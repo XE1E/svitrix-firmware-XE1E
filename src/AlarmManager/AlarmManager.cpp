@@ -1,4 +1,5 @@
 #include "AlarmManager.h"
+#include "AlarmLogic.h"
 #include "Globals.h"
 #include <ArduinoJson.h>
 #include <LittleFS.h>
@@ -51,49 +52,51 @@ void AlarmManager_::tick(time_t now)
     if (!timeProvider_->now(t))
         return;
 
-    // Check snooze expiry
-    if (ringing_ && snoozeUntil_ > 0 && now >= snoozeUntil_)
+    // Snooze expiry → re-ring. Checked independently of ringing_ (which is
+    // false while snoozed) so the alarm actually comes back.
+    if (snoozeUntil_ > 0 && now >= snoozeUntil_)
     {
         snoozeUntil_ = 0;
         const Alarm *alarm = getAlarm(ringingAlarmId_);
         if (alarm)
-        {
             triggerAlarm(*alarm);
-        }
+        return;
     }
 
     // Don't check for new triggers while ringing or snoozed
     if (ringing_ || snoozeUntil_ > 0)
         return;
 
-    // Create a minute identifier to prevent re-triggering
-    time_t currentMinute = (t.tm_hour * 60 + t.tm_min);
+    // Dedup by absolute epoch-minute so an alarm fires once per occurrence
+    // (and again the next day), not just once ever.
+    time_t currentMinute = now / 60;
     if (currentMinute == lastTriggerMinute_)
         return;
 
-    // Check all alarms
     for (const auto& alarm : alarms_)
     {
-        if (shouldTrigger(alarm, t))
+        if (alarmMatches(alarm.enabled, alarm.hour, alarm.minute,
+                         alarm.days, alarm.oneTime, t))
         {
             lastTriggerMinute_ = currentMinute;
             triggerAlarm(alarm);
+
+            // One-time alarms (reminders) auto-disable after firing.
+            if (alarm.oneTime)
+            {
+                for (auto& a : alarms_)
+                {
+                    if (a.id == alarm.id)
+                    {
+                        a.enabled = false;
+                        break;
+                    }
+                }
+                saveAlarms();
+            }
             break;
         }
     }
-}
-
-bool AlarmManager_::shouldTrigger(const Alarm& alarm, const struct tm& t) const
-{
-    if (!alarm.enabled)
-        return false;
-
-    if (alarm.hour != t.tm_hour || alarm.minute != t.tm_min)
-        return false;
-
-    // Check day of week (tm_wday: 0=Sun, 1=Mon, ..., 6=Sat)
-    uint8_t dayMask = 1 << t.tm_wday;
-    return (alarm.days & dayMask) != 0;
 }
 
 void AlarmManager_::triggerAlarm(const Alarm& alarm)
@@ -230,6 +233,8 @@ bool AlarmManager_::updateAlarm(const Alarm& alarm)
             a.minute = alarm.minute;
             a.days = alarm.days;
             a.enabled = alarm.enabled;
+            a.oneTime = alarm.oneTime;
+            a.snoozeMinutes = alarm.snoozeMinutes;
             a.label = alarm.label;
             a.melody = alarm.melody;
             saveAlarms();
@@ -275,6 +280,8 @@ bool AlarmManager_::saveAlarms()
         obj["minute"] = alarm.minute;
         obj["days"] = alarm.days;
         obj["enabled"] = alarm.enabled;
+        obj["oneTime"] = alarm.oneTime;
+        obj["snooze"] = alarm.snoozeMinutes;
         obj["label"] = alarm.label;
         obj["melody"] = alarm.melody;
     }
@@ -338,6 +345,8 @@ bool AlarmManager_::loadAlarms()
         alarm.minute = obj["minute"] | 0;
         alarm.days = obj["days"] | 0x7F;
         alarm.enabled = obj["enabled"] | true;
+        alarm.oneTime = obj["oneTime"] | false;
+        alarm.snoozeMinutes = obj["snooze"] | 5;
         alarm.label = obj["label"] | "";
         alarm.melody = obj["melody"] | "";
 

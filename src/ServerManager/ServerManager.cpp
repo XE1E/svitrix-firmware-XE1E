@@ -388,6 +388,8 @@ void addHandler()
                         obj["minute"] = alarm.minute;
                         obj["days"] = alarm.days;
                         obj["enabled"] = alarm.enabled;
+                        obj["oneTime"] = alarm.oneTime;
+                        obj["snoozeMinutes"] = alarm.snoozeMinutes;
                         obj["label"] = alarm.label;
                         obj["melody"] = alarm.melody;
                     }
@@ -422,6 +424,8 @@ void addHandler()
                             alarm.minute = doc["minute"] | 0;
                             alarm.days = doc["days"] | 0x7F;
                             alarm.enabled = doc["enabled"] | true;
+                            alarm.oneTime = doc["oneTime"] | false;
+                            alarm.snoozeMinutes = doc["snoozeMinutes"] | 5;
                             alarm.label = doc["label"] | "";
                             alarm.melody = doc["melody"] | "";
                             if (AlarmManager.addAlarm(alarm)) {
@@ -444,6 +448,8 @@ void addHandler()
                             alarm.minute = doc["minute"] | 0;
                             alarm.days = doc["days"] | 0x7F;
                             alarm.enabled = doc["enabled"] | true;
+                            alarm.oneTime = doc["oneTime"] | false;
+                            alarm.snoozeMinutes = doc["snoozeMinutes"] | 5;
                             alarm.label = doc["label"] | "";
                             alarm.melody = doc["melody"] | "";
                             if (AlarmManager.updateAlarm(alarm)) {
