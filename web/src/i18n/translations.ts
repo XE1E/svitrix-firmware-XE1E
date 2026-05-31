@@ -302,6 +302,10 @@ export const translations = {
       labelPlaceholder: "Etiqueta (opcional)",
       alarm: "Alarma",
       add: "Agregar",
+      once: "Una vez",
+      snoozeMin: "Posponer (min)",
+      nextAlarm: "Próxima",
+      melodyPlaceholder: "RTTTL o archivo",
     },
 
     // Files page
@@ -709,6 +713,10 @@ export const translations = {
       noAlarms: "No alarms configured",
       labelPlaceholder: "Label (optional)",
       alarm: "Alarm",
+      once: "Once",
+      snoozeMin: "Snooze (min)",
+      nextAlarm: "Next",
+      melodyPlaceholder: "RTTTL or file",
       add: "Add",
     },
 
