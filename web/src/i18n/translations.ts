@@ -306,6 +306,8 @@ export const translations = {
       snoozeMin: "Posponer (min)",
       nextAlarm: "Próxima",
       melodyPlaceholder: "RTTTL o archivo",
+      melodyNone: "Sin melodía",
+      dayLetters: ["D", "L", "M", "X", "J", "V", "S"],
     },
 
     // Files page
@@ -717,6 +719,8 @@ export const translations = {
       snoozeMin: "Snooze (min)",
       nextAlarm: "Next",
       melodyPlaceholder: "RTTTL or file",
+      melodyNone: "No melody",
+      dayLetters: ["S", "M", "T", "W", "T", "F", "S"],
       add: "Add",
     },
 

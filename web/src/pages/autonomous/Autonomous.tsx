@@ -11,7 +11,15 @@ import type { Alarm, AlarmsState } from "../../api/types";
 import { useT } from "../../i18n";
 import styles from "./Autonomous.module.css";
 
-const DAYS = ["S", "M", "T", "W", "T", "F", "S"]; // index 0 = Sunday (bit 0)
+// Preset RTTTL melodies offered in the alarm melody dropdown.
+const MELODIES = [
+  { name: "Beep", rtttl: "beep:d=4,o=5,b=160:16e6,16e6" },
+  { name: "Alarm", rtttl: "alarm:d=8,o=6,b=300:c,p,c,p,c,p,c,p,c,p,c,p" },
+  { name: "Nokia", rtttl: "Nokia:d=4,o=5,b=225:8e6,8d6,4f#,4g#,8c#6,8b,4d,4e,8b,8a,4c#,4e,2a" },
+  { name: "Mario", rtttl: "Mario:d=4,o=5,b=200:8e6,8e6,16p,8e6,16p,8c6,8e6,16p,8g6,8p,8g,8p" },
+  { name: "Star Wars", rtttl: "StarWars:d=4,o=5,b=45:32p,8d.,8d.,8d.,8a#4,16f,8d.,8a#4,16f,8d.,2a" },
+  { name: "Reveille", rtttl: "Reveille:d=4,o=5,b=140:8g,8c6,8e6,8g6,8e6,8c6,8g,8c6,8e6,8g6,8e6,8c6" },
+];
 
 // Minutes from `now` until the alarm's next fire, or -1 if it never will.
 // Mirrors firmware AlarmLogic for an at-a-glance "next alarm" display.
@@ -151,7 +159,7 @@ function AlarmsSection() {
               <div class={`${styles.dayBadge} ${styles.active}`}>1×</div>
             ) : (
               <div class={styles.alarmDays}>
-                {DAYS.map((d, i) => (
+                {t.alarms.dayLetters.map((d, i) => (
                   <div
                     key={i}
                     class={`${styles.dayBadge} ${alarm.days & (1 << i) ? styles.active : ""}`}
@@ -181,26 +189,37 @@ function AlarmsSection() {
               type="text"
               class={styles.alarmLabelInput}
               placeholder={t.alarms.labelPlaceholder}
-              value={alarm.label}
-              onChange={(e) => patch(alarm, { label: (e.target as HTMLInputElement).value })}
+              key={`label-${alarm.id}`}
+              defaultValue={alarm.label}
+              onBlur={(e) => {
+                const v = (e.target as HTMLInputElement).value;
+                if (v !== alarm.label) patch(alarm, { label: v });
+              }}
             />
-            <input
-              type="text"
+            <select
               class={styles.alarmMelodyInput}
-              placeholder={t.alarms.melodyPlaceholder}
-              value={alarm.melody}
-              onChange={(e) => patch(alarm, { melody: (e.target as HTMLInputElement).value })}
-            />
+              value={MELODIES.some((m) => m.rtttl === alarm.melody) ? alarm.melody : ""}
+              onChange={(e) => patch(alarm, { melody: (e.target as HTMLSelectElement).value })}
+            >
+              <option value="">{t.alarms.melodyNone}</option>
+              {MELODIES.map((m) => (
+                <option key={m.name} value={m.rtttl}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
             <label class={styles.snoozeField}>
               {t.alarms.snoozeMin}
               <input
                 type="number"
                 min={1}
                 max={60}
-                value={alarm.snoozeMinutes}
-                onChange={(e) =>
-                  patch(alarm, { snoozeMinutes: Number((e.target as HTMLInputElement).value) || 5 })
-                }
+                key={`snz-${alarm.id}`}
+                defaultValue={alarm.snoozeMinutes}
+                onBlur={(e) => {
+                  const v = Number((e.target as HTMLInputElement).value) || 5;
+                  if (v !== alarm.snoozeMinutes) patch(alarm, { snoozeMinutes: v });
+                }}
               />
             </label>
 
