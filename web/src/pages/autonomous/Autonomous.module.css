@@ -308,3 +308,18 @@
   background: var(--input-bg, #1a1a2e);
   color: var(--text-primary, #fff);
 }
+
+.previewBtn {
+  border: 1px solid var(--border, #333);
+  border-radius: 4px;
+  background: var(--input-bg, #1a1a2e);
+  color: var(--accent, #4a9eff);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9rem;
+}
+
+.previewBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

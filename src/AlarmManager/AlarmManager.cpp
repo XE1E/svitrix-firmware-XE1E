@@ -110,20 +110,21 @@ void AlarmManager_::triggerAlarm(const Alarm& alarm)
                      alarm.label.c_str(), alarm.hour, alarm.minute);
     }
 
-    // Play melody
-    if (sound_ && !alarm.melody.isEmpty())
-    {
-        sound_->playRTTTLString(alarm.melody);
-    }
-
-    // Show notification
+    // Show a held, red notification. The melody travels with the notification
+    // and loopSound makes the notification overlay re-play it whenever the
+    // buzzer goes idle, so it repeats until the alarm is dismissed or snoozed.
     if (notifier_)
     {
-        StaticJsonDocument<256> doc;
+        StaticJsonDocument<512> doc; // room for an RTTTL melody
         doc["text"] = alarm.label.isEmpty() ? "ALARM" : alarm.label;
         doc["color"] = "#FF0000";
-        doc["repeat"] = -1; // Repeat until dismissed
-        doc["hold"] = true;
+        doc["repeat"] = -1; // scroll the text until dismissed
+        doc["hold"] = true; // stay on screen until dismissed
+        if (!alarm.melody.isEmpty())
+        {
+            doc["rtttl"] = alarm.melody;
+            doc["loopSound"] = true; // repeat the melody until dismissed/snoozed
+        }
 
         String json;
         serializeJson(doc, json);

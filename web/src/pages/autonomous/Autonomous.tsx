@@ -6,6 +6,7 @@ import {
   deleteAlarm,
   snoozeAlarm,
   dismissAlarm,
+  playRtttl,
 } from "../../api/client";
 import type { Alarm, AlarmsState } from "../../api/types";
 import { useT } from "../../i18n";
@@ -223,6 +224,14 @@ function AlarmsSection() {
                 </option>
               ))}
             </select>
+            <button
+              class={styles.previewBtn}
+              title={t.alarms.preview}
+              disabled={!alarm.melody}
+              onClick={() => playRtttl(alarm.melody)}
+            >
+              ▶
+            </button>
             <label class={styles.snoozeField}>
               {t.alarms.snoozeMin}
               <input
