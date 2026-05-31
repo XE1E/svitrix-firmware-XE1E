@@ -400,7 +400,7 @@ void addHandler()
     mws.addHandlerWithBody("/api/alarms", HTTP_POST, [](AsyncWebServerRequest *request)
                            {
                             String body = getBody(request);
-                            StaticJsonDocument<256> doc;
+                            StaticJsonDocument<512> doc; // room for long RTTTL melodies
                             DeserializationError err = deserializeJson(doc, body);
                             if (err) {
                                 request->send(400, "text/plain", "InvalidJSON");
@@ -436,7 +436,7 @@ void addHandler()
     mws.addHandlerWithBody("/api/alarms", HTTP_PUT, [](AsyncWebServerRequest *request)
                            {
                             String body = getBody(request);
-                            StaticJsonDocument<256> doc;
+                            StaticJsonDocument<512> doc; // room for long RTTTL melodies
                             DeserializationError err = deserializeJson(doc, body);
                             if (err) {
                                 request->send(400, "text/plain", "InvalidJSON");

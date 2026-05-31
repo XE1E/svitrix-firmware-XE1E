@@ -269,7 +269,7 @@ uint8_t AlarmManager_::generateId()
 
 bool AlarmManager_::saveAlarms()
 {
-    DynamicJsonDocument doc(2048);
+    DynamicJsonDocument doc(4096); // room for up to 10 alarms with RTTTL melodies
     JsonArray arr = doc.createNestedArray("alarms");
 
     for (const auto& alarm : alarms_)
@@ -322,7 +322,7 @@ bool AlarmManager_::loadAlarms()
         return false;
     }
 
-    DynamicJsonDocument doc(2048);
+    DynamicJsonDocument doc(4096); // room for up to 10 alarms with RTTTL melodies
     DeserializationError error = deserializeJson(doc, file);
     file.close();
 

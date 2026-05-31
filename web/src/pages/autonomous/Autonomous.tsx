@@ -59,7 +59,8 @@ function AlarmsSection() {
   const pollRef = useRef<ReturnType<typeof setInterval>>();
   const t = useT();
 
-  const poll = async () => {
+  // Full reload — replaces the whole list (mount, add, delete).
+  const load = async () => {
     try {
       setState(await getAlarms());
     } catch {
@@ -68,10 +69,32 @@ function AlarmsSection() {
   };
 
   useEffect(() => {
-    poll();
-    pollRef.current = setInterval(poll, 2000);
+    load();
+    // Poll ONLY the ringing flag so it never clobbers a field being edited.
+    pollRef.current = setInterval(async () => {
+      try {
+        const s = await getAlarms();
+        setState((prev) => (prev ? { ...prev, ringing: s.ringing } : s));
+      } catch {
+        // ignore
+      }
+    }, 2000);
     return () => clearInterval(pollRef.current);
   }, []);
+
+  // Update one alarm in local state only — instant, no network, no clobber.
+  const setLocal = (id: number, fields: Partial<Alarm>) =>
+    setState((prev) =>
+      prev
+        ? { ...prev, alarms: prev.alarms.map((a) => (a.id === id ? { ...a, ...fields } : a)) }
+        : prev
+    );
+
+  // Apply locally and persist to the device.
+  const patch = (alarm: Alarm, fields: Partial<Alarm>) => {
+    setLocal(alarm.id, fields);
+    updateAlarm({ ...alarm, ...fields });
+  };
 
   const handleAdd = async () => {
     const [h, m] = newTime.split(":").map(Number);
@@ -87,12 +110,7 @@ function AlarmsSection() {
     });
     setNewLabel("");
     setNewOnce(false);
-    poll();
-  };
-
-  const patch = async (alarm: Alarm, fields: Partial<Alarm>) => {
-    await updateAlarm({ ...alarm, ...fields });
-    poll();
+    load();
   };
 
   const setTime = (alarm: Alarm, value: string) => {
@@ -102,7 +120,7 @@ function AlarmsSection() {
 
   const handleDelete = async (id: number) => {
     await deleteAlarm(id);
-    poll();
+    load();
   };
 
   // Soonest upcoming alarm (computed from browser time, for display only).
@@ -132,10 +150,10 @@ function AlarmsSection() {
       {state?.ringing && (
         <div class={styles.ringingAlert}>
           <div>{t.alarms.ringing}</div>
-          <button class={styles.btnPause} onClick={() => { snoozeAlarm(5); poll(); }}>
+          <button class={styles.btnPause} onClick={() => { snoozeAlarm(5); load(); }}>
             {t.alarms.snooze5min}
           </button>
-          <button class={styles.btnDanger} onClick={() => { dismissAlarm(); poll(); }}>
+          <button class={styles.btnDanger} onClick={() => { dismissAlarm(); load(); }}>
             {t.alarms.dismiss}
           </button>
         </div>
@@ -189,12 +207,9 @@ function AlarmsSection() {
               type="text"
               class={styles.alarmLabelInput}
               placeholder={t.alarms.labelPlaceholder}
-              key={`label-${alarm.id}`}
-              defaultValue={alarm.label}
-              onBlur={(e) => {
-                const v = (e.target as HTMLInputElement).value;
-                if (v !== alarm.label) patch(alarm, { label: v });
-              }}
+              value={alarm.label}
+              onInput={(e) => setLocal(alarm.id, { label: (e.target as HTMLInputElement).value })}
+              onBlur={(e) => updateAlarm({ ...alarm, label: (e.target as HTMLInputElement).value })}
             />
             <select
               class={styles.alarmMelodyInput}
@@ -214,11 +229,13 @@ function AlarmsSection() {
                 type="number"
                 min={1}
                 max={60}
-                key={`snz-${alarm.id}`}
-                defaultValue={alarm.snoozeMinutes}
+                value={alarm.snoozeMinutes}
+                onInput={(e) =>
+                  setLocal(alarm.id, { snoozeMinutes: Number((e.target as HTMLInputElement).value) || 0 })
+                }
                 onBlur={(e) => {
-                  const v = Number((e.target as HTMLInputElement).value) || 5;
-                  if (v !== alarm.snoozeMinutes) patch(alarm, { snoozeMinutes: v });
+                  const v = Math.min(60, Math.max(1, Number((e.target as HTMLInputElement).value) || 5));
+                  patch(alarm, { snoozeMinutes: v });
                 }}
               />
             </label>

@@ -185,7 +185,7 @@ void processMqttMessage(const String& strTopic, const String& payloadCopy)
     {
         if (!isJsonPayload(payloadCopy))
             return;
-        StaticJsonDocument<256> doc;
+        StaticJsonDocument<512> doc; // room for long RTTTL melodies
         if (deserializeJson(doc, payloadCopy.c_str()))
             return;
         Alarm alarm;
