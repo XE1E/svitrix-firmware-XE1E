@@ -128,10 +128,10 @@ std::map<String, String> mqttValues;   ///< Cached values for subscribed externa
 std::vector<String> topicsToSubscribe; ///< Topics queued for subscription on next connect
 
 // ── Deferred subscription state (non-blocking connect) ───────────────
-std::vector<String> pendingSubscriptions_;  ///< Topics waiting to be subscribed
-size_t pendingSubIndex_ = 0;                ///< Current position in pendingSubscriptions_
-unsigned long lastSubTime_ = 0;             ///< Timestamp of last subscription
-bool pendingInitialState_ = false;          ///< True if initial HA state needs to be published
+std::vector<String> pendingSubscriptions_; ///< Topics waiting to be subscribed
+size_t pendingSubIndex_ = 0;               ///< Current position in pendingSubscriptions_
+unsigned long lastSubTime_ = 0;            ///< Timestamp of last subscription
+bool pendingInitialState_ = false;         ///< True if initial HA state needs to be published
 
 // ── Display interfaces (set via setDisplay) ──────────────────────────
 
@@ -271,7 +271,7 @@ static void publishInitialHAState()
 
         bgEffect->setState(displayConfig.backgroundEffect, true);
 
-        timePerAppNum->setState(static_cast<float>(appConfig.timePerApp / 1000));  // ms → s
+        timePerAppNum->setState(static_cast<float>(appConfig.timePerApp / 1000)); // ms → s
         scrollSpeedNum->setState(static_cast<float>(appConfig.scrollSpeed));
         timeDurationNum->setState(static_cast<float>(appConfig.timeDuration));
         dateDurationNum->setState(static_cast<float>(appConfig.dateDuration));

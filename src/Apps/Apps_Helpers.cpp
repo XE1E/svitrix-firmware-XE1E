@@ -49,7 +49,7 @@ bool nativeAppGuard(const char *appName)
 /// policy-agnostic.
 /// @param colorValue Per-app color from colorConfig (0 = use global).
 /// @param appName    Name of the app being rendered (to verify rotation item match).
-void applyNativeAppColor(uint32_t colorValue, const char* appName)
+void applyNativeAppColor(uint32_t colorValue, const char *appName)
 {
     uint32_t preferred;
 

@@ -48,36 +48,38 @@ extern CRGB colorTemperature; ///< LED color temperature (0 = disabled)
 extern String currentApp; ///< Name of the currently displayed app
 
 // ── Rotation runtime state (defined in DisplayManager.cpp) ──────────
-struct RotationItemRuntime {
-    String id;          // unique ID for matching
-    uint8_t type;       // 0 = app, 1 = effect
+struct RotationItemRuntime
+{
+    String id;    // unique ID for matching
+    uint8_t type; // 0 = app, 1 = effect
     String name;
     bool enabled;
-    uint16_t duration;  // seconds (0 = use default)
-    uint32_t color;     // override (0 = use default)
-    String icon;        // override (empty = use default)
+    uint16_t duration; // seconds (0 = use default)
+    uint32_t color;    // override (0 = use default)
+    String icon;       // override (empty = use default)
 };
 
 // Legacy struct for compatibility (must be defined before extern)
-struct PlaylistItemRuntime {
-    uint8_t type;       // 0 = app, 1 = effect
+struct PlaylistItemRuntime
+{
+    uint8_t type; // 0 = app, 1 = effect
     String name;
-    uint16_t duration;  // seconds
+    uint16_t duration; // seconds
 };
 
-extern std::vector<RotationItemRuntime> rotationItems;  ///< Parsed rotation config
-extern int rotationIndex;                                ///< Current position in rotation (-1 initially)
-extern bool rotationEffectOnly;                          ///< True when showing standalone effect
-extern const RotationItemRuntime* currentRotationItem;   ///< Current item being displayed (for overrides)
-extern const RotationItemRuntime* prevRotationItem;      ///< Previous item (for outgoing app during transitions)
+extern std::vector<RotationItemRuntime> rotationItems; ///< Parsed rotation config
+extern int rotationIndex;                              ///< Current position in rotation (-1 initially)
+extern bool rotationEffectOnly;                        ///< True when showing standalone effect
+extern const RotationItemRuntime *currentRotationItem; ///< Current item being displayed (for overrides)
+extern const RotationItemRuntime *prevRotationItem;    ///< Previous item (for outgoing app during transitions)
 
 // Legacy playlist aliases (for gradual migration)
-extern std::vector<PlaylistItemRuntime> playlistItems;   ///< @deprecated Use rotationItems
-extern int playlistIndex;                                 ///< @deprecated Use rotationIndex
-extern bool playlistEffectOnly;                           ///< @deprecated Use rotationEffectOnly
+extern std::vector<PlaylistItemRuntime> playlistItems; ///< @deprecated Use rotationItems
+extern int playlistIndex;                              ///< @deprecated Use rotationIndex
+extern bool playlistEffectOnly;                        ///< @deprecated Use rotationEffectOnly
 
 // ── Rotation config parsing (defined in DisplayManager.cpp) ────────
-void parseRotationConfig();   ///< Parse rotationConfig.items into rotationItems vector
+void parseRotationConfig(); ///< Parse rotationConfig.items into rotationItems vector
 
 // ── Free functions from other modules ──────────────────────────────
 void ResetCustomApps();                                                          ///< Resets scroll state on non-active custom apps (DisplayManager_CustomApps.cpp)

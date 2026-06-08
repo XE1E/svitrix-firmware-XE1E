@@ -137,7 +137,8 @@ void setup()
 
     // Wire up ISound, IPower, IUpdater interfaces (Phase 9.3)
     ServerManager.setServices(&PeripheryManager, &PowerManager, &UpdateManager);
-    ServerManager.setMqttReconnectCallback([]() { MQTTManager.reconnect(); });
+    ServerManager.setMqttReconnectCallback([]()
+                                           { MQTTManager.reconnect(); });
     MQTTManager.setServices(&PeripheryManager, &PowerManager, &UpdateManager, &PeripheryManager);
     MenuManager.setServices(&PeripheryManager, &UpdateManager);
 
@@ -191,7 +192,7 @@ void setup()
         while (x >= -textLength)
         {
             DisplayManager.HSVtext(x, 6, textForDisplay.c_str(), true, 0);
-            x -= 0.4;  // Balanced scroll speed (~4 seconds)
+            x -= 0.4; // Balanced scroll speed (~4 seconds)
         }
         delay(300);
 

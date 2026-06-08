@@ -112,10 +112,10 @@ extern HASwitch *showAqiSwitch;
 extern HASwitch *showUvSwitch;
 
 // Alarm entities (autonomous mode)
-extern HABinarySensor *alarmRinging;  ///< true while an alarm is sounding
-extern HAButton *alarmSnoozeBtn;      ///< Snooze the ringing alarm
-extern HAButton *alarmDismissBtn;     ///< Dismiss the ringing alarm
-extern HASensor *nextAlarmSensor;     ///< "HH:MM" of the soonest enabled alarm, or "--:--"
+extern HABinarySensor *alarmRinging; ///< true while an alarm is sounding
+extern HAButton *alarmSnoozeBtn;     ///< Snooze the ringing alarm
+extern HAButton *alarmDismissBtn;    ///< Dismiss the ringing alarm
+extern HASensor *nextAlarmSensor;    ///< "HH:MM" of the soonest enabled alarm, or "--:--"
 
 // ── HA entity ID buffers (defined in MQTTManager.cpp) ───────────────
 // Each buffer holds a unique HA entity ID built from MAC + suffix.
@@ -147,10 +147,10 @@ extern std::map<String, String> mqttValues;   ///< Cached values for subscribed 
 extern std::vector<String> topicsToSubscribe; ///< Topics queued for subscription on next connect
 
 // ── Deferred subscription state (non-blocking connect) ──────────────
-extern std::vector<String> pendingSubscriptions_;  ///< Topics waiting to be subscribed
-extern size_t pendingSubIndex_;                    ///< Current position in pendingSubscriptions_
-extern unsigned long lastSubTime_;                 ///< Timestamp of last subscription
-extern bool pendingInitialState_;                  ///< True if initial HA state needs to be published
+extern std::vector<String> pendingSubscriptions_; ///< Topics waiting to be subscribed
+extern size_t pendingSubIndex_;                   ///< Current position in pendingSubscriptions_
+extern unsigned long lastSubTime_;                ///< Timestamp of last subscription
+extern bool pendingInitialState_;                 ///< True if initial HA state needs to be published
 
 // ── Free functions (defined in MQTTManager_Messages.cpp) ────────────
 

@@ -13,9 +13,9 @@ extern const char *rootCACertificate;
 static const char *TAG = "DataFetcher";
 static const char *SOURCES_PATH = "/DATAFETCHER/sources.json";
 static constexpr size_t MAX_RESPONSE_SIZE = 4096;
-static constexpr uint32_t HTTP_CONNECT_TIMEOUT = 10000;  // 10s for SSL handshake
+static constexpr uint32_t HTTP_CONNECT_TIMEOUT = 10000; // 10s for SSL handshake
 static constexpr uint32_t HTTP_READ_TIMEOUT = 15000;    // 15s for slow APIs
-static constexpr uint32_t MIN_FREE_HEAP = 60000;  // Increased for SSL overhead
+static constexpr uint32_t MIN_FREE_HEAP = 60000;        // Increased for SSL overhead
 
 DataFetcher_& DataFetcher_::getInstance()
 {
@@ -438,7 +438,8 @@ void DataFetcher_::cleanupOrphanedApps()
     File root = LittleFS.open("/CUSTOMAPPS");
     if (!root || !root.isDirectory())
     {
-        if (root) root.close();
+        if (root)
+            root.close();
         return;
     }
 
