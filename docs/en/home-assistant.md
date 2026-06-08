@@ -133,6 +133,22 @@ Once HA Discovery is enabled in SVITRIX and restarted, entities will appear auto
 | **UV index** | — | UV index (WeatherAPI) |
 | **Next alarm** | — | Next scheduled alarm (HH:MM or "None") |
 
+#### Last reset cause (`reset_reason`)
+
+The periodic `<prefix>/stats` topic payload (and `GET /api/stats`) includes a **`reset_reason`** field with the cause of the last boot: `PWR` (normal power-on), `SW` (software/OTA reset), `PANIC` (exception/crash), `HW_WDT` / `SW_WDT` / `WDT` (watchdog), `BROWNOUT` (low voltage), `DEEPSLEEP`, and others (`UNKNOWN` as fallback).
+
+It is not an auto-discovered entity; expose it as an MQTT sensor to alert on unexpected reboots (watchdog, panic, brownout) without a serial console:
+
+```yaml
+# configuration.yaml
+mqtt:
+  - sensor:
+      name: "SVITRIX Reset Reason"
+      state_topic: "svitrix/stats"   # use your MQTT prefix
+      value_template: "{{ value_json.reset_reason }}"
+      icon: mdi:restart-alert
+```
+
 ### Binary Sensors (4)
 
 | Entity | Description |

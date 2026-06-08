@@ -52,6 +52,7 @@ SVITRIX-XE1E es un fork de [SVITRIX](https://github.com/svitrix/svitrix-firmware
 - **API MQTT y HTTP** — control total sobre apps, notificaciones, configuración y pantalla
 - **Apps Personalizadas** — crea páginas dinámicas desde tu hogar inteligente sin recompilar
 - **Descubrimiento HomeAssistant** — integración automática con HA
+- **Causa de reinicio (NUEVO)** — reporta por qué se reinició el dispositivo (watchdog, panic, brownout, OTA, encendido…) en el campo `reset_reason` de `/api/stats` y MQTT, para diagnosticar reinicios inesperados desde Home Assistant
 - **Multi-red WiFi** — configura hasta 3 redes WiFi con respaldo automático
 - **Artnet (DMX)** — usa SVITRIX-XE1E como receptor Artnet
 

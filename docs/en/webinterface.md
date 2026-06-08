@@ -126,7 +126,7 @@ The **Apps** page contains a unified rotation list that controls **all** apps an
 
 Each item in the rotation has individual settings:
 - **Toggle** — enable/disable the item
-- **Duration** — display time (0 = use global duration)
+- **Duration** — per-item display time, set with a **−/+** stepper (tap = ±1 s, press-and-hold = ±10 s). 0 = use default duration (7 s)
 - **Color** — custom text color (0 = use default color)
 
 Drag any row to reorder. Changes save instantly and persist across reboots.

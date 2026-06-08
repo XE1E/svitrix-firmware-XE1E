@@ -133,6 +133,22 @@ Una vez habilitado HA Discovery en SVITRIX y reiniciado, las entidades aparecer�
 | **UV index** | — | Índice UV (WeatherAPI) |
 | **Next alarm** | — | Próxima alarma programada (HH:MM o "None") |
 
+#### Causa del último reinicio (`reset_reason`)
+
+El payload periódico del tópico `<prefijo>/stats` (y `GET /api/stats`) incluye el campo **`reset_reason`** con la causa del último arranque: `PWR` (encendido normal), `SW` (reinicio por software/OTA), `PANIC` (excepción/crash), `HW_WDT` / `SW_WDT` / `WDT` (watchdog), `BROWNOUT` (bajada de tensión), `DEEPSLEEP`, entre otras (`UNKNOWN` como respaldo).
+
+No es una entidad auto-descubierta; exponla como sensor MQTT para alertar sobre reinicios inesperados (watchdog, panic, brownout) sin necesidad de consola serie:
+
+```yaml
+# configuration.yaml
+mqtt:
+  - sensor:
+      name: "SVITRIX Causa de Reinicio"
+      state_topic: "svitrix/stats"   # usa tu prefijo MQTT
+      value_template: "{{ value_json.reset_reason }}"
+      icon: mdi:restart-alert
+```
+
 ### Sensores Binarios (4)
 
 | Entidad | Descripción |

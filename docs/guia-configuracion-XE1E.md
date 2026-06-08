@@ -416,12 +416,14 @@ La interfaz tiene una **lista unificada de rotación** que controla **todas** la
 
 | Campo | Descripción |
 |-------|-------------|
-| **Duración** | Segundos de visualización (0 = usar duración global) |
+| **Duración** | Tiempo de visualización, ajustable con un control **−/+** (0 = usar duración por defecto, 7 s) |
 | **Color** | Color de texto personalizado (selector de color, negro = usar color por defecto) |
 | **Icono** | Número de icono personalizado (muestra el icono por defecto como placeholder) |
 | **Eliminar** | Botón para quitar el elemento de la rotación |
 
 > **Nota:** Las apps **Hora** y **Fecha** no tienen opción de icono porque no usan iconos.
+
+> **Ajuste de duración (control −/+):** En lugar de un slider, la duración se ajusta con botones **−** y **+**: un **toque** cambia ±1 s y **mantener pulsado** cambia ±10 s (más rápido). El valor se guarda al soltar. Pon **0** para usar la duración por defecto (7 s).
 
 **Apps de clima adicionales:**
 | App | Opción especial |
@@ -835,6 +837,21 @@ El tab Sistema muestra información del dispositivo y opciones de mantenimiento.
 - Verifica que la URL sea correcta
 - Verifica que el JSON Path sea exacto
 - Revisa que el intervalo sea >= 60 segundos
+
+### El reloj se reinicia solo / quiero saber por qué se reinició
+El firmware registra la **causa del último reinicio** y la expone en el campo `reset_reason` de `GET http://[IP]/api/stats` (y en el tópico MQTT `<prefijo>/stats`). Valores posibles:
+
+| Valor | Significado |
+|-------|-------------|
+| `PWR` | Encendido normal (corte de luz, enchufado) |
+| `SW` | Reinicio por software (p. ej. tras una actualización OTA) |
+| `PANIC` | Excepción / crash del firmware |
+| `HW_WDT` / `SW_WDT` / `WDT` | Watchdog (el sistema se colgó y se reinició solo) |
+| `BROWNOUT` | Bajada de tensión (fuente/cable USB insuficiente) |
+| `DEEPSLEEP` | Despertar de sueño profundo |
+| `UNKNOWN` | Causa no identificada |
+
+> **Tip:** Si ves `PANIC` o `WDT` repetidos, hay un cuelgue de firmware; `BROWNOUT` suele indicar un cargador o cable USB débil. En Home Assistant puedes exponerlo como sensor — ver [home-assistant.md](home-assistant.md).
 
 ---
 
