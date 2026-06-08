@@ -320,11 +320,11 @@ export function UnifiedRotationSection() {
 
                   {expandedId === item.id && (
                     <div class={styles.rotationExpanded}>
-                      <DurationStepper
-                        value={item.duration}
-                        onCommit={(v) => updateItem(item.id, { duration: v })}
-                      />
                       <div class={styles.rotationRow}>
+                        <DurationStepper
+                          value={item.duration}
+                          onCommit={(v) => updateItem(item.id, { duration: v })}
+                        />
                         <div class={styles.rotationField}>
                           <label>Color:</label>
                           <input

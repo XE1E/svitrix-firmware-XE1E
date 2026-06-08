@@ -450,13 +450,14 @@
 
 .rotationRow {
   display: flex;
-  gap: 16px;
+  gap: 16px 24px;
   flex-wrap: wrap;
   align-items: center;
 }
 
 .rotationSlider {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .rotationSlider label {
