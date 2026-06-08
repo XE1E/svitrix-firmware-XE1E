@@ -112,7 +112,7 @@ La página de **Apps** contiene una lista unificada de rotación que controla **
 
 Cada elemento en la rotación tiene configuraciones individuales:
 - **Toggle** — activa/desactiva el elemento
-- **Duración** — tiempo de visualización (0 = usar duración global)
+- **Duración** — tiempo de visualización por elemento, ajustable con un control **−/+** (toca = ±1 s, mantén pulsado = ±10 s). 0 = usar duración por defecto (7 s)
 - **Color** — color de texto personalizado (0 = usar color por defecto)
 
 Arrastra cualquier fila para reordenarla. Los cambios se guardan al instante y persisten entre reinicios.
