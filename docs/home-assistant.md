@@ -135,7 +135,7 @@ Una vez habilitado HA Discovery en SVITRIX y reiniciado, las entidades aparecer�
 
 #### Causa del último reinicio (`reset_reason`)
 
-El payload periódico del tópico `<prefijo>/stats` (y `GET /api/stats`) incluye el campo **`reset_reason`** con la causa del último arranque: `PWR` (encendido normal), `SW` (reinicio por software/OTA), `PANIC` (excepción/crash), `HW_WDT` / `SW_WDT` / `WDT` (watchdog), `BROWNOUT` (bajada de tensión), `DEEPSLEEP`, entre otras (`UNKNOWN` como respaldo).
+El payload periódico del tópico `<prefijo>/stats` (y `GET /api/stats`) incluye el campo **`reset_reason`** con la causa del último arranque: `poweron` (encendido normal), `ext` (reset por pin externo), `software` (reinicio por software/OTA), `panic` (excepción/crash), `int_wdt` / `task_wdt` / `wdt` (watchdog), `brownout` (bajada de tensión), `deepsleep` (despertar de sueño profundo), `sdio`, y `unknown` (respaldo).
 
 No es una entidad auto-descubierta; exponla como sensor MQTT para alertar sobre reinicios inesperados (watchdog, panic, brownout) sin necesidad de consola serie:
 
