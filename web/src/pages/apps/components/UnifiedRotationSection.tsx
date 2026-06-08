@@ -1,4 +1,4 @@
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { getRotation, saveRotation, getEffects } from "../../../api/client";
 import type { RotationItem, RotationConfig, EffectInfo } from "../../../api/types";
 import { Card, Toggle, Button } from "../../../components/ui";
@@ -37,6 +37,106 @@ function generateId(): string {
     id += chars[Math.floor(Math.random() * 16)];
   }
   return id;
+}
+
+const DURATION_MIN = 0;
+const DURATION_MAX = 300;
+const HOLD_DELAY_MS = 400; // press longer than this → fast repeat
+const REPEAT_MS = 110; // repeat interval while held
+const FAST_STEP = 10; // step while held
+
+/**
+ * −/+ stepper for app duration. Tap = ±1s, press-and-hold = ±10s (repeating).
+ * Updates locally for instant feedback and commits once per gesture (on release)
+ * to avoid spamming the device with a save per increment.
+ */
+function DurationStepper({ value, onCommit }: { value: number; onCommit: (v: number) => void }) {
+  const t = useT();
+  const [local, setLocal] = useState(value);
+  const localRef = useRef(value);
+  const interacting = useRef(false);
+  const holdTimer = useRef<number | null>(null);
+  const repeatTimer = useRef<number | null>(null);
+
+  // Sync from parent when the value changes externally (not mid-gesture).
+  useEffect(() => {
+    if (!interacting.current) {
+      localRef.current = value;
+      setLocal(value);
+    }
+  }, [value]);
+
+  function clamp(v: number): number {
+    return Math.max(DURATION_MIN, Math.min(DURATION_MAX, v));
+  }
+
+  function apply(delta: number) {
+    const next = clamp(localRef.current + delta);
+    if (next !== localRef.current) {
+      localRef.current = next;
+      setLocal(next);
+    }
+  }
+
+  function start(dir: 1 | -1) {
+    interacting.current = true;
+    apply(dir); // immediate tap step (±1)
+    holdTimer.current = window.setTimeout(() => {
+      repeatTimer.current = window.setInterval(() => apply(dir * FAST_STEP), REPEAT_MS);
+    }, HOLD_DELAY_MS);
+  }
+
+  function stop() {
+    if (holdTimer.current !== null) { clearTimeout(holdTimer.current); holdTimer.current = null; }
+    if (repeatTimer.current !== null) { clearInterval(repeatTimer.current); repeatTimer.current = null; }
+    if (interacting.current) {
+      interacting.current = false;
+      if (localRef.current !== value) onCommit(localRef.current);
+    }
+  }
+
+  // Clean up timers if unmounted mid-press.
+  useEffect(() => () => {
+    if (holdTimer.current !== null) clearTimeout(holdTimer.current);
+    if (repeatTimer.current !== null) clearInterval(repeatTimer.current);
+  }, []);
+
+  const isDefault = local === 0;
+  const display = isDefault ? `${t.apps.default || "Default"} (7s)` : `${local}s`;
+
+  return (
+    <div class={styles.rotationSlider}>
+      <label>{t.apps.playlistDuration}</label>
+      <div class={styles.stepper}>
+        <button
+          type="button"
+          class={styles.stepperBtn}
+          aria-label="−"
+          onPointerDown={(e) => { e.preventDefault(); start(-1); }}
+          onPointerUp={stop}
+          onPointerLeave={stop}
+          onPointerCancel={stop}
+        >
+          −
+        </button>
+        <span class={`${styles.stepperValue} ${isDefault ? styles.stepperValueDefault : ""}`}>
+          {display}
+        </span>
+        <button
+          type="button"
+          class={styles.stepperBtn}
+          aria-label="+"
+          onPointerDown={(e) => { e.preventDefault(); start(1); }}
+          onPointerUp={stop}
+          onPointerLeave={stop}
+          onPointerCancel={stop}
+        >
+          +
+        </button>
+      </div>
+      <span class={styles.sliderHint}>{t.apps.durationStepHint}</span>
+    </div>
+  );
 }
 
 export function UnifiedRotationSection() {
@@ -220,20 +320,10 @@ export function UnifiedRotationSection() {
 
                   {expandedId === item.id && (
                     <div class={styles.rotationExpanded}>
-                      <div class={styles.rotationSlider}>
-                        <label>
-                          {t.apps.playlistDuration}: {item.duration === 0 ? `${t.apps.default || "Default"} (7s)` : `${item.duration}s`}
-                        </label>
-                        <input
-                          type="range"
-                          min={0}
-                          max={300}
-                          step={1}
-                          value={item.duration}
-                          onInput={(e) => updateItem(item.id, { duration: parseInt((e.target as HTMLInputElement).value) })}
-                        />
-                        <span class={styles.sliderHint}>0 = {t.apps.default || "default"}</span>
-                      </div>
+                      <DurationStepper
+                        value={item.duration}
+                        onCommit={(v) => updateItem(item.id, { duration: v })}
+                      />
                       <div class={styles.rotationRow}>
                         <div class={styles.rotationField}>
                           <label>Color:</label>
