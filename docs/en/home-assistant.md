@@ -135,7 +135,7 @@ Once HA Discovery is enabled in SVITRIX and restarted, entities will appear auto
 
 #### Last reset cause (`reset_reason`)
 
-The periodic `<prefix>/stats` topic payload (and `GET /api/stats`) includes a **`reset_reason`** field with the cause of the last boot: `PWR` (normal power-on), `SW` (software/OTA reset), `PANIC` (exception/crash), `HW_WDT` / `SW_WDT` / `WDT` (watchdog), `BROWNOUT` (low voltage), `DEEPSLEEP`, and others (`UNKNOWN` as fallback).
+The periodic `<prefix>/stats` topic payload (and `GET /api/stats`) includes a **`reset_reason`** field with the cause of the last boot: `poweron` (normal power-on), `ext` (external pin reset), `software` (software/OTA reset), `panic` (exception/crash), `int_wdt` / `task_wdt` / `wdt` (watchdog), `brownout` (low voltage), `deepsleep` (wake from deep sleep), `sdio`, and `unknown` (fallback).
 
 It is not an auto-discovered entity; expose it as an MQTT sensor to alert on unexpected reboots (watchdog, panic, brownout) without a serial console:
 

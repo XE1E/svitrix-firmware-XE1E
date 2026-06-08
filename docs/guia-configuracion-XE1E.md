@@ -843,15 +843,17 @@ El firmware registra la **causa del último reinicio** y la expone en el campo `
 
 | Valor | Significado |
 |-------|-------------|
-| `PWR` | Encendido normal (corte de luz, enchufado) |
-| `SW` | Reinicio por software (p. ej. tras una actualización OTA) |
-| `PANIC` | Excepción / crash del firmware |
-| `HW_WDT` / `SW_WDT` / `WDT` | Watchdog (el sistema se colgó y se reinició solo) |
-| `BROWNOUT` | Bajada de tensión (fuente/cable USB insuficiente) |
-| `DEEPSLEEP` | Despertar de sueño profundo |
-| `UNKNOWN` | Causa no identificada |
+| `poweron` | Encendido normal (corte de luz, enchufado) |
+| `ext` | Reset por pin externo (botón de reset físico) |
+| `software` | Reinicio por software (p. ej. tras una actualización OTA o reinicio remoto) |
+| `panic` | Excepción / crash del firmware |
+| `int_wdt` / `task_wdt` / `wdt` | Watchdog (el sistema se colgó y se reinició solo) |
+| `brownout` | Bajada de tensión (fuente/cable USB insuficiente) |
+| `deepsleep` | Despertar de sueño profundo |
+| `sdio` | Reinicio vía SDIO |
+| `unknown` | Causa no identificada |
 
-> **Tip:** Si ves `PANIC` o `WDT` repetidos, hay un cuelgue de firmware; `BROWNOUT` suele indicar un cargador o cable USB débil. En Home Assistant puedes exponerlo como sensor — ver [home-assistant.md](home-assistant.md).
+> **Tip:** Si ves `panic` o `*_wdt` repetidos, hay un cuelgue de firmware; `brownout` suele indicar un cargador o cable USB débil. En Home Assistant puedes exponerlo como sensor — ver [home-assistant.md](home-assistant.md).
 
 ---
 
