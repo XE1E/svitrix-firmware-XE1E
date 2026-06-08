@@ -117,7 +117,7 @@ void MQTTManager_::sendStats()
         bgEffect->setState(displayConfig.backgroundEffect, false);
 
         // Display timing sync
-        timePerAppNum->setState(static_cast<float>(appConfig.timePerApp / 1000));  // ms → s
+        timePerAppNum->setState(static_cast<float>(appConfig.timePerApp / 1000)); // ms → s
         scrollSpeedNum->setState(static_cast<float>(appConfig.scrollSpeed));
         timeDurationNum->setState(static_cast<float>(appConfig.timeDuration));
         dateDurationNum->setState(static_cast<float>(appConfig.dateDuration));
@@ -143,7 +143,7 @@ void MQTTManager_::sendStats()
         int best = -1, bh = 0, bm = 0;
         if (nowTm)
         {
-            for (const auto &a : AlarmManager.getAlarms())
+            for (const auto& a : AlarmManager.getAlarms())
             {
                 int mu = minutesUntilNext(a.enabled, a.hour, a.minute, a.days, a.oneTime, *nowTm);
                 if (mu >= 0 && (best < 0 || mu < best))

@@ -61,8 +61,8 @@ String currentApp;
 std::vector<RotationItemRuntime> rotationItems;
 int rotationIndex = -1;
 bool rotationEffectOnly = false;
-const RotationItemRuntime* currentRotationItem = nullptr;
-const RotationItemRuntime* prevRotationItem = nullptr;
+const RotationItemRuntime *currentRotationItem = nullptr;
+const RotationItemRuntime *prevRotationItem = nullptr;
 
 // Legacy aliases for gradual migration
 std::vector<PlaylistItemRuntime> playlistItems;
@@ -107,11 +107,11 @@ void parseRotationConfig()
     {
         bool enabled = item["enabled"] | true;
         if (!enabled)
-            continue;  // Skip disabled items
+            continue; // Skip disabled items
 
         RotationItemRuntime rir;
         rir.id = item["id"].as<String>();
-        const char* typeStr = item["type"] | "app";
+        const char *typeStr = item["type"] | "app";
         rir.type = (strcmp(typeStr, "effect") == 0) ? 1 : 0;
         rir.name = item["name"].as<String>();
         rir.enabled = true;

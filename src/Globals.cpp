@@ -254,8 +254,10 @@ void formatSettings()
 template <typename T>
 static T clampValue(T value, T minVal, T maxVal)
 {
-    if (value < minVal) return minVal;
-    if (value > maxVal) return maxVal;
+    if (value < minVal)
+        return minVal;
+    if (value > maxVal)
+        return maxVal;
     return value;
 }
 
@@ -346,9 +348,8 @@ static String generateItemId()
 }
 
 // Default native apps for rotation
-static const char* DEFAULT_NATIVE_APPS[] = {
-    "Time", "Date", "Temperature", "Humidity", "Battery"
-};
+static const char *DEFAULT_NATIVE_APPS[] = {
+    "Time", "Date", "Temperature", "Humidity", "Battery"};
 static const int NUM_DEFAULT_APPS = 5;
 
 // Migrate from legacy appOrder + playlistConfig to unified rotationConfig

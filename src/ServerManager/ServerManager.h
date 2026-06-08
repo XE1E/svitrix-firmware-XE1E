@@ -28,8 +28,15 @@ class ServerManager_ : public IButtonReporter
     bool hasDisplay() const;
     void setServices(ISound *s, IPower *p, IUpdater *u);
     bool hasServices() const;
-    void setMqttReconnectCallback(void (*cb)()) { onMqttConfigChanged_ = cb; }
-    void triggerMqttReconnect() { if (onMqttConfigChanged_) onMqttConfigChanged_(); }
+    void setMqttReconnectCallback(void (*cb)())
+    {
+        onMqttConfigChanged_ = cb;
+    }
+    void triggerMqttReconnect()
+    {
+        if (onMqttConfigChanged_)
+            onMqttConfigChanged_();
+    }
     void setup();
     void tick();
     void initConfigDefaults();

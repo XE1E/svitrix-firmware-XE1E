@@ -30,7 +30,7 @@ enum MenuState
     SoundMenu,
     VolumeMenu,
     UpdateMenu,
-    AlarmsMenu,   // alarm list / select (mapped to "ALARMS" menu item)
+    AlarmsMenu, // alarm list / select (mapped to "ALARMS" menu item)
     MaxMenu,
     AlarmEditMenu // edit a single alarm (sub-state, not a top-level item)
 };
@@ -57,32 +57,32 @@ int8_t menuIndex = 0;
 uint8_t menuItemCount = MaxMenu - 1;
 
 const char *timeFormat[] PROGMEM = {
-    "%H %M",      // 24H blink (default)
-    "%H:%M",      // 24H colon
-    "%H-%M",      // 24H dash
-    "%I %M",      // 12H blink
-    "%I:%M",      // 12H colon
-    "%I-%M",      // 12H dash
-    "%H %M %S",   // 24H blink + seconds
-    "%H:%M:%S",   // 24H colon + seconds
-    "%H-%M-%S",   // 24H dash + seconds
-    "%I %M %S",   // 12H blink + seconds
-    "%I:%M:%S",   // 12H colon + seconds
-    "%I-%M-%S",   // 12H dash + seconds
+    "%H %M",    // 24H blink (default)
+    "%H:%M",    // 24H colon
+    "%H-%M",    // 24H dash
+    "%I %M",    // 12H blink
+    "%I:%M",    // 12H colon
+    "%I-%M",    // 12H dash
+    "%H %M %S", // 24H blink + seconds
+    "%H:%M:%S", // 24H colon + seconds
+    "%H-%M-%S", // 24H dash + seconds
+    "%I %M %S", // 12H blink + seconds
+    "%I:%M:%S", // 12H colon + seconds
+    "%I-%M-%S", // 12H dash + seconds
 };
 int8_t timeFormatIndex = 0;
 uint8_t timeFormatCount = 12;
 
 const char *dateFormat[] PROGMEM = {
-    "%d.%m.%y",   // DD.MM.YY (EU)
-    "%d-%m-%y",   // DD-MM-YY
-    "%d.%m.",     // DD.MM.
-    "%d %b",      // DD Mon
-    "%m.%d.%y",   // MM.DD.YY (US)
-    "%m-%d-%y",   // MM-DD-YY
-    "%m/%d/%y",   // MM/DD/YY
-    "%b %d",      // Mon DD
-    "%y-%m-%d",   // YY-MM-DD (ISO)
+    "%d.%m.%y", // DD.MM.YY (EU)
+    "%d-%m-%y", // DD-MM-YY
+    "%d.%m.",   // DD.MM.
+    "%d %b",    // DD Mon
+    "%m.%d.%y", // MM.DD.YY (US)
+    "%m-%d-%y", // MM-DD-YY
+    "%m/%d/%y", // MM/DD/YY
+    "%b %d",    // Mon DD
+    "%y-%m-%d", // YY-MM-DD (ISO)
 };
 
 int8_t dateFormatIndex = 0;

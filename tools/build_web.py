@@ -17,6 +17,11 @@ Import("env")
 web_dir = os.path.join(env["PROJECT_DIR"], "web")
 data_dir = os.path.join(env["PROJECT_DIR"], "data")
 
+# npm is a .cmd shim on Windows; invoke it directly (no shell=True). Passing a
+# list with shell=True is broken on POSIX: /bin/sh -c only sees the first token,
+# so "npm install" runs bare "npm" and exits 1 (this broke the CI build).
+NPM = "npm.cmd" if os.name == "nt" else "npm"
+
 
 def build_web(*args, **kwargs):
     if not os.path.exists(os.path.join(web_dir, "package.json")):
@@ -27,14 +32,13 @@ def build_web(*args, **kwargs):
     if not os.path.exists(os.path.join(web_dir, "node_modules")):
         print("Installing web dependencies...")
         result = subprocess.run(
-            ["npm", "install"],
+            [NPM, "install"],
             cwd=web_dir,
             capture_output=True,
             text=True,
-            shell=True,
         )
         if result.returncode != 0:
-            print(f"npm install failed:\n{result.stderr}")
+            print(f"npm install failed (exit {result.returncode}):\n{result.stdout}\n{result.stderr}")
             sys.exit(1)
 
     # Check if rebuild is needed (any src file newer than output)
@@ -58,14 +62,13 @@ def build_web(*args, **kwargs):
 
     print("Building SPA...")
     result = subprocess.run(
-        ["npm", "run", "build"],
+        [NPM, "run", "build"],
         cwd=web_dir,
         capture_output=True,
         text=True,
-        shell=True,
     )
     if result.returncode != 0:
-        print(f"SPA build failed:\n{result.stderr}")
+        print(f"SPA build failed (exit {result.returncode}):\n{result.stdout}\n{result.stderr}")
         sys.exit(1)
 
     print("SPA built successfully")
