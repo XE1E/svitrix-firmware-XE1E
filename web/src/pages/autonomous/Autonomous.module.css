@@ -131,12 +131,29 @@
 
 .alarmItem {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.5rem;
   padding: 0.75rem;
   background: var(--bg-dark, #0f0f1a);
   border-radius: 6px;
+}
+
+/* One horizontal line inside an alarm card (3 per alarm). */
+.alarmRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   flex-wrap: wrap;
+}
+
+/* Pushes an element to the right edge of its row (delete X, once toggle). */
+.pushRight {
+  margin-left: auto;
+}
+
+/* Top row (time · snooze · delete) must stay on a single line. */
+.alarmRowTop {
+  flex-wrap: nowrap;
 }
 
 .alarmTime {
@@ -286,9 +303,11 @@
 
 /* Per-alarm editable inputs */
 .alarmTimeInput {
-  font-size: 1.2rem;
+  font-size: 0.95rem;
   font-family: monospace;
   padding: 0.25rem;
+  width: 95px;
+  box-sizing: border-box;
   border: 1px solid var(--border, #333);
   border-radius: 4px;
   background: var(--input-bg, #1a1a2e);
@@ -314,6 +333,7 @@
   gap: 0.3rem;
   font-size: 0.8rem;
   color: var(--text-secondary, #888);
+  white-space: nowrap;
 }
 
 .snoozeField input {

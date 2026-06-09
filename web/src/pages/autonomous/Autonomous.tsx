@@ -7,6 +7,8 @@ import {
   snoozeAlarm,
   dismissAlarm,
   playRtttl,
+  listDir,
+  readFile,
 } from "../../api/client";
 import type { Alarm, AlarmsState } from "../../api/types";
 import { useT } from "../../i18n";
@@ -58,6 +60,8 @@ function AlarmsSection() {
   const [newTime, setNewTime] = useState("07:00");
   const [newLabel, setNewLabel] = useState("");
   const [newOnce, setNewOnce] = useState(false);
+  // Melody files found on the device (/MELODIES), for the per-alarm dropdown.
+  const [deviceMelodies, setDeviceMelodies] = useState<string[]>([]);
   const pollRef = useRef<ReturnType<typeof setInterval>>();
   const t = useT();
   const { settings, instantSave } = useSettings();
@@ -73,6 +77,10 @@ function AlarmsSection() {
 
   useEffect(() => {
     load();
+    // Load melody files from /MELODIES so they can be picked in the dropdown.
+    listDir("/MELODIES")
+      .then((entries) => setDeviceMelodies(entries.filter((e) => e.type === "file").map((e) => e.name)))
+      .catch(() => {});
     // Poll ONLY the ringing flag so it never clobbers a field being edited.
     pollRef.current = setInterval(async () => {
       try {
@@ -126,6 +134,26 @@ function AlarmsSection() {
     load();
   };
 
+  // RTTTL melodies store the name before the first ':'. Used to label a melody
+  // whose source isn't a known preset (e.g. one loaded from a /MELODIES file).
+  const melodyTitle = (m: string) => m.split(":")[0] || "♪";
+
+  // Dropdown change. A "file:<name>" value loads the RTTTL from /MELODIES and
+  // stores its content (the firmware plays alarm.melody as an RTTTL string).
+  const setMelody = async (alarm: Alarm, value: string) => {
+    if (value === "__current__") return; // already selected, no-op
+    if (value.startsWith("file:")) {
+      try {
+        const content = await readFile(`/MELODIES/${value.slice(5)}`);
+        patch(alarm, { melody: content.trim() });
+      } catch {
+        // ignore
+      }
+    } else {
+      patch(alarm, { melody: value });
+    }
+  };
+
   // Soonest upcoming alarm (computed from browser time, for display only).
   let soonest = -1;
   if (state?.alarms) {
@@ -174,101 +202,125 @@ function AlarmsSection() {
       )}
 
       <div class={styles.alarmList}>
-        {state?.alarms.map((alarm) => (
+        {state?.alarms.map((alarm) => {
+          const isPreset = MELODIES.some((m) => m.rtttl === alarm.melody);
+          return (
           <div key={alarm.id} class={styles.alarmItem}>
-            <div
-              class={`${styles.toggle} ${alarm.enabled ? styles.on : ""}`}
-              onClick={() => patch(alarm, { enabled: !alarm.enabled })}
-            />
-            <input
-              type="time"
-              class={styles.alarmTimeInput}
-              value={fmtTime(alarm)}
-              onChange={(e) => setTime(alarm, (e.target as HTMLInputElement).value)}
-            />
-
-            {alarm.oneTime ? (
-              <div class={`${styles.dayBadge} ${styles.active}`}>1×</div>
-            ) : (
-              <div class={styles.alarmDays}>
-                {t.alarms.dayLetters.map((d, i) => (
-                  <div
-                    key={i}
-                    class={`${styles.dayBadge} ${alarm.days & (1 << i) ? styles.active : ""}`}
-                    onClick={() => patch(alarm, { days: alarm.days ^ (1 << i) })}
-                  >
-                    {d}
-                  </div>
-                ))}
+            {/* Row 1: enable switch · time · snooze · delete */}
+            <div class={`${styles.alarmRow} ${styles.alarmRowTop}`}>
+              <div
+                class={`${styles.toggle} ${alarm.enabled ? styles.on : ""}`}
+                onClick={() => patch(alarm, { enabled: !alarm.enabled })}
+              />
+              <input
+                type="time"
+                class={styles.alarmTimeInput}
+                value={fmtTime(alarm)}
+                onChange={(e) => setTime(alarm, (e.target as HTMLInputElement).value)}
+              />
+              <label class={styles.snoozeField}>
+                {t.alarms.snoozeMin}
+                <input
+                  type="number"
+                  min={1}
+                  max={60}
+                  value={alarm.snoozeMinutes}
+                  onInput={(e) =>
+                    setLocal(alarm.id, { snoozeMinutes: Number((e.target as HTMLInputElement).value) || 0 })
+                  }
+                  onBlur={(e) => {
+                    const v = Math.min(60, Math.max(1, Number((e.target as HTMLInputElement).value) || 5));
+                    patch(alarm, { snoozeMinutes: v });
+                  }}
+                />
+              </label>
+              <div class={`${styles.alarmActions} ${styles.pushRight}`}>
+                <button class={styles.btnDanger} onClick={() => handleDelete(alarm.id)}>
+                  X
+                </button>
               </div>
-            )}
+            </div>
 
-            <label class={styles.onceToggle}>
+            {/* Row 2: weekday badges (or 1×) · one-time toggle */}
+            <div class={styles.alarmRow}>
+              {alarm.oneTime ? (
+                <div class={`${styles.dayBadge} ${styles.active}`}>1×</div>
+              ) : (
+                <div class={styles.alarmDays}>
+                  {t.alarms.dayLetters.map((d, i) => (
+                    <div
+                      key={i}
+                      class={`${styles.dayBadge} ${alarm.days & (1 << i) ? styles.active : ""}`}
+                      onClick={() => patch(alarm, { days: alarm.days ^ (1 << i) })}
+                    >
+                      {d}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <label class={`${styles.onceToggle} ${styles.pushRight}`}>
+                <input
+                  type="checkbox"
+                  checked={alarm.oneTime}
+                  onChange={(e) =>
+                    patch(alarm, {
+                      oneTime: (e.target as HTMLInputElement).checked,
+                      days: (e.target as HTMLInputElement).checked ? 0 : 0x7f,
+                    })
+                  }
+                />
+                {t.alarms.once}
+              </label>
+            </div>
+
+            {/* Row 3: label · melody · preview */}
+            <div class={styles.alarmRow}>
               <input
-                type="checkbox"
-                checked={alarm.oneTime}
-                onChange={(e) =>
-                  patch(alarm, {
-                    oneTime: (e.target as HTMLInputElement).checked,
-                    days: (e.target as HTMLInputElement).checked ? 0 : 0x7f,
-                  })
-                }
+                type="text"
+                class={styles.alarmLabelInput}
+                placeholder={t.alarms.labelPlaceholder}
+                value={alarm.label}
+                onInput={(e) => setLocal(alarm.id, { label: (e.target as HTMLInputElement).value })}
+                onBlur={(e) => updateAlarm({ ...alarm, label: (e.target as HTMLInputElement).value })}
               />
-              {t.alarms.once}
-            </label>
-
-            <input
-              type="text"
-              class={styles.alarmLabelInput}
-              placeholder={t.alarms.labelPlaceholder}
-              value={alarm.label}
-              onInput={(e) => setLocal(alarm.id, { label: (e.target as HTMLInputElement).value })}
-              onBlur={(e) => updateAlarm({ ...alarm, label: (e.target as HTMLInputElement).value })}
-            />
-            <select
-              class={styles.alarmMelodyInput}
-              value={MELODIES.some((m) => m.rtttl === alarm.melody) ? alarm.melody : ""}
-              onChange={(e) => patch(alarm, { melody: (e.target as HTMLSelectElement).value })}
-            >
-              <option value="">{t.alarms.melodyNone}</option>
-              {MELODIES.map((m) => (
-                <option key={m.name} value={m.rtttl}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-            <button
-              class={styles.previewBtn}
-              title={t.alarms.preview}
-              disabled={!alarm.melody}
-              onClick={() => playRtttl(alarm.melody)}
-            >
-              ▶
-            </button>
-            <label class={styles.snoozeField}>
-              {t.alarms.snoozeMin}
-              <input
-                type="number"
-                min={1}
-                max={60}
-                value={alarm.snoozeMinutes}
-                onInput={(e) =>
-                  setLocal(alarm.id, { snoozeMinutes: Number((e.target as HTMLInputElement).value) || 0 })
-                }
-                onBlur={(e) => {
-                  const v = Math.min(60, Math.max(1, Number((e.target as HTMLInputElement).value) || 5));
-                  patch(alarm, { snoozeMinutes: v });
-                }}
-              />
-            </label>
-
-            <div class={styles.alarmActions}>
-              <button class={styles.btnDanger} onClick={() => handleDelete(alarm.id)}>
-                X
+              <select
+                class={styles.alarmMelodyInput}
+                value={isPreset ? alarm.melody : alarm.melody ? "__current__" : ""}
+                onChange={(e) => setMelody(alarm, (e.target as HTMLSelectElement).value)}
+              >
+                <option value="">{t.alarms.melodyNone}</option>
+                {!isPreset && alarm.melody && (
+                  <option value="__current__">{melodyTitle(alarm.melody)}</option>
+                )}
+                <optgroup label={t.alarms.melodyPresets}>
+                  {MELODIES.map((m) => (
+                    <option key={m.name} value={m.rtttl}>
+                      {m.name}
+                    </option>
+                  ))}
+                </optgroup>
+                {deviceMelodies.length > 0 && (
+                  <optgroup label={t.alarms.melodyFiles}>
+                    {deviceMelodies.map((n) => (
+                      <option key={n} value={`file:${n}`}>
+                        {n.replace(/\.txt$/, "")}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+              <button
+                class={styles.previewBtn}
+                title={t.alarms.preview}
+                disabled={!alarm.melody}
+                onClick={() => playRtttl(alarm.melody)}
+              >
+                ▶
               </button>
             </div>
           </div>
-        ))}
+          );
+        })}
 
         {(!state?.alarms || state.alarms.length === 0) && (
           <div class={styles.emptyState}>{t.alarms.noAlarms}</div>
@@ -281,12 +333,6 @@ function AlarmsSection() {
           value={newTime}
           onChange={(e) => setNewTime((e.target as HTMLInputElement).value)}
         />
-        <input
-          type="text"
-          placeholder={t.alarms.labelPlaceholder}
-          value={newLabel}
-          onChange={(e) => setNewLabel((e.target as HTMLInputElement).value)}
-        />
         <label class={styles.onceToggle}>
           <input
             type="checkbox"
@@ -295,6 +341,12 @@ function AlarmsSection() {
           />
           {t.alarms.once}
         </label>
+        <input
+          type="text"
+          placeholder={t.alarms.labelPlaceholder}
+          value={newLabel}
+          onInput={(e) => setNewLabel((e.target as HTMLInputElement).value)}
+        />
         <button class={styles.btnStart} onClick={handleAdd}>
           {t.alarms.add}
         </button>
