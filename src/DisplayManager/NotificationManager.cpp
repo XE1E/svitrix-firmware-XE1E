@@ -20,6 +20,26 @@
 #include "ColorUtils.h"
 #include "Functions.h"
 
+namespace
+{
+// Matrix icons render into an 8×8 cell. A larger GIF overflows the GIF
+// decoder's buffers and panics the device, so reject oversized ones up front.
+bool gifFitsMatrix(fs::File &f)
+{
+    if (!f)
+        return false;
+    uint8_t hdr[10];
+    f.seek(0);
+    size_t n = f.read(hdr, sizeof(hdr));
+    f.seek(0); // rewind so the decoder starts from the beginning
+    if (n < 10 || hdr[0] != 'G' || hdr[1] != 'I' || hdr[2] != 'F')
+        return false;
+    int w = hdr[6] | (hdr[7] << 8);  // GIF logical screen width (little-endian)
+    int h = hdr[8] | (hdr[9] << 8);  // GIF logical screen height
+    return w > 0 && h > 0 && w <= 8 && h <= 8;
+}
+} // namespace
+
 // ═══════════════════════════════════════════════════════════════════════
 // Dependency injection
 // ═══════════════════════════════════════════════════════════════════════
@@ -102,8 +122,20 @@ bool NotificationManager_::generateNotification(uint8_t source, const char *json
             }
             else if (LittleFS.exists("/ICONS/" + iconValue + ".gif"))
             {
-                newNotification.isGif = true;
                 newNotification.icon = LittleFS.open("/ICONS/" + iconValue + ".gif");
+                if (gifFitsMatrix(newNotification.icon))
+                {
+                    newNotification.isGif = true;
+                }
+                else
+                {
+                    // Oversized GIF would overflow the decoder and panic — ignore it.
+                    newNotification.icon.close();
+                    fs::File nullPointer;
+                    newNotification.icon = nullPointer;
+                    newNotification.isGif = false;
+                    DEBUG_PRINTLN(F("Icon GIF larger than 8x8 — ignored"));
+                }
             }
             else
             {
@@ -120,6 +152,11 @@ bool NotificationManager_::generateNotification(uint8_t source, const char *json
         newNotification.jpegDataBuffer.clear();
         newNotification.isGif = false;
     }
+
+    // No icon present → don't reserve the 8px icon slot; the text runs the full
+    // width from the left instead of starting indented (as if for an icon).
+    if (!newNotification.icon && newNotification.jpegDataBuffer.empty())
+        newNotification.layout = IconLayout::None;
 
     if (doc.containsKey("clients"))
     {
