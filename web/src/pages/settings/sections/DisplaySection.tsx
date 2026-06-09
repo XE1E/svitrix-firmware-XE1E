@@ -37,7 +37,11 @@ export function DisplaySection() {
             </>
           )}
         </div>
-        <Slider label={t.display.brightness} min={0} max={255} value={s.BRI} onChange={(v) => autoSave({ BRI: v })} />
+        {/* Brightness shown as a percentage (more understandable); converted to
+            the 0-255 BRI the firmware/HA use. Matches the on-device menu's %. */}
+        <Slider label={t.display.brightness} min={0} max={100} unit="%"
+          value={Math.round((s.BRI ?? 0) * 100 / 255)}
+          onChange={(v) => autoSave({ BRI: Math.round(v * 255 / 100) })} />
         <Slider label={t.display.gamma} min={0.5} max={3} step={0.1} value={s.GAMMA} onChange={(v) => autoSave({ GAMMA: v })} />
         <Toggle label={t.display.uppercase} checked={s.UPPERCASE} onChange={(v) => instantSave({ UPPERCASE: v })} />
         <ColorField label={t.display.textColor} value={s.TCOL} onChange={(v) => autoSave({ TCOL: v })} />
