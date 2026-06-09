@@ -3,7 +3,12 @@
 #include <FastLED.h>
 #include "ConfigTypes.h"
 
+// Debug serial logging is opt-in via the SVITRIX_DEBUG build flag (platformio.ini).
+// Release builds (env `ulanzi`) omit it to save flash; use env `ulanzi_debug`
+// for serial diagnostics.
+#ifdef SVITRIX_DEBUG
 #define DEBUG
+#endif
 
 #ifdef DEBUG
 #define DEBUG_PRINTLN(x)        \
