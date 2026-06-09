@@ -154,6 +154,12 @@ void AlarmManager_::snooze(uint8_t minutes)
     if (!ringing_)
         return;
 
+    // Prefer the ringing alarm's own configured snooze duration; the passed
+    // value (e.g. from the web button) is only a fallback.
+    const Alarm *ringing = getAlarm(ringingAlarmId_);
+    if (ringing && ringing->snoozeMinutes > 0)
+        minutes = ringing->snoozeMinutes;
+
     if (sound_)
     {
         periphery_->stopSound();
