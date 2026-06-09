@@ -22,9 +22,10 @@
 #include "EffectRegistry.h"
 #include "Overlays.h"
 #include "AlarmManager/AlarmManager.h"
+#ifdef ARTNET
 #include <ArtnetWifi.h>
-
 extern ArtnetWifi artnet;
+#endif
 #include "GammaUtils.h"
 #include <ArduinoJson.h>
 
@@ -499,6 +500,7 @@ void DisplayManager_::tick()
         }
     }
 
+#ifdef ARTNET
     if (!systemConfig.apMode)
     {
         auto artnetStatus = artnet.read();
@@ -512,6 +514,7 @@ void DisplayManager_::tick()
             artnetMode = false;
         }
     }
+#endif
 
     if (systemConfig.newyear)
         DisplayManager.checkNewYear();

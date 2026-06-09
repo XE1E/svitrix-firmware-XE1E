@@ -12,13 +12,16 @@
 #include "DisplayManager_internal.h"
 #include "Globals.h"
 #include "INotifier.h"
+#ifdef ARTNET
 #include <ArtnetWifi.h>
+#endif
 #include <ArduinoJson.h>
 #include "ColorUtils.h"
 #include "Functions.h"
 #include "Apps.h"
 #include "EffectRegistry.h"
 
+#ifdef ARTNET
 // Artnet-related globals (extern declarations in DisplayManager_internal.h)
 unsigned long lastArtnetStatusTime = 0;
 const int numberOfChannels = 256 * 3;
@@ -79,12 +82,16 @@ void onDmxFrame(uint16_t universe, uint16_t length, uint8_t sequence, uint8_t *d
         memset(universesReceived, 0, maxUniverses);
     }
 }
+#endif // ARTNET
 
 /// Initializes the Art-Net receiver and registers the DMX frame callback.
+/// No-op unless built with -DARTNET.
 void DisplayManager_::startArtnet()
 {
+#ifdef ARTNET
     artnet.begin();
     artnet.onDmx(onDmxFrame);
+#endif
 }
 
 /// Fills the entire matrix with a solid color or kelvin temperature.
