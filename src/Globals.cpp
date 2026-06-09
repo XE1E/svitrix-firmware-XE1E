@@ -358,8 +358,10 @@ static void migrateToRotationConfig()
     // Check if ROT_ITEMS has valid content
     if (!rotationConfig.items.isEmpty())
     {
-        // Validate it's proper JSON array
-        DynamicJsonDocument testDoc(512);
+        // Validate it's proper JSON array. Capacity must match the 4096 used by
+        // parseRotationConfig and the /api/rotation handlers — a smaller doc
+        // overflows (NoMemory) on real configs, which would wrongly clear them.
+        DynamicJsonDocument testDoc(4096);
         if (deserializeJson(testDoc, rotationConfig.items) == DeserializationError::Ok)
         {
             if (testDoc.is<JsonArray>() && testDoc.as<JsonArray>().size() > 0)
