@@ -192,10 +192,10 @@ function AlarmsSection() {
       {state?.ringing && (
         <div class={styles.ringingAlert}>
           <div>{t.alarms.ringing}</div>
-          <button class={styles.btnPause} onClick={() => { snoozeAlarm(5); load(); }}>
-            {t.alarms.snooze5min}
+          <button class={styles.btnPause} onClick={async () => { await snoozeAlarm(); load(); }}>
+            {t.alarms.snooze}
           </button>
-          <button class={styles.btnDanger} onClick={() => { dismissAlarm(); load(); }}>
+          <button class={styles.btnDanger} onClick={async () => { await dismissAlarm(); load(); }}>
             {t.alarms.dismiss}
           </button>
         </div>
@@ -216,6 +216,10 @@ function AlarmsSection() {
                 type="time"
                 class={styles.alarmTimeInput}
                 value={fmtTime(alarm)}
+                onInput={(e) => {
+                  const [h, m] = (e.target as HTMLInputElement).value.split(":").map(Number);
+                  setLocal(alarm.id, { hour: h, minute: m });
+                }}
                 onChange={(e) => setTime(alarm, (e.target as HTMLInputElement).value)}
               />
               <label class={styles.snoozeField}>
@@ -331,7 +335,7 @@ function AlarmsSection() {
         <input
           type="time"
           value={newTime}
-          onChange={(e) => setNewTime((e.target as HTMLInputElement).value)}
+          onInput={(e) => setNewTime((e.target as HTMLInputElement).value)}
         />
         <label class={styles.onceToggle}>
           <input

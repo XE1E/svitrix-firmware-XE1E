@@ -326,6 +326,11 @@
   font-size: 0.85rem;
 }
 
+/* Label text flush with the rows above (no reserved left inset). */
+.alarmLabelInput {
+  padding-left: 0.1rem;
+}
+
 .onceToggle,
 .snoozeField {
   display: flex;
