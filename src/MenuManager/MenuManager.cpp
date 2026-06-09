@@ -36,22 +36,22 @@ enum MenuState
 };
 
 const char *menuItems[] PROGMEM = {
-    "BRIGHT",
+    "BRILLO",
     "COLOR",
-    "SWITCH",
-    "T-SPEED",
-    "APPTIME",
-    "TIME",
-    "DATE",
-    "WEEKDAY",
+    "ROTAR",
+    "VEL-TRA",
+    "DUR-APP",
+    "HORA",
+    "FECHA",
+    "INI-SEM",
     "TEMP",
     "APPS",
-    "NIGHT",
+    "NOCHE",
     "INFO",
-    "SOUND",
-    "VOLUME",
-    "UPDATE",
-    "ALARMS"};
+    "SONIDO",
+    "VOLUMEN",
+    "OTA",
+    "ALARMAS"};
 
 int8_t menuIndex = 0;
 uint8_t menuItemCount = MaxMenu - 1;
@@ -207,9 +207,9 @@ String MenuManager_::menutext()
         snprintf(buf, sizeof(buf), "0X%X", textColors[currentColor]);
         return buf;
     case SwitchMenu:
-        return appConfig.autoTransition ? "ON" : "OFF";
+        return appConfig.autoTransition ? "SI" : "NO";
     case SoundMenu:
-        return audioConfig.soundActive ? "ON" : "OFF";
+        return audioConfig.soundActive ? "SI" : "NO";
     case TspeedMenu:
         snprintf(buf, sizeof(buf), "%.1fs", appConfig.timePerTransition / 1000.0);
         return buf;
@@ -237,7 +237,7 @@ String MenuManager_::menutext()
         strftime(buf, sizeof(buf), dateFormat[dateFormatIndex], timer_localtime());
         return buf;
     case WeekdayMenu:
-        return timeConfig.startOnMonday ? "MON" : "SUN";
+        return timeConfig.startOnMonday ? "LUN" : "DOM";
     case TempMenu:
         return timeConfig.isCelsius ? "°C" : "°F";
     case Appmenu:
@@ -253,12 +253,12 @@ String MenuManager_::menutext()
         // ON/OFF reads the rotation config — the same source as the web and the
         // running app loop — so the menu, web and screen always agree.
         const char *appResult =
-            (nav_ && nav_->rotationAppState(kAppMenuNames[appsIndex]) == 1) ? "ON" : "OFF";
+            (nav_ && nav_->rotationAppState(kAppMenuNames[appsIndex]) == 1) ? "SI" : "NO";
         renderer_->drawMenuIndicator(appsIndex, appsCount, 0xFBC000);
         return appResult;
     }
     case NightMenu:
-        return appConfig.nightMode ? "ON" : "OFF";
+        return appConfig.nightMode ? "SI" : "NO";
     case InfoMenu:
     {
         renderer_->drawMenuIndicator(infoIndex, infoCount, 0x00FFFF);
@@ -292,21 +292,21 @@ String MenuManager_::menutext()
     case AlarmsMenu:
     {
         if (!alarm_)
-            return "NO ALARM";
+            return "SIN ALARMA";
         auto alarms = alarm_->getAlarms();
         if (alarms.empty())
-            return "NO ALARMS";
+            return "SIN ALARMAS";
         if (alarmSel >= (int)alarms.size())
             alarmSel = 0;
         renderer_->drawMenuIndicator(alarmSel, alarms.size(), 0xFBC000);
         const Alarm& a = alarms[alarmSel];
-        snprintf(buf, sizeof(buf), "%02d:%02d %s", a.hour, a.minute, a.enabled ? "ON" : "OFF");
+        snprintf(buf, sizeof(buf), "%02d:%02d %s", a.hour, a.minute, a.enabled ? "SI" : "NO");
         return buf;
     }
     case AlarmEditMenu:
         renderer_->drawMenuIndicator(alarmField, 3, 0x00FF00);
         if (alarmField == 0)
-            snprintf(buf, sizeof(buf), "EN %s", alarmEdit.enabled ? "ON" : "OFF");
+            snprintf(buf, sizeof(buf), "ACT %s", alarmEdit.enabled ? "SI" : "NO");
         else if (alarmField == 1)
             snprintf(buf, sizeof(buf), "H %02d", alarmEdit.hour);
         else
