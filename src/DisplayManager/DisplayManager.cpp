@@ -154,7 +154,7 @@ void parseRotationConfig()
 /// 0=disabled, -1=absent. Cheap lookup over the table built by parseRotationConfig.
 int8_t DisplayManager_::rotationAppState(const char *name)
 {
-    for (const auto &a : rotationAllApps)
+    for (const auto& a : rotationAllApps)
         if (a.first == name)
             return a.second ? 1 : 0;
     return -1;

@@ -24,7 +24,7 @@ namespace
 {
 // Matrix icons render into an 8×8 cell. A larger GIF overflows the GIF
 // decoder's buffers and panics the device, so reject oversized ones up front.
-bool gifFitsMatrix(fs::File &f)
+bool gifFitsMatrix(fs::File& f)
 {
     if (!f)
         return false;
@@ -34,8 +34,8 @@ bool gifFitsMatrix(fs::File &f)
     f.seek(0); // rewind so the decoder starts from the beginning
     if (n < 10 || hdr[0] != 'G' || hdr[1] != 'I' || hdr[2] != 'F')
         return false;
-    int w = hdr[6] | (hdr[7] << 8);  // GIF logical screen width (little-endian)
-    int h = hdr[8] | (hdr[9] << 8);  // GIF logical screen height
+    int w = hdr[6] | (hdr[7] << 8); // GIF logical screen width (little-endian)
+    int h = hdr[8] | (hdr[9] << 8); // GIF logical screen height
     return w > 0 && h > 0 && w <= 8 && h <= 8;
 }
 } // namespace

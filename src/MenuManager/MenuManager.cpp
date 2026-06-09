@@ -17,9 +17,7 @@ enum MenuState
     MainMenu,
     BrightnessMenu,
     ColorMenu,
-    SwitchMenu,
-    TspeedMenu,
-    AppTimeMenu,
+    RotationMenu, // submenu: ROTAR + DUR-TRA + VEL-DES + DUR-APP (rotationField)
     TimeFormatMenu,
     DateFormatMenu,
     WeekdayMenu,
@@ -36,22 +34,20 @@ enum MenuState
 };
 
 const char *menuItems[] PROGMEM = {
-    "BRIGHT",
+    "BRILLO",
     "COLOR",
-    "SWITCH",
-    "T-SPEED",
-    "APPTIME",
-    "TIME",
-    "DATE",
-    "WEEKDAY",
+    "ROTACION",
+    "HORA",
+    "FECHA",
+    "INI-SEM",
     "TEMP",
     "APPS",
-    "NIGHT",
+    "NOCHE",
     "INFO",
-    "SOUND",
-    "VOLUME",
-    "UPDATE",
-    "ALARMS"};
+    "SONIDO",
+    "VOLUMEN",
+    "OTA",
+    "ALARMAS"};
 
 int8_t menuIndex = 0;
 uint8_t menuItemCount = MaxMenu - 1;
@@ -111,6 +107,10 @@ static const char *kAppMenuNames[appsCount] = {
 int8_t infoIndex = 0;
 static const uint8_t infoCount = 5; // IP, WIFI, VER, HOST, MEM
 
+// Rotation submenu state — which parameter is being shown/edited
+uint8_t rotationField = 0; // 0=ROTAR, 1=DUR-TRA, 2=VEL-DES, 3=DUR-APP
+static const uint8_t ROTATION_FIELD_COUNT = 4;
+
 // Alarm menu state
 int8_t alarmSel = 0;    // selected alarm index in AlarmsMenu
 uint8_t alarmField = 0; // 0=enabled, 1=hour, 2=minute (AlarmEditMenu)
@@ -145,6 +145,9 @@ static const int TRANSITION_SPEED_STEP = 100;
 static const long MIN_APP_TIME = 1000;
 static const long MAX_APP_TIME = 30000;
 static const long APP_TIME_STEP = 1000;
+static const int MIN_SCROLL_SPEED = 10; // matches the web slider (10-100)
+static const int MAX_SCROLL_SPEED = 100;
+static const int SCROLL_SPEED_STEP = 10;
 
 MenuManager_& MenuManager_::getInstance()
 {
@@ -206,15 +209,22 @@ String MenuManager_::menutext()
         renderer_->setTextColor(textColors[currentColor]);
         snprintf(buf, sizeof(buf), "0X%X", textColors[currentColor]);
         return buf;
-    case SwitchMenu:
-        return appConfig.autoTransition ? "ON" : "OFF";
     case SoundMenu:
-        return audioConfig.soundActive ? "ON" : "OFF";
-    case TspeedMenu:
-        snprintf(buf, sizeof(buf), "%.1fs", appConfig.timePerTransition / 1000.0);
-        return buf;
-    case AppTimeMenu:
-        snprintf(buf, sizeof(buf), "%.0fs", appConfig.timePerApp / 1000.0);
+        return audioConfig.soundActive ? "SI" : "NO";
+    case RotationMenu:
+        // Submenu with 4 fields; the prefix tells which one (the indicator
+        // shows the position). Select cycles fields, Left/Right adjust.
+        renderer_->drawMenuIndicator(rotationField, ROTATION_FIELD_COUNT, 0xFBC000);
+        // No "s" suffix: the SvitrixFont 's' glyph reads as '5' next to digits
+        // on the 8px matrix. Prefix + magnitude already convey seconds.
+        if (rotationField == 0)
+            snprintf(buf, sizeof(buf), "ROT %s", appConfig.autoTransition ? "SI" : "NO");
+        else if (rotationField == 1)
+            snprintf(buf, sizeof(buf), "TRA %.1f", appConfig.timePerTransition / 1000.0);
+        else if (rotationField == 2)
+            snprintf(buf, sizeof(buf), "DES %d", appConfig.scrollSpeed);
+        else
+            snprintf(buf, sizeof(buf), "APP %.0f", appConfig.timePerApp / 1000.0);
         return buf;
     case TimeFormatMenu:
     {
@@ -237,7 +247,7 @@ String MenuManager_::menutext()
         strftime(buf, sizeof(buf), dateFormat[dateFormatIndex], timer_localtime());
         return buf;
     case WeekdayMenu:
-        return timeConfig.startOnMonday ? "MON" : "SUN";
+        return timeConfig.startOnMonday ? "LUN" : "DOM";
     case TempMenu:
         return timeConfig.isCelsius ? "°C" : "°F";
     case Appmenu:
@@ -253,12 +263,12 @@ String MenuManager_::menutext()
         // ON/OFF reads the rotation config — the same source as the web and the
         // running app loop — so the menu, web and screen always agree.
         const char *appResult =
-            (nav_ && nav_->rotationAppState(kAppMenuNames[appsIndex]) == 1) ? "ON" : "OFF";
+            (nav_ && nav_->rotationAppState(kAppMenuNames[appsIndex]) == 1) ? "SI" : "NO";
         renderer_->drawMenuIndicator(appsIndex, appsCount, 0xFBC000);
         return appResult;
     }
     case NightMenu:
-        return appConfig.nightMode ? "ON" : "OFF";
+        return appConfig.nightMode ? "SI" : "NO";
     case InfoMenu:
     {
         renderer_->drawMenuIndicator(infoIndex, infoCount, 0x00FFFF);
@@ -292,21 +302,21 @@ String MenuManager_::menutext()
     case AlarmsMenu:
     {
         if (!alarm_)
-            return "NO ALARM";
+            return "SIN ALARMA";
         auto alarms = alarm_->getAlarms();
         if (alarms.empty())
-            return "NO ALARMS";
+            return "SIN ALARMAS";
         if (alarmSel >= (int)alarms.size())
             alarmSel = 0;
         renderer_->drawMenuIndicator(alarmSel, alarms.size(), 0xFBC000);
         const Alarm& a = alarms[alarmSel];
-        snprintf(buf, sizeof(buf), "%02d:%02d %s", a.hour, a.minute, a.enabled ? "ON" : "OFF");
+        snprintf(buf, sizeof(buf), "%02d:%02d %s", a.hour, a.minute, a.enabled ? "SI" : "NO");
         return buf;
     }
     case AlarmEditMenu:
         renderer_->drawMenuIndicator(alarmField, 3, 0x00FF00);
         if (alarmField == 0)
-            snprintf(buf, sizeof(buf), "EN %s", alarmEdit.enabled ? "ON" : "OFF");
+            snprintf(buf, sizeof(buf), "ACT %s", alarmEdit.enabled ? "SI" : "NO");
         else if (alarmField == 1)
             snprintf(buf, sizeof(buf), "H %02d", alarmEdit.hour);
         else
@@ -338,14 +348,15 @@ void MenuManager_::rightButton()
     case ColorMenu:
         currentColor = (currentColor + 1) % COLOR_COUNT;
         break;
-    case SwitchMenu:
-        appConfig.autoTransition = !appConfig.autoTransition;
-        break;
-    case TspeedMenu:
-        appConfig.timePerTransition = min(MAX_TRANSITION_SPEED, appConfig.timePerTransition + TRANSITION_SPEED_STEP);
-        break;
-    case AppTimeMenu:
-        appConfig.timePerApp = min(MAX_APP_TIME, appConfig.timePerApp + APP_TIME_STEP);
+    case RotationMenu:
+        if (rotationField == 0)
+            appConfig.autoTransition = !appConfig.autoTransition;
+        else if (rotationField == 1)
+            appConfig.timePerTransition = min(MAX_TRANSITION_SPEED, appConfig.timePerTransition + TRANSITION_SPEED_STEP);
+        else if (rotationField == 2)
+            appConfig.scrollSpeed = min(MAX_SCROLL_SPEED, appConfig.scrollSpeed + SCROLL_SPEED_STEP);
+        else
+            appConfig.timePerApp = min(MAX_APP_TIME, appConfig.timePerApp + APP_TIME_STEP);
         break;
     case TimeFormatMenu:
         timeFormatIndex = (timeFormatIndex + 1) % timeFormatCount;
@@ -417,14 +428,15 @@ void MenuManager_::leftButton()
     case ColorMenu:
         currentColor = (currentColor + COLOR_COUNT - 1) % COLOR_COUNT;
         break;
-    case SwitchMenu:
-        appConfig.autoTransition = !appConfig.autoTransition;
-        break;
-    case TspeedMenu:
-        appConfig.timePerTransition = max(MIN_TRANSITION_SPEED, appConfig.timePerTransition - TRANSITION_SPEED_STEP);
-        break;
-    case AppTimeMenu:
-        appConfig.timePerApp = max(MIN_APP_TIME, appConfig.timePerApp - APP_TIME_STEP);
+    case RotationMenu:
+        if (rotationField == 0)
+            appConfig.autoTransition = !appConfig.autoTransition;
+        else if (rotationField == 1)
+            appConfig.timePerTransition = max(MIN_TRANSITION_SPEED, appConfig.timePerTransition - TRANSITION_SPEED_STEP);
+        else if (rotationField == 2)
+            appConfig.scrollSpeed = max(MIN_SCROLL_SPEED, appConfig.scrollSpeed - SCROLL_SPEED_STEP);
+        else
+            appConfig.timePerApp = max(MIN_APP_TIME, appConfig.timePerApp - APP_TIME_STEP);
         break;
     case TimeFormatMenu:
         timeFormatIndex = (timeFormatIndex == 0) ? timeFormatCount - 1 : timeFormatIndex - 1;
@@ -499,6 +511,9 @@ void MenuManager_::selectButton()
         case AlarmsMenu:
             alarmSel = 0;
             break;
+        case RotationMenu:
+            rotationField = 0;
+            break;
         case TimeFormatMenu:
             timeFormatIndex = findFormatIndex(timeConfig.timeFormat.c_str(), timeFormat, timeFormatCount);
             break;
@@ -550,6 +565,10 @@ void MenuManager_::selectButton()
     case NightMenu:
         appConfig.nightMode = !appConfig.nightMode;
         break;
+    case RotationMenu:
+        // Short Select cycles the field; Select-long saves + exits.
+        rotationField = (rotationField + 1) % ROTATION_FIELD_COUNT;
+        break;
     case AlarmsMenu:
         if (alarm_)
         {
@@ -599,13 +618,9 @@ void MenuManager_::selectButtonLong()
         case MainMenu:
             inMenu = false;
             break;
-        case SwitchMenu:
+        case RotationMenu:
             control_->setAutoTransition(appConfig.autoTransition);
-            saveSettings();
-            break;
-        case TspeedMenu:
-        case AppTimeMenu:
-            control_->applyAllSettings();
+            control_->applyAllSettings(); // applies transition/scroll/app-time live
             saveSettings();
             break;
         case TimeFormatMenu:

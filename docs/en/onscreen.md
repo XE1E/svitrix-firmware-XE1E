@@ -9,18 +9,42 @@ Hold down the middle button for 2s to exit the current menu and to save your set
 You can easily turn your SVITRIX matrix on or off by simply double-pressing the middle button if youre not in Menu.
 :::
 
+The on-device menu labels are in **Spanish** (the project's default language)
+and the menu has 14 items.
+
 | Menu Item | Description |
 | --- | --- |
-| `BRIGHT` | Allows adjustment of the brightness of the display. Switch between Auto and manual brightnesscontrol with the middle button. |
-| `COLOR` | Allows selection of one of 13 different colors for text. Hex values displayed.  |
-| `SWITCH` | Determines if pages should automatically switch. |
-| `T-SPEED` | Adjusts transition speed between apps. |
-| `APPTIME` | Adjusts duration of app display before switching to next. |
-| `TIME` | Allows selection of time format. |
-| `DATE` | Allows selection of date format. |
-| `WEEKDAY` | Allows selection of start of week. |
-| `TEMP` | Allows selection of temperature system (°C or °F).  |
-| `APPS` | Allows to enable or disable internal apps  |
-| `SOUND` | Allows to enable or disable sound output.   |
-| `VOLUME` | Adjusts the buzzer volume (0–30). |
-| `UPDATE` | Check and download new firmware if available. |
+| `BRILLO` | Brightness of the display (0–100 %) or `AUTO`. Toggle auto/manual with the middle button. |
+| `COLOR` | Select one of 15 text colors (hex value displayed). |
+| `ROTACION` | **Submenu** with the app-rotation settings (see below). |
+| `HORA` | Time format. |
+| `FECHA` | Date format. |
+| `INI-SEM` | Start of week (`LUN` = Monday / `DOM` = Sunday). |
+| `TEMP` | Temperature unit (°C or °F). |
+| `APPS` | Enable or disable internal apps. |
+| `NOCHE` | Toggle night mode. |
+| `INFO` | Shows IP, WiFi signal, version, ID and free RAM (read-only). |
+| `SONIDO` | Enable or disable sound output. |
+| `VOLUMEN` | Buzzer volume (0–30). |
+| `OTA` | Check and download new firmware if available. |
+| `ALARMAS` | Lists alarms; the middle button edits one (enabled / hour / minute). Days, label and melody are set from the web UI or MQTT. |
+
+## `ROTACION` submenu
+
+Groups the four app-rotation settings. Inside the submenu:
+
+- **Middle button (short press):** move to the next field.
+- **Left / Right:** adjust the current field's value.
+- **Middle button (hold):** apply, save and exit.
+
+| Field | Setting | Range |
+| --- | --- | --- |
+| `ROT` | Auto app rotation (`SI`/`NO` = on/off) | — |
+| `TRA` | Transition duration (seconds) | 0.2 – 2.0 |
+| `DES` | Text scroll speed | 10 – 100 |
+| `APP` | Time per app before switching (seconds) | 1 – 30 |
+
+::: tip
+Time values (`TRA`, `APP`) are shown without an "s" suffix; the prefix and
+magnitude already imply seconds.
+:::
