@@ -19,4 +19,11 @@ public:
     virtual String getTransitionNames() = 0;
     virtual void loadNativeApps() = 0;
     virtual void setCustomAppColors(uint32_t color) = 0;
+    /// Rotation-backed native-app on/off state, shared with the web/screen.
+    /// Returns 1 = present & enabled, 0 = present & disabled, -1 = absent.
+    virtual int8_t rotationAppState(const char *name) = 0;
+    /// Enable/disable a native app in the rotation config (adds it if missing
+    /// and `enabled`). In-memory only — persist + apply via loadNativeApps()
+    /// + saveSettings() (e.g. on menu exit).
+    virtual void setRotationAppEnabled(const char *name, bool enabled) = 0;
 };

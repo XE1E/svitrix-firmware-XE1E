@@ -202,6 +202,8 @@ struct MockDisplayNavigation : public IDisplayNavigation
     String getTransitionNames() override { getTransitionNamesCalls++; return transitionNamesReturn; }
     void loadNativeApps() override { loadNativeAppsCalls++; }
     void setCustomAppColors(uint32_t color) override { setCustomAppColorsCalls++; lastCustomAppColor = color; }
+    int8_t rotationAppState(const char *) override { return -1; }
+    void setRotationAppEnabled(const char *, bool) override {}
 };
 
 // ---------------------------------------------------------------------------

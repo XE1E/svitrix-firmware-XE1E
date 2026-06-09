@@ -100,7 +100,13 @@ static int8_t findFormatIndex(const char *current, const char *formats[], uint8_
 }
 
 int8_t appsIndex = 0;
-static const uint8_t appsCount = 9;
+static const uint8_t appsCount = 10;
+
+// Native apps shown in the APPS menu (must match the rotation item names used
+// by the web). State (ON/OFF) and toggling go through the rotation config.
+static const char *kAppMenuNames[appsCount] = {
+    "Time", "Date", "Temperature", "Humidity", "Battery",
+    "OutdoorTemp", "OutdoorHum", "Pressure", "AirQuality", "UV"};
 
 int8_t infoIndex = 0;
 static const uint8_t infoCount = 5; // IP, WIFI, VER, HOST, MEM
@@ -243,48 +249,17 @@ String MenuManager_::menutext()
         return timeConfig.isCelsius ? "°C" : "°F";
     case Appmenu:
     {
-        const char *appResult = "OFF";
-        switch (appsIndex)
-        {
-        case 0:
-            renderer_->drawBMP(0, 0, icon_13, 8, 8);
-            appResult = appConfig.showTime ? "ON" : "OFF";
-            break;
-        case 1:
-            renderer_->drawBMP(0, 0, icon_1158, 8, 8);
-            appResult = appConfig.showDate ? "ON" : "OFF";
-            break;
-        case 2:
-            renderer_->drawBMP(0, 0, icon_234, 8, 8);
-            appResult = appConfig.showTemp ? "ON" : "OFF";
-            break;
-        case 3:
-            renderer_->drawBMP(0, 0, icon_2075, 8, 8);
-            appResult = appConfig.showHum ? "ON" : "OFF";
-            break;
-        case 4:
-            renderer_->drawBMP(0, 0, icon_1486, 8, 8);
-            appResult = appConfig.showBat ? "ON" : "OFF";
-            break;
-        case 5:
-            renderer_->drawBMP(0, 0, icon_sunny, 8, 8);
-            appResult = weatherConfig.showOutdoorTemp ? "ON" : "OFF";
-            break;
-        case 6:
-            renderer_->drawBMP(0, 0, icon_53628, 8, 8);
-            appResult = weatherConfig.showOutdoorHumidity ? "ON" : "OFF";
-            break;
-        case 7:
-            renderer_->drawBMP(0, 0, icon_66892, 8, 8);
-            appResult = weatherConfig.showPressure ? "ON" : "OFF";
-            break;
-        case 8:
-            renderer_->drawBMP(0, 0, icon_6622, 8, 8);
-            appResult = weatherConfig.showAirQuality ? "ON" : "OFF";
-            break;
-        default:
-            break;
-        }
+        // Icons stay the existing per-app bitmaps for now (real-icon unification
+        // is a follow-up step). UV (index 9) is the new entry.
+        const uint16_t *icons[appsCount] = {
+            icon_13, icon_1158, icon_234, icon_2075, icon_1486,
+            icon_sunny, icon_53628, icon_66892, icon_6622, icon_59801};
+        if (appsIndex >= 0 && appsIndex < (int)appsCount)
+            renderer_->drawBMP(0, 0, icons[appsIndex], 8, 8);
+        // ON/OFF reads the rotation config — the same source as the web and the
+        // running app loop — so the menu, web and screen always agree.
+        const char *appResult =
+            (nav_ && nav_->rotationAppState(kAppMenuNames[appsIndex]) == 1) ? "ON" : "OFF";
         renderer_->drawMenuIndicator(appsIndex, appsCount, 0xFBC000);
         return appResult;
     }
@@ -556,37 +531,13 @@ void MenuManager_::selectButton()
         }
         break;
     case Appmenu:
-        switch (appsIndex)
+        if (nav_ && appsIndex >= 0 && appsIndex < (int)appsCount)
         {
-        case 0:
-            appConfig.showTime = !appConfig.showTime;
-            break;
-        case 1:
-            appConfig.showDate = !appConfig.showDate;
-            break;
-        case 2:
-            appConfig.showTemp = !appConfig.showTemp;
-            break;
-        case 3:
-            appConfig.showHum = !appConfig.showHum;
-            break;
-        case 4:
-            appConfig.showBat = !appConfig.showBat;
-            break;
-        case 5:
-            weatherConfig.showOutdoorTemp = !weatherConfig.showOutdoorTemp;
-            break;
-        case 6:
-            weatherConfig.showOutdoorHumidity = !weatherConfig.showOutdoorHumidity;
-            break;
-        case 7:
-            weatherConfig.showPressure = !weatherConfig.showPressure;
-            break;
-        case 8:
-            weatherConfig.showAirQuality = !weatherConfig.showAirQuality;
-            break;
-        default:
-            break;
+            const char *n = kAppMenuNames[appsIndex];
+            // Flip the app's enabled in the rotation config (same source as the
+            // web). In-memory; persisted + applied to the live loop on exit
+            // (selectButtonLong calls loadNativeApps + saveSettings).
+            nav_->setRotationAppEnabled(n, nav_->rotationAppState(n) != 1);
         }
         break;
     case NightMenu:
