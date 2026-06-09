@@ -7,7 +7,8 @@ On-device settings menu rendered on the LED matrix. Adjusts display, time, audio
 - **Provides:** `IButtonHandler` → PeripheryManager
 - **Consumes:** `IDisplayRenderer`, `IDisplayControl`, `IDisplayNavigation`, `IPeripheryProvider`, `IUpdater`
 - **Entry point:** `MenuManager_::setup()`, `::tick()`, `::show(bool)`
-- **UI:** ~13 menu items on 32×8 matrix
+- **UI:** 14 top-level items on 32×8 matrix (Spanish labels)
+- **Indicator limit:** `drawMenuIndicator` draws 1px per item on row 7 → max ~16 items fit (16 = 31px). Group related settings into submenus rather than adding top-level items.
 
 > 📌 Auto-loads when reading files in `src/MenuManager/`
 
@@ -18,24 +19,26 @@ On-device settings menu rendered on the LED matrix. Adjusts display, time, audio
 | `MenuManager.h` | Singleton, `IButtonHandler` implementation |
 | `MenuManager.cpp` | Menu state machine, menu items, button handlers |
 
-## Menu Structure (~13 items)
+## Menu Structure (14 top-level items, Spanish)
 
 | Menu | Controls |
 |------|----------|
-| BRIGHT | `brightnessPercent` (1-100%) or AUTO |
+| BRILLO | `brightnessPercent` (1-100%) or AUTO |
 | COLOR | `textColor` (15 preset colors) |
-| SWITCH | `autoTransition` (ON/OFF) |
-| T-SPEED | `timePerTransition` (200-2000ms) |
-| APPTIME | `timePerApp` (1-30s) |
-| TIME | `timeFormat` (8 strftime patterns) |
-| DATE | `dateFormat` (9 strftime patterns) |
-| WEEKDAY | `startOnMonday` (MON/SUN) |
+| ROTACION | **Submenu** (`rotationField` 0-3): Select cycles fields, Left/Right adjust, Select-long applies + saves + exits. Fields: `ROT` `autoTransition` (SI/NO) · `TRA` `timePerTransition` (0.2-2.0s) · `DES` `scrollSpeed` (10-100) · `APP` `timePerApp` (1-30s) |
+| HORA | `timeFormat` (12 strftime patterns) |
+| FECHA | `dateFormat` (9 strftime patterns) |
+| INI-SEM | `startOnMonday` (LUN/DOM) |
 | TEMP | `isCelsius` (°C/°F) |
-| APPS | Toggle native apps |
-| SOUND | `soundActive` (ON/OFF) |
-| VOLUME | `soundVolume` (0-30) |
-| UPDATE | Triggers OTA update |
-| ALARMS | List alarms → Select edits one (Select cycles enabled/hour/minute, Left/Right adjust, Select-long saves). Days/label/melody via web/MQTT. Needs `IAlarmProvider` injection. |
+| APPS | Toggle native apps (drives rotation config) |
+| NOCHE | `nightMode` (SI/NO) |
+| INFO | IP / WIFI / VER / ID / RAM (read-only) |
+| SONIDO | `soundActive` (SI/NO) |
+| VOLUMEN | `soundVolume` (0-30) |
+| OTA | Triggers OTA update |
+| ALARMAS | List alarms → Select edits one (Select cycles enabled/hour/minute, Left/Right adjust, Select-long saves). Days/label/melody via web/MQTT. Needs `IAlarmProvider` injection. |
+
+`SWITCH`/`T-SPEED`/`APPTIME` were merged into the **ROTACION** submenu (frees indicator space + groups the app-rotation knobs). Same field-cycling pattern as `ALARMAS`.
 
 When an alarm is **ringing** (handled in `DisplayManager`, not the menu): Left/Right = snooze (per-alarm `snoozeMinutes`), Select / Select-long = dismiss. A long-press while ringing dismisses instead of opening the menu.
 

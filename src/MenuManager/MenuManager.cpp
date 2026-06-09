@@ -17,9 +17,7 @@ enum MenuState
     MainMenu,
     BrightnessMenu,
     ColorMenu,
-    SwitchMenu,
-    TspeedMenu,
-    AppTimeMenu,
+    RotationMenu, // submenu: ROTAR + DUR-TRA + VEL-DES + DUR-APP (rotationField)
     TimeFormatMenu,
     DateFormatMenu,
     WeekdayMenu,
@@ -38,9 +36,7 @@ enum MenuState
 const char *menuItems[] PROGMEM = {
     "BRILLO",
     "COLOR",
-    "ROTAR",
-    "VEL-TRA",
-    "DUR-APP",
+    "ROTACION",
     "HORA",
     "FECHA",
     "INI-SEM",
@@ -111,6 +107,10 @@ static const char *kAppMenuNames[appsCount] = {
 int8_t infoIndex = 0;
 static const uint8_t infoCount = 5; // IP, WIFI, VER, HOST, MEM
 
+// Rotation submenu state — which parameter is being shown/edited
+uint8_t rotationField = 0; // 0=ROTAR, 1=DUR-TRA, 2=VEL-DES, 3=DUR-APP
+static const uint8_t ROTATION_FIELD_COUNT = 4;
+
 // Alarm menu state
 int8_t alarmSel = 0;    // selected alarm index in AlarmsMenu
 uint8_t alarmField = 0; // 0=enabled, 1=hour, 2=minute (AlarmEditMenu)
@@ -145,6 +145,9 @@ static const int TRANSITION_SPEED_STEP = 100;
 static const long MIN_APP_TIME = 1000;
 static const long MAX_APP_TIME = 30000;
 static const long APP_TIME_STEP = 1000;
+static const int MIN_SCROLL_SPEED = 10; // matches the web slider (10-100)
+static const int MAX_SCROLL_SPEED = 100;
+static const int SCROLL_SPEED_STEP = 10;
 
 MenuManager_& MenuManager_::getInstance()
 {
@@ -206,15 +209,20 @@ String MenuManager_::menutext()
         renderer_->setTextColor(textColors[currentColor]);
         snprintf(buf, sizeof(buf), "0X%X", textColors[currentColor]);
         return buf;
-    case SwitchMenu:
-        return appConfig.autoTransition ? "SI" : "NO";
     case SoundMenu:
         return audioConfig.soundActive ? "SI" : "NO";
-    case TspeedMenu:
-        snprintf(buf, sizeof(buf), "%.1fs", appConfig.timePerTransition / 1000.0);
-        return buf;
-    case AppTimeMenu:
-        snprintf(buf, sizeof(buf), "%.0fs", appConfig.timePerApp / 1000.0);
+    case RotationMenu:
+        // Submenu with 4 fields; the prefix tells which one (the indicator
+        // shows the position). Select cycles fields, Left/Right adjust.
+        renderer_->drawMenuIndicator(rotationField, ROTATION_FIELD_COUNT, 0xFBC000);
+        if (rotationField == 0)
+            snprintf(buf, sizeof(buf), "ROT %s", appConfig.autoTransition ? "SI" : "NO");
+        else if (rotationField == 1)
+            snprintf(buf, sizeof(buf), "TRA %.1fs", appConfig.timePerTransition / 1000.0);
+        else if (rotationField == 2)
+            snprintf(buf, sizeof(buf), "DES %d", appConfig.scrollSpeed);
+        else
+            snprintf(buf, sizeof(buf), "APP %.0fs", appConfig.timePerApp / 1000.0);
         return buf;
     case TimeFormatMenu:
     {
@@ -338,14 +346,15 @@ void MenuManager_::rightButton()
     case ColorMenu:
         currentColor = (currentColor + 1) % COLOR_COUNT;
         break;
-    case SwitchMenu:
-        appConfig.autoTransition = !appConfig.autoTransition;
-        break;
-    case TspeedMenu:
-        appConfig.timePerTransition = min(MAX_TRANSITION_SPEED, appConfig.timePerTransition + TRANSITION_SPEED_STEP);
-        break;
-    case AppTimeMenu:
-        appConfig.timePerApp = min(MAX_APP_TIME, appConfig.timePerApp + APP_TIME_STEP);
+    case RotationMenu:
+        if (rotationField == 0)
+            appConfig.autoTransition = !appConfig.autoTransition;
+        else if (rotationField == 1)
+            appConfig.timePerTransition = min(MAX_TRANSITION_SPEED, appConfig.timePerTransition + TRANSITION_SPEED_STEP);
+        else if (rotationField == 2)
+            appConfig.scrollSpeed = min(MAX_SCROLL_SPEED, appConfig.scrollSpeed + SCROLL_SPEED_STEP);
+        else
+            appConfig.timePerApp = min(MAX_APP_TIME, appConfig.timePerApp + APP_TIME_STEP);
         break;
     case TimeFormatMenu:
         timeFormatIndex = (timeFormatIndex + 1) % timeFormatCount;
@@ -417,14 +426,15 @@ void MenuManager_::leftButton()
     case ColorMenu:
         currentColor = (currentColor + COLOR_COUNT - 1) % COLOR_COUNT;
         break;
-    case SwitchMenu:
-        appConfig.autoTransition = !appConfig.autoTransition;
-        break;
-    case TspeedMenu:
-        appConfig.timePerTransition = max(MIN_TRANSITION_SPEED, appConfig.timePerTransition - TRANSITION_SPEED_STEP);
-        break;
-    case AppTimeMenu:
-        appConfig.timePerApp = max(MIN_APP_TIME, appConfig.timePerApp - APP_TIME_STEP);
+    case RotationMenu:
+        if (rotationField == 0)
+            appConfig.autoTransition = !appConfig.autoTransition;
+        else if (rotationField == 1)
+            appConfig.timePerTransition = max(MIN_TRANSITION_SPEED, appConfig.timePerTransition - TRANSITION_SPEED_STEP);
+        else if (rotationField == 2)
+            appConfig.scrollSpeed = max(MIN_SCROLL_SPEED, appConfig.scrollSpeed - SCROLL_SPEED_STEP);
+        else
+            appConfig.timePerApp = max(MIN_APP_TIME, appConfig.timePerApp - APP_TIME_STEP);
         break;
     case TimeFormatMenu:
         timeFormatIndex = (timeFormatIndex == 0) ? timeFormatCount - 1 : timeFormatIndex - 1;
@@ -499,6 +509,9 @@ void MenuManager_::selectButton()
         case AlarmsMenu:
             alarmSel = 0;
             break;
+        case RotationMenu:
+            rotationField = 0;
+            break;
         case TimeFormatMenu:
             timeFormatIndex = findFormatIndex(timeConfig.timeFormat.c_str(), timeFormat, timeFormatCount);
             break;
@@ -550,6 +563,10 @@ void MenuManager_::selectButton()
     case NightMenu:
         appConfig.nightMode = !appConfig.nightMode;
         break;
+    case RotationMenu:
+        // Short Select cycles the field; Select-long saves + exits.
+        rotationField = (rotationField + 1) % ROTATION_FIELD_COUNT;
+        break;
     case AlarmsMenu:
         if (alarm_)
         {
@@ -599,13 +616,9 @@ void MenuManager_::selectButtonLong()
         case MainMenu:
             inMenu = false;
             break;
-        case SwitchMenu:
+        case RotationMenu:
             control_->setAutoTransition(appConfig.autoTransition);
-            saveSettings();
-            break;
-        case TspeedMenu:
-        case AppTimeMenu:
-            control_->applyAllSettings();
+            control_->applyAllSettings(); // applies transition/scroll/app-time live
             saveSettings();
             break;
         case TimeFormatMenu:
