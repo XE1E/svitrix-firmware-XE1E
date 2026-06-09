@@ -215,14 +215,16 @@ String MenuManager_::menutext()
         // Submenu with 4 fields; the prefix tells which one (the indicator
         // shows the position). Select cycles fields, Left/Right adjust.
         renderer_->drawMenuIndicator(rotationField, ROTATION_FIELD_COUNT, 0xFBC000);
+        // No "s" suffix: the SvitrixFont 's' glyph reads as '5' next to digits
+        // on the 8px matrix. Prefix + magnitude already convey seconds.
         if (rotationField == 0)
             snprintf(buf, sizeof(buf), "ROT %s", appConfig.autoTransition ? "SI" : "NO");
         else if (rotationField == 1)
-            snprintf(buf, sizeof(buf), "TRA %.1fs", appConfig.timePerTransition / 1000.0);
+            snprintf(buf, sizeof(buf), "TRA %.1f", appConfig.timePerTransition / 1000.0);
         else if (rotationField == 2)
             snprintf(buf, sizeof(buf), "DES %d", appConfig.scrollSpeed);
         else
-            snprintf(buf, sizeof(buf), "APP %.0fs", appConfig.timePerApp / 1000.0);
+            snprintf(buf, sizeof(buf), "APP %.0f", appConfig.timePerApp / 1000.0);
         return buf;
     case TimeFormatMenu:
     {
