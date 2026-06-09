@@ -23,6 +23,7 @@
 12. [Gabinete 3D Imprimible](#12-gabinete-3d-imprimible)
 13. [Apéndice A: Improv WiFi](#apéndice-a-improv-wifi--configuración-sin-access-point)
 14. [Apéndice B: Recursos](#apéndice-b-recursos)
+15. [Apéndice C: Audio Mejorado](#apéndice-c-audio-mejorado-opcional)
 
 ---
 
@@ -419,6 +420,11 @@ Nota: Muchos módulos I2C ya incluyen pull-ups. Verificar antes de agregar.
 Nota: Usar buzzer pasivo de 3.3V. Si solo tienes de 5V,
 agregar transistor NPN como amplificador.
 ```
+
+> 🔊 **¿Quieres mejor sonido (MP3, voz, más volumen)?** El piezo solo genera tonos
+> cuadrados. El ESP32-S3 (I2S nativo + PSRAM + 9.5MB LittleFS) permite audio real a bajo
+> costo. Ver [Apéndice C: Audio Mejorado](#apéndice-c-audio-mejorado-opcional) — comparativa
+> **MAX98357A (I2S)** vs **DFPlayer Mini**, esquemáticos, BOM e integración con `ISound`.
 
 ---
 
@@ -1113,6 +1119,196 @@ void loop() {
 
 ---
 
+## Apéndice C: Audio Mejorado (Opcional)
+
+### C.1 Motivación
+
+El buzzer piezo pasivo (sección 5.6) solo genera **tonos cuadrados por PWM**: chillón,
+metálico, ~80 dB y sin timbre. Funciona para beeps y melodías RTTTL, pero no para sonido
+agradable, voz ni música.
+
+A diferencia del Ulanzi (ESP32 clásico), el **ESP32-S3 tiene I2S nativo, 8MB PSRAM y
+~9.5MB de LittleFS**, lo que abre dos caminos de **bajo costo** para sonido real:
+
+- **Opción A — DAC I2S + amplificador Class-D (MAX98357A):** el ESP32-S3 genera el audio
+  (tonos sintetizados, WAV o MP3 desde LittleFS/PSRAM) y el MAX98357A lo convierte a
+  analógico y lo amplifica. Sin tarjeta SD.
+- **Opción B — Módulo MP3 dedicado (DFPlayer Mini):** un módulo externo con decodificador
+  MP3 + amplificador + microSD; el ESP32-S3 solo le envía comandos por UART. Es el enfoque
+  del proyecto [Weather-monitor-BIM32](https://github.com/himikat123/Weather-monitor-BIM32).
+
+Ambas opciones encajan en la abstracción `ISound` del firmware: se añade un *backend* nuevo
+sin tocar el resto del código.
+
+### C.2 Comparativa detallada: MAX98357A vs DFPlayer Mini
+
+| Criterio | **MAX98357A (I2S)** | **DFPlayer Mini (UART)** |
+|----------|---------------------|--------------------------|
+| Principio | DAC I2S + ampli Class-D integrado | Módulo MP3 (decoder + ampli + SD) |
+| Calidad de audio | Excelente, full-range, sin hiss | Buena; clones suelen tener hiss/ruido de fondo |
+| Potencia / volumen | 3.2W @ 4Ω (hasta ~95 dB) | ~3W ampli mono interno; DAC stereo line-out aparte |
+| Fuente de audio | LittleFS (~9.5MB) o PSRAM | microSD (FAT16/FAT32) |
+| Formatos | WAV + MP3 (lib decoder) + tonos sintetizados | MP3, WAV (nativo del módulo) |
+| Interfaz / pines | I2S — 3 GPIO (BCLK, LRC, DIN) | UART — 2 GPIO (+ BUSY opcional) |
+| Carga MCU | Decodifica en CPU + buffer en PSRAM (al S3 le sobra) | Cero — offload total al módulo |
+| Piezas extra | **Ninguna** (sin SD ni lector) | microSD + manejo de archivos |
+| Melodías RTTTL actuales | Se **sintetizan** como tono limpio por I2S | No directo — hay que **pre-generar MP3** |
+| Canales | Mono (1 bocina) | DAC stereo / ampli mono interno |
+| Control de volumen | Software (escala de muestras) | Comando 0–30 |
+| Fiabilidad | Alta (todo digital, sin medios extraíbles) | SD puede corromperse; clones con firmware variable |
+| Costo (ampli + bocina) | **~$3–5** | ~$6–10 (incluye microSD) |
+| Esfuerzo de firmware | Medio (pipeline I2S + decoder) | **Bajo** (frames UART) |
+| Latencia de inicio | Inmediata | ~1.5–3s tras encender; pausa entre comandos |
+| Ideal para | Mejor sonido, mínimas piezas, integración nativa S3 | Mínimo código, voz pregrabada multi-idioma fácil |
+
+### C.3 Recomendación
+
+**Para el build S3, la opción recomendada es el MAX98357A (I2S):** es **más barato y suena
+mejor** que el DFPlayer, no necesita tarjeta SD (una pieza menos, sin riesgo de corrupción),
+aprovecha el I2S nativo y los ~9.5MB de LittleFS para guardar clips MP3/WAV, y permite
+sintetizar las melodías RTTTL existentes como **tonos limpios** en vez del chillido del piezo.
+La matriz LED del S3 usa el periférico **RMT**, así que **no hay conflicto** con el I2S.
+
+**El DFPlayer Mini es la alternativa de mínimo esfuerzo de firmware:** trae decodificador y
+amplificador integrados y se controla con ~3 líneas de UART (descarga al MCU de todo el
+audio). Es excelente si el objetivo principal es **voz pregrabada** (p. ej. anuncio de hora
+en varios idiomas, como BIM32). A cambio: añade microSD, es *file-based* (no reproduce RTTTL
+directamente) y la calidad depende del clon.
+
+> **Regla rápida:** mejor sonido + menos piezas + integración nativa → **MAX98357A**.
+> Mínimo código + voz pregrabada lista para usar → **DFPlayer Mini**.
+
+### C.4 Opción A — MAX98357A (recomendada)
+
+```
+ESP32-S3                MAX98357A
+GPIO15 ───────────────► BCLK   (bit clock)
+GPIO16 ───────────────► LRC    (LRCLK / word select)
+GPIO7  ───────────────► DIN    (datos I2S)
+5V     ───────────────► VIN    (5V = más volumen; 3V3 también funciona)
+GND    ───────────────► GND
+                        SD   → VIN (HIGH) = canal activo
+                        GAIN → flotante = 9 dB · GND = 12 dB · VIN = 3 dB
+                               (100k→GND = 15 dB · 100k→VIN = 6 dB)
+            OUT+ / OUT− ─────► bocina 4Ω 3W (mono)
+```
+
+| GPIO | Señal I2S | Notas |
+|------|-----------|-------|
+| 15 | BCLK | Reloj de bit |
+| 16 | LRC (WS) | Selector de canal (L/R) |
+| 7 | DIN | Datos serie |
+
+- Alimentar **VIN desde 5V** para máximo volumen; compartir GND con el DevKit.
+- Mono: usa una sola bocina de 4Ω 3W. Para más volumen, caja/baffle pequeño ayuda.
+- El piezo de GPIO17 puede conservarse como respaldo o eliminarse.
+
+### C.5 Opción B — DFPlayer Mini
+
+```
+ESP32-S3                DFPlayer Mini
+GPIO40 ──[1kΩ]────────► RX     (resistencia serie recomendada)
+GPIO41 ◄──────────────  TX
+GPIO8  ◄──────────────  BUSY   (LOW = reproduciendo)
+5V     ───────────────► VCC
+GND    ───────────────► GND
+            SPK_1 / SPK_2 ───► bocina 4–8Ω 3W (ampli mono interno)
+            DAC_R / DAC_L ───► (salida line-level, si usas ampli externo)
+```
+
+| GPIO | Señal | Notas |
+|------|-------|-------|
+| 40 | UART TX → DF RX | Resistencia 1kΩ en serie reduce ruido |
+| 41 | UART RX ← DF TX | — |
+| 8 | BUSY | LOW mientras reproduce; permite esperar fin de pista |
+
+**Estructura de la microSD** (estilo BIM32 — carpetas y pistas numeradas):
+
+```
+/01/001.mp3, /01/002.mp3 ...   ← categoría 1 (p. ej. anuncios de hora)
+/02/001.mp3 ...                 ← categoría 2 (alarmas/melodías)
+```
+
+- Esperar ~1.5–3s tras encender antes de enviar comandos; respetar pausas entre comandos.
+- Comando de reproducción por carpeta/pista (0x0F), volumen 0–30 (0x06), stop (0x16).
+- Para robustez con clones, enviar **frames crudos** (como BIM32) o usar `DFRobotDFPlayerMini`.
+
+### C.6 BOM del upgrade
+
+| Opción | Componente | Especificación | Precio est. |
+|--------|------------|----------------|-------------|
+| **A (I2S)** | MAX98357A | DAC I2S + ampli Class-D 3.2W | $2–4 |
+| | Bocina | 4Ω 3W (28–40mm) | $1–2 |
+| | **Subtotal A** | sin tarjeta SD | **~$3–6** |
+| **B (DFPlayer)** | DFPlayer Mini | Módulo MP3 + ampli + lector microSD | $2–4 |
+| | microSD | 1–8GB, FAT32 | $3–5 |
+| | Bocina | 4–8Ω 3W | $1–2 |
+| | Resistencia | 1kΩ (serie en RX) | $0.05 |
+| | **Subtotal B** | con tarjeta SD | **~$6–11** |
+
+### C.7 Integración en firmware
+
+La abstracción `ISound` (`lib/interfaces/`) desacopla el audio del resto del sistema. El
+upgrade se implementa como un **backend nuevo** sin tocar consumidores (ServerManager,
+MQTTManager, AlarmManager).
+
+1. **Flags y pines** en `HardwarePins.h` (bloque `CONFIG_IDF_TARGET_ESP32S3`):
+
+   ```cpp
+   // ── Audio mejorado (opcional) ───────────────────────────────
+   // Opción A: MAX98357A (I2S)
+   constexpr bool kHasI2sAudio = true;
+   constexpr int  kI2sBclkPin  = 15;
+   constexpr int  kI2sLrcPin   = 16;
+   constexpr int  kI2sDinPin   = 7;
+   // Opción B: DFPlayer Mini (UART)
+   constexpr bool kHasDfPlayer = false;
+   constexpr int  kDfTxPin     = 40;  // ESP TX → DF RX
+   constexpr int  kDfRxPin     = 41;  // ESP RX ← DF TX
+   constexpr int  kDfBusyPin   = 8;
+   ```
+
+2. **Backend `ISound`:** `I2sAudio` (o `DfPlayerAudio`) implementa `playRTTTLString()`,
+   `playFromFile()`, `setVolume()`, `stopSound()`. En `main.cpp` se inyecta este backend en
+   lugar de (o junto a) el `MelodyPlayer` del piezo.
+
+3. **Melodías RTTTL:**
+   - *I2S:* sintetizar cada nota como muestras (seno/cuadrada) y escribirlas con `i2s_write()`
+     — tono limpio, mismo `ISound`.
+   - *DFPlayer:* pre-generar las melodías como MP3 en la microSD y reproducir por número.
+
+4. **Reproducir clips MP3/WAV:** reutilizar el file manager y la carpeta `/MELODIES` ya
+   existentes (subir clips por la web). En I2S se decodifican desde LittleFS; en DFPlayer
+   viven en la microSD.
+
+5. **`platformio.ini` (`[env:esp32s3]`):** añadir la librería de audio a `lib_deps`
+   (I2S: `ESP8266Audio` o `ESP32-audioI2S`; DFPlayer: `DFRobotDFPlayerMini` o frames propios)
+   y, opcionalmente, un build flag (`-DUSE_I2S_AUDIO` / `-DUSE_DFPLAYER`).
+
+### C.8 Gotchas
+
+- **Sin conflicto con la matriz:** FastLED en el S3 usa **RMT**, no I2S — el periférico I2S
+  queda libre para audio.
+- **Alimentación:** alimentar ampli/bocina desde **5V** y compartir GND. La matriz ya demanda
+  corriente; usar la fuente externa 5V/3A y desacoplar con capacitor cerca del ampli.
+- **MAX98357A es mono.** Para estéreo se necesitarían dos módulos (innecesario en un reloj).
+- **DFPlayer:** resistencia serie en RX, respetar el arranque (~1.5–3s) y manejar clones que
+  no soportan todos los comandos.
+- **Espacio:** los clips en LittleFS reducen el espacio para SPA/iconos, pero con ~9.5MB sobra.
+
+### C.9 Librerías y referencias
+
+| Recurso | Uso |
+|---------|-----|
+| [ESP8266Audio](https://github.com/earlephilhower/ESP8266Audio) | MP3/WAV/AAC por I2S (compatible ESP32-S3) |
+| [ESP32-audioI2S](https://github.com/schreibfaul1/ESP32-audioI2S) | Reproductor MP3/streaming por I2S |
+| [DFRobotDFPlayerMini](https://github.com/DFRobot/DFRobotDFPlayerMini) | Control del DFPlayer por UART |
+| [MAX98357A datasheet](https://www.analog.com/media/en/technical-documentation/data-sheets/MAX98357A-MAX98357B.pdf) | DAC I2S + ampli Class-D |
+| [DFPlayer Mini wiki](https://wiki.dfrobot.com/DFPlayer_Mini_SKU_DFR0299) | Comandos, frames, estructura SD |
+| [Weather-monitor-BIM32](https://github.com/himikat123/Weather-monitor-BIM32) | Referencia DFPlayer (frames + BUSY + carpetas) |
+
+---
+
 *Documento: Svitrix DIY ESP32-S3-DevKitC-1 Build Guide*  
-*Versión: 3.2 (+ Improv WiFi)*  
-*Fecha: 2026-06-07*
+*Versión: 3.3 (+ Audio Mejorado)*  
+*Fecha: 2026-06-08*
