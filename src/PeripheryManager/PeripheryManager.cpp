@@ -2,10 +2,14 @@
 #include "IButtonHandler.h"
 #include "IButtonReporter.h"
 #include "SensorCalc.h"
-#include "Adafruit_SHT31.h"
+#include "Adafruit_SHT31.h" // stock TC001 sensor — always compiled
+// Extra I2C temp/humidity sensors are opt-in (build flag SENSORS_EXTRA) to keep
+// the release flash small; the stock Ulanzi only has the SHT3x.
+#ifdef SENSORS_EXTRA
 #include "Adafruit_BME280.h"
 #include "Adafruit_BMP280.h"
 #include "Adafruit_HTU21DF.h"
+#endif
 #include <MelodyPlayer/melody_player.h>
 #include <MelodyPlayer/melody_factory.h>
 #include "Globals.h"
@@ -50,9 +54,11 @@ constexpr int kI2cSdaPin = 21;
 #define I2C_SCL_PIN kI2cSclPin
 #define I2C_SDA_PIN kI2cSdaPin
 
+#ifdef SENSORS_EXTRA
 Adafruit_BME280 bme280;
 Adafruit_BMP280 bmp280;
 Adafruit_HTU21DF htu21df;
+#endif
 Adafruit_SHT31 sht31;
 
 constexpr int kR2d2BaudRate = 100; // Per-character tone duration for r2d2() beeps (ms)
@@ -309,6 +315,7 @@ void PeripheryManager_::setup()
 
     Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
 
+#ifdef SENSORS_EXTRA
     if (bme280.begin(BME280_ADDRESS) || bme280.begin(BME280_ADDRESS_ALTERNATE))
     {
         if (systemConfig.debugMode)
@@ -327,7 +334,9 @@ void PeripheryManager_::setup()
             DEBUG_PRINTLN(F("HTU21DF sensor detected"));
         sensorConfig.tempSensorType = TEMP_SENSOR_TYPE_HTU21DF;
     }
-    else if (sht31.begin(0x44))
+    else
+#endif
+        if (sht31.begin(0x44))
     {
         if (systemConfig.debugMode)
             DEBUG_PRINTLN(F("SHT31 sensor detected"));
@@ -383,6 +392,7 @@ void PeripheryManager_::tick()
         {
             switch (sensorConfig.tempSensorType)
             {
+#ifdef SENSORS_EXTRA
             case TEMP_SENSOR_TYPE_BME280:
                 sensorConfig.currentTemp = bme280.readTemperature();
                 sensorConfig.currentHum = bme280.readHumidity();
@@ -395,6 +405,7 @@ void PeripheryManager_::tick()
                 sensorConfig.currentTemp = htu21df.readTemperature();
                 sensorConfig.currentHum = htu21df.readHumidity();
                 break;
+#endif
             case TEMP_SENSOR_TYPE_SHT31:
                 sht31.readBoth(&sensorConfig.currentTemp, &sensorConfig.currentHum);
                 break;
