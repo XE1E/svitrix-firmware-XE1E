@@ -126,7 +126,18 @@ void addHandler()
     mws.addHandler("/api/transitions", HTTP_GET, [](AsyncWebServerRequest *request)
                    { request->send(200, "application/json", smNav_->getTransitionNames()); });
     mws.addHandlerWithBody("/api/rtttl", HTTP_POST, [](AsyncWebServerRequest *request)
-                           { String body = getBody(request); request->send(200, "text/plain", "OK"); smSound_->playRTTTLString(body.c_str()); });
+                           {
+                            String body = getBody(request);
+                            request->send(200, "text/plain", "OK");
+                            // The web client posts {"rtttl":"name:d=..,o=..,b=..:notes"}. Extract the
+                            // field so the JSON wrapper isn't fed to the RTTTL parser (which would play
+                            // the `{"rtttl"`, `d=4`, `b=165` tokens as garbage leading notes). Fall back
+                            // to the raw body for callers that post a bare RTTTL string.
+                            DynamicJsonDocument doc(2048);
+                            if (deserializeJson(doc, body) == DeserializationError::Ok && doc.containsKey("rtttl"))
+                                smSound_->playRTTTLString(doc["rtttl"].as<String>());
+                            else
+                                smSound_->playRTTTLString(body.c_str()); });
     mws.addHandlerWithBody("/api/sound", HTTP_POST, [](AsyncWebServerRequest *request)
                            { String body = getBody(request);
                            if (smSound_->parseSound(body.c_str())){

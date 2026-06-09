@@ -109,8 +109,20 @@ void changeTone(MelodyPlayer *player)
         {
             if (!player->muted)
             {
-                ledcWriteTone(player->pwmChannel, computedNote.frequency);
-                ledcWrite(player->pwmChannel, player->volume);
+                if (computedNote.frequency > 0)
+                {
+                    ledcWriteTone(player->pwmChannel, computedNote.frequency);
+                    ledcWrite(player->pwmChannel, player->volume);
+                }
+                else
+                {
+                    // RTTTL 'p' rests parse as a note with frequency 0 (not an automatic
+                    // silence). ledcWriteTone(0) only zeroes the duty and leaves the timer at
+                    // the PREVIOUS note's frequency, so the following ledcWrite(volume) would
+                    // re-drive that stale frequency — an audible continuous tone under the
+                    // melody. Silence the channel instead.
+                    ledcWrite(player->pwmChannel, 0);
+                }
             }
 
             player->ticker.once_ms(duration, changeTone, player);
@@ -250,10 +262,13 @@ void MelodyPlayer::haltPlay()
 void MelodyPlayer::turnOn()
 {
     const int resolution = 8;
-    // 2000 is a frequency, it will be changed at the first play
+    // 2000 is a placeholder frequency; the real first-note frequency is set by
+    // changeTone(). Keep the duty at 0 (silent) until then — writing `volume`
+    // here would emit an audible 2000 Hz tone burst before the melody starts,
+    // since changeTone() runs a few ms later via the Ticker.
     ledcSetup(pwmChannel, 2000, resolution);
     ledcAttachPin(pin, pwmChannel);
-    ledcWrite(pwmChannel, volume);
+    ledcWrite(pwmChannel, 0);
 }
 
 void MelodyPlayer::setVolume(byte newVolume)
