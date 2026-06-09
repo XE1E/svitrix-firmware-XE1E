@@ -51,8 +51,11 @@ export default defineConfig({
       output: {
         manualChunks: undefined,
         format: "iife",
-        entryFileNames: "app.js",
-        assetFileNames: "[name][extname]",
+        // Content-hashed names so each build gets a fresh URL the browser has
+        // never cached — fixes stale app.js/style.css after deploys. index.html
+        // references the hashed files and is re-fetched on reload.
+        entryFileNames: "app.[hash].js",
+        assetFileNames: "[name].[hash][extname]",
       },
     },
   },
