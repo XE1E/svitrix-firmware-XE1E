@@ -178,21 +178,14 @@ void MenuManager_::setAlarmProvider(IAlarmProvider *a)
 
 int convertBRIPercentTo8Bit(int brightness_percent)
 {
-    int brightness;
-    if (brightness_percent <= 10)
-    {
-        // Map 10 % or lower 1:1 to 0:255 range. Reasons:
-        // * 1% would be mapped to 2 so lowest value would be inaccessible.
-        // * Small changes in lower brightness are perceived by humans
-        //   as big changes, so it makes sense to give higher
-        //   "resolution" here.
-        brightness = brightness_percent;
-    }
-    else
-    {
-        brightness = map(brightness_percent, 0, 100, 0, 255);
-    }
-    return brightness;
+    // Linear, rounded mapping — consistent with the web's percent slider so the
+    // menu and web agree (no jump/drift). Very low brightness is further damped
+    // by DisplayManager's low-brightness handling.
+    if (brightness_percent <= 0)
+        return 0;
+    if (brightness_percent >= 100)
+        return 255;
+    return (brightness_percent * 255 + 50) / 100;
 }
 
 String MenuManager_::menutext()
@@ -494,15 +487,8 @@ void MenuManager_::selectButton()
         switch (currentState)
         {
         case BrightnessMenu:
-            // reverse of convertBRIPercentTo8Bit.
-            if (brightnessConfig.brightness <= 10)
-            {
-                brightnessConfig.brightnessPercent = brightnessConfig.brightness;
-            }
-            else
-            {
-                brightnessConfig.brightnessPercent = map(brightnessConfig.brightness, 0, 255, 0, 100);
-            }
+            // Inverse of convertBRIPercentTo8Bit (rounded linear) — matches web.
+            brightnessConfig.brightnessPercent = (brightnessConfig.brightness * 100 + 127) / 255;
             break;
         case UpdateMenu:
             if (updater_->checkUpdate(true))
