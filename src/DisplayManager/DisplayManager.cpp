@@ -807,10 +807,25 @@ void DisplayManager_::setPower(bool state)
 void DisplayManager_::gammaCorrection()
 {
     float gamma = calculateGamma(actualBri);
+    // The per-channel gamma curve is identical for every pixel and only depends
+    // on `gamma`, which changes solely when brightness changes. Cache it as a
+    // 256-entry LUT so the hot path does table lookups instead of 768 pow()
+    // calls per frame (3 channels x 256 px). Output is byte-identical to
+    // calling applyGamma_video() per channel.
+    static uint8_t gammaLut[256];
+    static float cachedGamma = -1.0f;
+    if (gamma != cachedGamma)
+    {
+        for (int v = 0; v < 256; v++)
+            gammaLut[v] = applyGamma_video((uint8_t)v, gamma);
+        cachedGamma = gamma;
+    }
     memcpy(ledsCopy, leds, sizeof(leds));
     for (int i = 0; i < MATRIX_WIDTH * MATRIX_HEIGHT; i++)
     {
-        leds[i] = applyGamma_video(leds[i], gamma);
+        leds[i].r = gammaLut[leds[i].r];
+        leds[i].g = gammaLut[leds[i].g];
+        leds[i].b = gammaLut[leds[i].b];
     }
     // Apply extra dimming at very low brightness for better low-light control
     if (actualBri <= 5)
