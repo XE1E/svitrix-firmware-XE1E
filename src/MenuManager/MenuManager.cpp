@@ -519,6 +519,26 @@ void MenuManager_::selectButton()
         case DateFormatMenu:
             dateFormatIndex = findFormatIndex(timeConfig.dateFormat.c_str(), dateFormat, dateFormatCount);
             break;
+        case ColorMenu:
+        {
+            // Seed the preset index from the current text color so the menu
+            // reflects what the web/screen show (nearest of the 15 presets).
+            uint32_t cur = colorConfig.textColor;
+            uint32_t bestDist = 0xFFFFFFFF;
+            for (uint8_t i = 0; i < COLOR_COUNT; i++)
+            {
+                int dr = (int)((textColors[i] >> 16) & 0xFF) - (int)((cur >> 16) & 0xFF);
+                int dg = (int)((textColors[i] >> 8) & 0xFF) - (int)((cur >> 8) & 0xFF);
+                int db = (int)(textColors[i] & 0xFF) - (int)(cur & 0xFF);
+                uint32_t dist = (uint32_t)(dr * dr + dg * dg + db * db);
+                if (dist < bestDist)
+                {
+                    bestDist = dist;
+                    currentColor = i;
+                }
+            }
+            break;
+        }
         default:
             break;
         }
@@ -586,6 +606,8 @@ void MenuManager_::selectButtonLong()
             break;
         case ColorMenu:
             colorConfig.textColor = textColors[currentColor];
+            nav_->setCustomAppColors(colorConfig.textColor);
+            control_->applyAllSettings(); // apply live, same as the web color path
             saveSettings();
             break;
         case MainMenu:
