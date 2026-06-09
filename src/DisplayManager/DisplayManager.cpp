@@ -64,11 +64,6 @@ bool rotationEffectOnly = false;
 const RotationItemRuntime *currentRotationItem = nullptr;
 const RotationItemRuntime *prevRotationItem = nullptr;
 
-// Legacy aliases for gradual migration
-std::vector<PlaylistItemRuntime> playlistItems;
-int playlistIndex = -1;
-bool playlistEffectOnly = false;
-
 // Forward declaration for getDurationForApp (defined below)
 static long getDurationForApp(const String& appName);
 
@@ -141,16 +136,7 @@ void parseRotationConfig()
     if (!currentRotationItem)
         rotationIndex = -1;
 
-    // Sync legacy playlistEffectOnly
-    playlistEffectOnly = rotationEffectOnly;
-
     DEBUG_PRINTF("Rotation loaded: %d enabled items\n", rotationItems.size());
-}
-
-/// @deprecated Legacy wrapper - calls parseRotationConfig
-static void parsePlaylistConfig()
-{
-    parseRotationConfig();
 }
 
 /// Advances display to the current rotation item (app or effect).
@@ -166,7 +152,6 @@ static void advanceToRotationItem()
     if (item.type == 0) // app
     {
         rotationEffectOnly = false;
-        playlistEffectOnly = false;
         // Restore normal background (no effect override)
         ui->setBackgroundEffect(displayConfig.backgroundEffect);
 
@@ -187,7 +172,6 @@ static void advanceToRotationItem()
     else // effect (standalone)
     {
         rotationEffectOnly = true;
-        playlistEffectOnly = true;
         // Find effect index by name
         int effectIdx = getEffectIndex(item.name.c_str());
         if (effectIdx >= 0)
@@ -199,7 +183,6 @@ static void advanceToRotationItem()
         {
             DEBUG_PRINTF("Rotation: effect '%s' not found\n", item.name.c_str());
             rotationEffectOnly = false;
-            playlistEffectOnly = false;
             // Skip to next item
             rotationIndex = (rotationIndex + 1) % rotationItems.size();
             advanceToRotationItem();
@@ -212,12 +195,6 @@ static void advanceToRotationItem()
     if (item.type == 0 && item.duration == 0)
         dur = getDurationForApp(item.name);
     ui->setTimePerApp(dur);
-}
-
-/// @deprecated Legacy wrapper
-static void advanceToPlaylistItem()
-{
-    advanceToRotationItem();
 }
 
 /// Maps native app names to their configured per-app duration (in milliseconds).
@@ -379,9 +356,9 @@ void DisplayManager_::applyAllSettings()
     setTextColor(colorConfig.textColor);
     setAutoTransition(appConfig.autoTransition);
 
-    // Parse playlist config - actual playlist rotation happens via resolveNextApp()
+    // Parse rotation config - actual rotation happens via resolveNextApp()
     // during auto-transitions, not here
-    parsePlaylistConfig();
+    parseRotationConfig();
 }
 
 void DisplayManager_::setAppTime(long duration)
@@ -428,10 +405,6 @@ void DisplayManager_::setup()
         }
     }
     setAutoTransition(policyBlocks ? false : appConfig.autoTransition);
-
-    // Ensure clean playlist state on startup
-    playlistEffectOnly = false;
-    playlistIndex = -1;
 
     ui->init();
 }
@@ -656,16 +629,7 @@ void DisplayManager_::nextApp()
     if (systemConfig.debugMode)
         DEBUG_PRINTLN(F("Switching to next app"));
 
-    // Playlist mode: advance in playlist sequence
-    if (playlistConfig.enabled && !playlistItems.empty())
-    {
-        playlistIndex = (playlistIndex + 1) % playlistItems.size();
-        advanceToPlaylistItem();
-    }
-    else
-    {
-        ui->nextApp();
-    }
+    ui->nextApp();
 }
 
 /// Immediately transitions to the current app (forces redraw) and publishes the app loop via MQTT.
@@ -687,16 +651,7 @@ void DisplayManager_::previousApp()
     if (systemConfig.debugMode)
         DEBUG_PRINTLN(F("Switching to previous app"));
 
-    // Playlist mode: go back in playlist sequence
-    if (playlistConfig.enabled && !playlistItems.empty())
-    {
-        playlistIndex = (playlistIndex - 1 + playlistItems.size()) % playlistItems.size();
-        advanceToPlaylistItem();
-    }
-    else
-    {
-        ui->previousApp();
-    }
+    ui->previousApp();
 }
 
 void DisplayManager_::selectButton()

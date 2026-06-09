@@ -30,8 +30,8 @@ void ShowCustomApp(const String& name, FastLED_NeoMatrix *matrix, const MatrixDi
     if (notifyFlag)
         return;
 
-    // Playlist effect-only mode: only render background effect, skip app content
-    if (playlistEffectOnly)
+    // Effect-only mode: only render background effect, skip app content
+    if (rotationEffectOnly)
         return;
 
     CustomApp *ca = getCustomAppByName(name);
