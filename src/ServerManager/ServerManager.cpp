@@ -268,7 +268,7 @@ void addHandler()
                     request->send(200, "application/json", json); });
     mws.addHandler("/api/weather", HTTP_GET, [](AsyncWebServerRequest *request)
                    {
-                    StaticJsonDocument<768> doc;
+                    StaticJsonDocument<1024> doc;
                     doc["apiKey"] = weatherConfig.apiKey;
                     doc["locationType"] = static_cast<int>(weatherConfig.locationType);
                     doc["city"] = weatherConfig.city;
@@ -288,6 +288,8 @@ void addHandler()
                     doc["pressureColor"] = weatherConfig.pressureColor;
                     doc["aqiColor"] = weatherConfig.aqiColor;
                     doc["uvColor"] = weatherConfig.uvColor;
+                    doc["aqiAutoColor"] = weatherConfig.aqiAutoColor;
+                    doc["uvAutoColor"] = weatherConfig.uvAutoColor;
                     doc["outdoorTempDuration"] = weatherConfig.outdoorTempDuration;
                     doc["outdoorHumDuration"] = weatherConfig.outdoorHumDuration;
                     doc["pressureDuration"] = weatherConfig.pressureDuration;
@@ -299,7 +301,7 @@ void addHandler()
     mws.addHandlerWithBody("/api/weather", HTTP_POST, [](AsyncWebServerRequest *request)
                            {
                             String body = getBody(request);
-                            StaticJsonDocument<768> doc;
+                            StaticJsonDocument<1024> doc;
                             DeserializationError err = deserializeJson(doc, body);
                             if (err) {
                                 request->send(400, "text/plain", "InvalidJSON");
@@ -324,6 +326,8 @@ void addHandler()
                             if (doc.containsKey("pressureColor")) weatherConfig.pressureColor = doc["pressureColor"].as<uint32_t>();
                             if (doc.containsKey("aqiColor")) weatherConfig.aqiColor = doc["aqiColor"].as<uint32_t>();
                             if (doc.containsKey("uvColor")) weatherConfig.uvColor = doc["uvColor"].as<uint32_t>();
+                            if (doc.containsKey("aqiAutoColor")) weatherConfig.aqiAutoColor = doc["aqiAutoColor"].as<bool>();
+                            if (doc.containsKey("uvAutoColor")) weatherConfig.uvAutoColor = doc["uvAutoColor"].as<bool>();
                             if (doc.containsKey("outdoorTempDuration")) weatherConfig.outdoorTempDuration = doc["outdoorTempDuration"].as<uint8_t>();
                             if (doc.containsKey("outdoorHumDuration")) weatherConfig.outdoorHumDuration = doc["outdoorHumDuration"].as<uint8_t>();
                             if (doc.containsKey("pressureDuration")) weatherConfig.pressureDuration = doc["pressureDuration"].as<uint8_t>();

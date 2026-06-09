@@ -54,6 +54,9 @@ export function SettingsProvider({ children }: { children: ComponentChildren }) 
   const [appsVersion, setAppsVersion] = useState(0);
 
   const pendingAutoSave = useRef<Partial<Settings>>({});
+  // Mirrors weatherConfig so saveWeatherConfig() always reads the latest value
+  // even when called right after updateWeatherConfig() (setState is async).
+  const weatherConfigRef = useRef<WeatherConfig | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -63,7 +66,7 @@ export function SettingsProvider({ children }: { children: ComponentChildren }) 
       getTransitions().then(setTransitions).catch((e) => console.error("Failed to load transitions:", e)),
       getEffects().then(setEffects).catch((e) => console.error("Failed to load effects:", e)),
       getConfig().then((c) => setConfig(c as unknown as InfraConfig)).catch((e) => console.error("Failed to load config:", e)),
-      getWeatherConfig().then(setWeatherConfig).catch((e) => console.error("Failed to load weather config:", e)),
+      getWeatherConfig().then((w) => { weatherConfigRef.current = w; setWeatherConfig(w); }).catch((e) => console.error("Failed to load weather config:", e)),
     ]).finally(() => setLoading(false));
   }, []);
 
@@ -78,7 +81,12 @@ export function SettingsProvider({ children }: { children: ComponentChildren }) 
   }
 
   function updateWeatherConfig(patch: Partial<WeatherConfig>) {
-    setWeatherConfig((prev) => (prev ? { ...prev, ...patch } : prev));
+    setWeatherConfig((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      weatherConfigRef.current = next;
+      return next;
+    });
   }
 
   const flushAutoSave = useCallback(async () => {
@@ -177,10 +185,11 @@ export function SettingsProvider({ children }: { children: ComponentChildren }) 
   }
 
   async function handleSaveWeatherConfig(successMsg?: string) {
-    if (!weatherConfig) return;
+    const cfg = weatherConfigRef.current ?? weatherConfig;
+    if (!cfg) return;
     const t = getT();
     try {
-      await apiSaveWeatherConfig(weatherConfig);
+      await apiSaveWeatherConfig(cfg);
       setAppsVersion((v) => v + 1);
       if (successMsg !== "") toast(successMsg || t.ok);
     } catch (e) {
