@@ -253,7 +253,8 @@ String MenuManager_::menutext()
         // is a follow-up step). UV (index 9) is the new entry.
         const uint16_t *icons[appsCount] = {
             icon_13, icon_1158, icon_234, icon_2075, icon_1486,
-            icon_sunny, icon_53628, icon_66892, icon_6622, icon_59801};
+            icon_sunny, icon_weather_hum, icon_weather_pressure,
+            icon_weather_aqi, icon_weather_uv};
         if (appsIndex >= 0 && appsIndex < (int)appsCount)
             renderer_->drawBMP(0, 0, icons[appsIndex], 8, 8);
         // ON/OFF reads the rotation config — the same source as the web and the
