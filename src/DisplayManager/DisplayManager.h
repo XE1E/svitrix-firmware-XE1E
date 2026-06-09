@@ -113,6 +113,8 @@ class DisplayManager_ : public IButtonHandler, public IMatrixHost, public IDispl
     String getAppsWithIcon() override;
     void sendAppLoop() override;
     void setCustomAppColors(uint32_t color) override;
+    int8_t rotationAppState(const char *name) override;
+    void setRotationAppEnabled(const char *name, bool enabled) override;
 
     // ── Settings & stats (DisplayManager_Settings.cpp) ─────────────
     String getSettings() override;

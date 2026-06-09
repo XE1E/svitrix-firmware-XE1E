@@ -65,6 +65,11 @@ bool rotationEffectOnly = false;
 const RotationItemRuntime *currentRotationItem = nullptr;
 const RotationItemRuntime *prevRotationItem = nullptr;
 
+// Lightweight name->enabled lookup for ALL rotation APP items (incl. disabled),
+// rebuilt by parseRotationConfig(). The on-device menu (rotationAppState) needs
+// disabled state too, which rotationItems (enabled-only) doesn't carry.
+static std::vector<std::pair<String, bool>> rotationAllApps;
+
 // Forward declaration for getDurationForApp (defined below)
 static long getDurationForApp(const String& appName);
 
@@ -78,6 +83,7 @@ void parseRotationConfig()
         currentName = currentRotationItem->name;
 
     rotationItems.clear();
+    rotationAllApps.clear();
     currentRotationItem = nullptr;
 
     if (rotationConfig.items.isEmpty())
@@ -102,12 +108,16 @@ void parseRotationConfig()
     for (JsonObject item : arr)
     {
         bool enabled = item["enabled"] | true;
+        const char *typeStr = item["type"] | "app";
+        // Record every APP item (enabled or not) for the menu's on/off lookup.
+        if (strcmp(typeStr, "effect") != 0)
+            rotationAllApps.push_back({item["name"].as<String>(), enabled});
+
         if (!enabled)
-            continue; // Skip disabled items
+            continue; // Skip disabled items (rotationItems = enabled only)
 
         RotationItemRuntime rir;
         rir.id = item["id"].as<String>();
-        const char *typeStr = item["type"] | "app";
         rir.type = (strcmp(typeStr, "effect") == 0) ? 1 : 0;
         rir.name = item["name"].as<String>();
         rir.enabled = true;
@@ -138,6 +148,57 @@ void parseRotationConfig()
         rotationIndex = -1;
 
     DEBUG_PRINTF("Rotation loaded: %d enabled items\n", rotationItems.size());
+}
+
+/// Rotation-backed native-app on/off (shared with web/screen): 1=enabled,
+/// 0=disabled, -1=absent. Cheap lookup over the table built by parseRotationConfig.
+int8_t DisplayManager_::rotationAppState(const char *name)
+{
+    for (const auto &a : rotationAllApps)
+        if (a.first == name)
+            return a.second ? 1 : 0;
+    return -1;
+}
+
+/// Enable/disable a native app in the rotation config, adding it if missing and
+/// `enabled`. Updates rotationConfig.items in memory and refreshes the runtime
+/// lookup; persistence + live-loop apply happen on menu exit (saveSettings +
+/// loadNativeApps), matching the menu's "apply on exit" pattern.
+void DisplayManager_::setRotationAppEnabled(const char *name, bool enabled)
+{
+    DynamicJsonDocument doc(4096);
+    if (deserializeJson(doc, rotationConfig.items) != DeserializationError::Ok || !doc.is<JsonArray>())
+        doc.to<JsonArray>();
+    JsonArray arr = doc.as<JsonArray>();
+
+    bool found = false;
+    for (JsonObject item : arr)
+    {
+        const char *typeStr = item["type"] | "app";
+        if (strcmp(typeStr, "effect") == 0)
+            continue;
+        if (strcmp(item["name"] | "", name) == 0)
+        {
+            item["enabled"] = enabled;
+            found = true;
+            break;
+        }
+    }
+    if (!found && enabled)
+    {
+        JsonObject ni = arr.createNestedObject();
+        ni["id"] = String("m") + String(millis(), HEX);
+        ni["type"] = "app";
+        ni["name"] = name;
+        ni["enabled"] = true;
+        ni["duration"] = 0;
+        ni["color"] = 0;
+        ni["icon"] = "";
+    }
+    String out;
+    serializeJson(doc, out);
+    rotationConfig.items = out;
+    parseRotationConfig(); // refresh lookup + rotationItems (no save; persisted on menu exit)
 }
 
 /// Advances display to the current rotation item (app or effect).
