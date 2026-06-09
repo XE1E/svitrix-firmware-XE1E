@@ -163,14 +163,10 @@ int8_t DisplayManager_::resolveNextApp(int8_t currentApp, int8_t direction)
         auto& item = rotationItems[rotationIndex];
         currentRotationItem = &item;
 
-        // Sync legacy aliases
-        playlistIndex = rotationIndex;
-
         if (item.type == 0) // App
         {
             bool wasEffectOnly = rotationEffectOnly;
             rotationEffectOnly = false;
-            playlistEffectOnly = false;
             ui->setBackgroundEffect(displayConfig.backgroundEffect);
 
             // Find app index
@@ -200,7 +196,6 @@ int8_t DisplayManager_::resolveNextApp(int8_t currentApp, int8_t direction)
             if (effectIdx >= 0)
             {
                 rotationEffectOnly = true;
-                playlistEffectOnly = true;
                 ui->setBackgroundEffect(effectIdx);
                 // Set duration for effect display
                 long dur = item.duration > 0 ? item.duration * 1000L : appConfig.timePerApp;
@@ -214,7 +209,6 @@ int8_t DisplayManager_::resolveNextApp(int8_t currentApp, int8_t direction)
             }
             // Effect not found, continue to next item
             rotationEffectOnly = false;
-            playlistEffectOnly = false;
         }
     }
 
