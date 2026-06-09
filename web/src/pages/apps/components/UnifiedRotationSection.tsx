@@ -377,7 +377,7 @@ export function UnifiedRotationSection() {
                             <Toggle
                               label={t.apps.autoColor || "Auto color"}
                               checked={weatherConfig.aqiAutoColor}
-                              onChange={(v) => { updateWeatherConfig({ aqiAutoColor: v }); saveWeatherConfig(""); }}
+                              onChange={(v) => { updateWeatherConfig({ aqiAutoColor: v }); saveWeatherConfig(); }}
                             />
                           </div>
                         )}
@@ -386,7 +386,7 @@ export function UnifiedRotationSection() {
                             <Toggle
                               label={t.apps.autoColor || "Auto color"}
                               checked={weatherConfig.uvAutoColor}
-                              onChange={(v) => { updateWeatherConfig({ uvAutoColor: v }); saveWeatherConfig(""); }}
+                              onChange={(v) => { updateWeatherConfig({ uvAutoColor: v }); saveWeatherConfig(); }}
                             />
                           </div>
                         )}

@@ -81,12 +81,13 @@ export function SettingsProvider({ children }: { children: ComponentChildren }) 
   }
 
   function updateWeatherConfig(patch: Partial<WeatherConfig>) {
-    setWeatherConfig((prev) => {
-      if (!prev) return prev;
-      const next = { ...prev, ...patch };
-      weatherConfigRef.current = next;
-      return next;
-    });
+    // Update the ref synchronously so a saveWeatherConfig() call right after
+    // (e.g. a toggle's onChange) reads the new value — setState is async.
+    const base = weatherConfigRef.current ?? weatherConfig;
+    if (!base) return;
+    const next = { ...base, ...patch };
+    weatherConfigRef.current = next;
+    setWeatherConfig(next);
   }
 
   const flushAutoSave = useCallback(async () => {
