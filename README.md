@@ -79,7 +79,7 @@ SVITRIX-XE1E es un fork de [SVITRIX](https://github.com/svitrix/svitrix-firmware
 
 ### Configuración y Gestión
 - **Interfaz web moderna** — configuración WiFi, MQTT, clima, gestor de archivos, descargador de iconos, actualizaciones OTA, vista en vivo
-- **Menú en pantalla** — cambia configuraciones directamente en el dispositivo con los botones
+- **Menú en pantalla** (en español) — ajusta la configuración desde el dispositivo con los botones, incluido el submenú **Rotación** (transición, desplazamiento y duración por app)
 - **Duración por app** — configura el tiempo de visualización para cada app nativa
 - **Opciones de formato de hora** — 12/24 horas, formatos personalizados, Celsius/Fahrenheit
 - **Modo nocturno** — cambios automáticos de brillo y color por hora del día

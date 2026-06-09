@@ -477,8 +477,8 @@ Arriba se muestra la **próxima alarma**. Si suena una alarma, aparece una alert
 
 ### 11.2 Configurar desde los botones
 
-Mantén pulsado el botón central para entrar al menú y navega hasta **ALARMS**:
-- Izquierda/Derecha: recorre las alarmas (`07:30 ON`).
+Mantén pulsado el botón central para entrar al menú y navega hasta **ALARMAS**:
+- Izquierda/Derecha: recorre las alarmas (`07:30 SI`).
 - Pulsación corta: entra a editar — la pulsación corta cicla entre **activado / hora / minuto**, e Izquierda/Derecha ajusta el valor.
 - Pulsación larga: **guarda** y vuelve a la lista.
 
