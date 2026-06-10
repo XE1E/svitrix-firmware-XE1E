@@ -126,7 +126,7 @@ The **Apps** page contains a unified rotation list that controls **all** apps an
 
 Each item in the rotation has individual settings:
 - **Toggle** — enable/disable the item
-- **Duration** — per-item display time, set with a **−/+** stepper (tap = ±1 s, press-and-hold = ±10 s). 0 = use default duration (7 s)
+- **Duration** — per-item display time, set with a **−/+** stepper (tap = ±1 s, press-and-hold = ±10 s). 0 = use the default duration (configurable below)
 - **Color** — custom text color (0 = use default color)
 
 Drag any row to reorder. Changes save instantly and persist across reboots.
@@ -140,6 +140,7 @@ Drag any row to reorder. Changes save instantly and persist across reboots.
 - **Transition Effect** — animation style (slide, dim, zoom, etc.)
 - **Transition Speed** — animation speed (100–2000ms)
 - **Scroll Speed** — text scroll speed
+- **Default app duration** — seconds each app is shown when its per-item duration is 0 (1–30 s; same as the on-device `ROTACION → APP` field)
 - **Block Navigation** — disable button navigation
 
 ### Fecha/Hora / Time/Date

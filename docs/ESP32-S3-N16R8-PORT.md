@@ -868,8 +868,8 @@ Diseño minimalista para impresión 3D que aloja la matriz LED 32×8 WS2812B est
 
 ### 12.3 Archivo OpenSCAD
 
-> **Descargar:** [`hardware/enclosure.scad`](../hardware/enclosure.scad)  
-> **Visualización:** [`hardware/enclosure_preview.txt`](../hardware/enclosure_preview.txt)
+> **Descargar:** [`hardware/enclosure.scad`](https://github.com/XE1E/svitrix-firmware-XE1E/blob/main/hardware/enclosure.scad)  
+> **Visualización:** [`hardware/enclosure_preview.txt`](https://github.com/XE1E/svitrix-firmware-XE1E/blob/main/hardware/enclosure_preview.txt)
 
 **Parámetros principales (editables en el archivo):**
 
@@ -1022,7 +1022,7 @@ El ESP32-S3 tiene espacio de sobra y BLE 5.0 optimizado — Improv BLE es viable
 
 ### A.5 Integración con Flasher Web
 
-El [flasher web](../web/flasher/) ya usa Web Serial para flashear el firmware. Añadir Improv Serial permitiría:
+El [flasher web](./flasher) ya usa Web Serial para flashear el firmware. Añadir Improv Serial permitiría:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
