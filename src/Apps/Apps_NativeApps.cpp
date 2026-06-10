@@ -522,7 +522,8 @@ void AirQualityApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16
 
     // Use dynamic color if autoColor enabled, otherwise use config color
     uint32_t aqiColor = weatherConfig.aqiColor;
-    if (weatherConfig.aqiAutoColor && weatherData.valid && weatherData.aqi > 0)
+    bool aqiAuto = weatherConfig.aqiAutoColor && weatherData.valid && weatherData.aqi > 0;
+    if (aqiAuto)
     {
         switch (weatherData.aqi)
         {
@@ -546,7 +547,12 @@ void AirQualityApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16
             break; // Hazardous - maroon
         }
     }
-    applyNativeAppColor(aqiColor, "AirQuality");
+    if (aqiAuto)
+        // Auto color wins over any per-item/global color override
+        // (still honors display policies such as night mode).
+        DisplayManager.setTextColor(DisplayManager.resolveTextColor(aqiColor));
+    else
+        applyNativeAppColor(aqiColor, "AirQuality");
 
     LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
 
@@ -605,7 +611,8 @@ void UVApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, in
 
     // Use dynamic color if autoColor enabled, otherwise use config color
     uint32_t uvColor = weatherConfig.uvColor;
-    if (weatherConfig.uvAutoColor && weatherData.valid)
+    bool uvAuto = weatherConfig.uvAutoColor && weatherData.valid;
+    if (uvAuto)
     {
         float uv = weatherData.uv;
         if (uv < 3)
@@ -619,7 +626,12 @@ void UVApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, in
         else
             uvColor = 0x9400D3; // Extreme - violet
     }
-    applyNativeAppColor(uvColor, "UV");
+    if (uvAuto)
+        // Auto color wins over any per-item/global color override
+        // (still honors display policies such as night mode).
+        DisplayManager.setTextColor(DisplayManager.resolveTextColor(uvColor));
+    else
+        applyNativeAppColor(uvColor, "UV");
 
     LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
 
