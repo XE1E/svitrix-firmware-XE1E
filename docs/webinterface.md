@@ -112,7 +112,7 @@ La página de **Apps** contiene una lista unificada de rotación que controla **
 
 Cada elemento en la rotación tiene configuraciones individuales:
 - **Toggle** — activa/desactiva el elemento
-- **Duración** — tiempo de visualización por elemento, ajustable con un control **−/+** (toca = ±1 s, mantén pulsado = ±10 s). 0 = usar duración por defecto (7 s)
+- **Duración** — tiempo de visualización por elemento, ajustable con un control **−/+** (toca = ±1 s, mantén pulsado = ±10 s). 0 = usar la duración por defecto (configurable abajo)
 - **Color** — color de texto personalizado (0 = usar color por defecto)
 
 Arrastra cualquier fila para reordenarla. Los cambios se guardan al instante y persisten entre reinicios.
@@ -126,6 +126,7 @@ Arrastra cualquier fila para reordenarla. Los cambios se guardan al instante y p
 - **Efecto de Transición** — efecto visual al cambiar apps (Ninguno, Deslizar, Atenuar, Zoom, etc.)
 - **Velocidad de Transición** — qué tan rápido reproduce la animación de transición (100–2000ms)
 - **Velocidad de Desplazamiento** — velocidad de desplazamiento de texto para texto largo
+- **Duración por defecto** — segundos que se muestra cada app cuando su duración por elemento es 0 (1–30 s; equivale a `ROTACION → APP` del menú físico)
 - **Bloquear Navegación** — deshabilita navegación con botones entre apps
 
 ### Hora y Fecha
