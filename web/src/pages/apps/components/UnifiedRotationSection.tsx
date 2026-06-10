@@ -50,7 +50,7 @@ const FAST_STEP = 10; // step while held
  * Updates locally for instant feedback and commits once per gesture (on release)
  * to avoid spamming the device with a save per increment.
  */
-function DurationStepper({ value, onCommit }: { value: number; onCommit: (v: number) => void }) {
+function DurationStepper({ value, onCommit, defaultDuration }: { value: number; onCommit: (v: number) => void; defaultDuration: number }) {
   const t = useT();
   const [local, setLocal] = useState(value);
   const localRef = useRef(value);
@@ -102,7 +102,7 @@ function DurationStepper({ value, onCommit }: { value: number; onCommit: (v: num
   }, []);
 
   const isDefault = local === 0;
-  const display = isDefault ? `${t.apps.default || "Default"} (7s)` : `${local}s`;
+  const display = isDefault ? `${t.apps.default || "Default"} (${defaultDuration}s)` : `${local}s`;
 
   return (
     <div class={styles.rotationSlider}>
@@ -324,6 +324,7 @@ export function UnifiedRotationSection() {
                         <DurationStepper
                           value={item.duration}
                           onCommit={(v) => updateItem(item.id, { duration: v })}
+                          defaultDuration={settings?.ATIME ?? 7}
                         />
                         <div class={styles.rotationField}>
                           <label>Color:</label>
