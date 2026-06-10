@@ -54,7 +54,7 @@ Una barra de solo lectura en la parte superior mostrando información del dispos
 
 ### WiFi
 
-Escanea redes disponibles, selecciona una e ingresa la contraseña para conectar. El dispositivo se reinicia después de conectar.
+Configura hasta **3 redes WiFi**. El dispositivo intenta conectarse a cada una en orden. Escanea las redes disponibles, selecciona una (o escríbela manualmente) e ingresa la contraseña. Puedes guardar sin reiniciar o guardar y reiniciar para aplicar los cambios.
 
 ### Red
 
@@ -73,6 +73,15 @@ Conéctate a un broker MQTT para integración con Home Assistant y control remot
 
 - **Servidor NTP** — servidor de tiempo (por defecto: `time.cloudflare.com`)
 - **Zona horaria** — cadena de zona horaria POSIX (encuentra la tuya en [posix_tz_db](https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv))
+
+### API del Clima
+
+Configura el origen de los datos meteorológicos usados por las apps del clima (Temp. Exterior, Humedad Exterior, Presión, Calidad del Aire, UV):
+
+- **Clave API** — clave de [weatherapi.com](https://www.weatherapi.com) (registro gratuito)
+- **Ubicación** — método para fijar la localización: por **ciudad** (nombre), por **coordenadas** (latitud/longitud), **auto por IP** (detección automática) o por **estación PWS** (ID de estación meteorológica personal)
+- **Intervalo de actualización** — cada cuánto se vuelven a obtener los datos
+- **Obtener ahora** — botón para forzar una actualización inmediata y comprobar la configuración
 
 ### Autenticación
 
@@ -93,11 +102,12 @@ Durante el tiempo programado, la pantalla reduce su brillo a la configuración e
 ### Pantalla
 
 - **Energía de Matriz** — enciende/apaga la matriz LED
-- **Brillo Automático** — ajusta automáticamente el brillo basado en luz ambiental
-- **Brillo** — nivel de brillo manual (0–255)
+- **Brillo Automático** — ajusta automáticamente el brillo basado en luz ambiental. Al activarlo se muestran dos sub-controles que definen el rango: **Brillo Mínimo** (1–50) y **Brillo Máximo** (0–255)
+- **Brillo** — nivel de brillo manual, expresado como porcentaje (0–100 %)
 - **Gamma** — curva de corrección gamma (0.5–3.0)
 - **Mayúsculas** — fuerza todo el texto a mayúsculas
 - **Color de Texto** — color de texto por defecto para todas las apps
+- **Efecto de Fondo** — selecciona un efecto visual que se dibuja detrás de las apps (Ninguno por defecto)
 - **Corrección de Color / Temperatura de Color** — ajuste avanzado de color LED
 
 ### Apps
@@ -110,10 +120,14 @@ La página de **Apps** contiene una lista unificada de rotación que controla **
 - **Apps personalizadas** — creadas vía MQTT, HTTP o Data Fetcher
 - **Efectos** — efectos visuales independientes (sin texto)
 
-Cada elemento en la rotación tiene configuraciones individuales:
+Cada elemento en la rotación se puede expandir (▼) para mostrar sus configuraciones individuales:
 - **Toggle** — activa/desactiva el elemento
 - **Duración** — tiempo de visualización por elemento, ajustable con un control **−/+** (toca = ±1 s, mantén pulsado = ±10 s). 0 = usar la duración por defecto (configurable abajo)
 - **Color** — color de texto personalizado (0 = usar color por defecto)
+- **Icono** — sobrescribe el icono del elemento con un ID de icono o nombre de archivo (no disponible para Hora/Fecha; deja vacío para usar el icono por defecto que se muestra como placeholder)
+- **Celsius** — solo en Temperatura y Temp. Exterior: muestra °C cuando está activo, °F cuando está apagado
+- **Offset** — solo en Temperatura: corrección de temperatura aplicada a la lectura del sensor interno (de −15 a +5°)
+- **Auto color** — solo en Calidad del Aire (AQI) y UV: cuando está activo, el color se asigna dinámicamente según el nivel (anula el color fijo/por elemento)
 
 Arrastra cualquier fila para reordenarla. Los cambios se guardan al instante y persisten entre reinicios.
 
@@ -132,9 +146,16 @@ Arrastra cualquier fila para reordenarla. Los cambios se guardan al instante y p
 ### Hora y Fecha
 
 - **Formato de Hora / Formato de Fecha** — cadenas de formato strftime (ej., `%H:%M`, `%d.%m.%y`)
-- **Modo de Hora** — estilo de visualización: Texto Plano, Calendario, Calendario Arriba, Calendario Alt, Dígitos Grandes o Binario
+- **Modo de Hora** — estilo de visualización, 7 opciones:
+  1. **Texto simple (día abajo)**
+  2. **Calendario (día abajo)**
+  3. **Calendario (día arriba)**
+  4. **Calendario Alt (día abajo)**
+  5. **Calendario Alt (día arriba)**
+  6. **Dígitos grandes**
+  7. **Binario**
+  (con formatos de hora que incluyen segundos solo están disponibles Texto simple y Binario)
 - **Comenzar en Lunes** — la semana comienza en lunes en lugar de domingo
-- **Celsius** — muestra temperatura en °C (apagado = °F)
 - **Color de Hora / Fecha** — colores individuales para apps de hora y fecha
 - **Mostrar Día de Semana** — muestra barra indicadora de día de semana
 - **Color Día Activo / Inactivo** — colores para puntos de día de semana
@@ -163,6 +184,15 @@ Si no especificas icono, el texto usa los 32 píxeles completos de la pantalla. 
 :::
 
 Ver [Sonidos](./sounds) para crear archivos de melodía.
+
+### Alarmas
+
+La pestaña de **Alarmas** permite gestionar despertadores y recordatorios:
+- **Agregar / Editar alarma** — define la **hora**, los **días** de la semana, una **etiqueta** opcional, la **melodía** que suena y la opción de **posponer** (snooze)
+- **Una sola vez** — marca la alarma para que suene una única vez y se desactive después
+- **Indicador de alarma** — activa/desactiva el pequeño indicador que muestra en la matriz que hay una alarma programada
+
+Las alarmas funcionan incluso sin WiFi gracias al reloj de tiempo real (RTC).
 
 ### Iconos
 

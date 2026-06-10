@@ -118,8 +118,8 @@ Standard values:
 | TheaterChase | 3 | Rainbow | true |
 | Plasma | 2 | Rainbow | true |
 | Matrix | 8 | - | - |
-| SwirlIn | 4 | Rainbow | - |
-| SwirlOut | 4 | Rainbow | - |
+| SwirlIn | 5 | Rainbow | - |
+| SwirlOut | 5 | Rainbow | - |
 | LookingEyes | - | - | - |
 | TwinklingStars | 4 | Ocean | false |
 | ColorWaves | 3 | Rainbow | true |

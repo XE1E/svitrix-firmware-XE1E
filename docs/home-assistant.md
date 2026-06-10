@@ -1,6 +1,6 @@
 # Home Assistant Integration
 
-SVITRIX soporta auto-discovery de Home Assistant a través de MQTT. Al habilitarlo, el dispositivo se registra automáticamente en HA con 39 entidades controlables.
+SVITRIX soporta auto-discovery de Home Assistant a través de MQTT. Al habilitarlo, el dispositivo se registra automáticamente en HA con 66 entidades controlables.
 
 ## Requisitos
 
