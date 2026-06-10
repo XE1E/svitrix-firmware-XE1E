@@ -705,4 +705,4 @@ automation:
 ## Ver también
 
 - [API MQTT/HTTP](api.md) — Comandos avanzados via MQTT
-- [Configuración MQTT con Docker](en/mqtt-docker-setup.md) — Instalación de Mosquitto
+- [Configuración MQTT con Docker](mqtt-docker-setup.md) — Instalación de Mosquitto
