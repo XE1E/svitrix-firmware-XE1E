@@ -120,8 +120,8 @@ Weather apps are also **native** (built into the firmware), but require the **We
 | **Outdoor Temp** | Outdoor temperature. Configurable color; respects the Celsius/Fahrenheit scale. |
 | **Outdoor Humidity** | Outdoor relative humidity (%). Configurable color. |
 | **Pressure** | Atmospheric pressure (mb/hPa). Configurable color. |
-| **Air Quality (AQI)** | Air quality index (US EPA, 1–6). Auto color by level (green → yellow → orange → red) or a fixed color. |
-| **UV Index** | Ultraviolet index (0–11+). Auto color by level or a fixed color. |
+| **Air Quality (AQI)** | Air quality index (US EPA, 1–6). Auto color by level (green → yellow → orange → red) or a fixed color. When the auto-color toggle is on, the level color takes priority and overrides any fixed/per-item color (it still respects night mode). |
+| **UV Index** | Ultraviolet index (0–11+). Auto color by level or a fixed color. When the auto-color toggle is on, the level color takes priority and overrides any fixed/per-item color (it still respects night mode). |
 
 Each weather app has its own configurable **duration** and can be toggled individually. The data refresh interval is set in the Weather API section.
 
