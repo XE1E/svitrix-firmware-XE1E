@@ -89,8 +89,9 @@ Do not lose your auth credentials — otherwise you will need to factory reset t
 
 **Display Settings:**
 - **Matrix Power** — turn the LED matrix on/off
-- **Auto Brightness** — adjust brightness based on ambient light (with min/max range)
-- **Brightness** — manual brightness level (0–255)
+- **Auto Brightness** — adjust brightness based on ambient light. When enabled, two sub-sliders set the range: **Min Brightness** (1–50) and **Max Brightness** (0–255)
+- **Brightness** — manual brightness level, shown as a percentage (0–100 %)
+- **Background Effect** — a visual effect drawn behind the apps (None by default)
 - **Gamma** — gamma correction (0.5–3.0)
 - **Uppercase** — force all text to uppercase
 - **Text Color** — default text color
@@ -128,6 +129,10 @@ Each item in the rotation has individual settings:
 - **Toggle** — enable/disable the item
 - **Duration** — per-item display time, set with a **−/+** stepper (tap = ±1 s, press-and-hold = ±10 s). 0 = use the default duration (configurable below)
 - **Color** — custom text color (0 = use default color)
+- **Icon** — override the item's icon with an icon ID or filename (not available for Time/Date; leave empty for the default icon shown as a placeholder)
+- **Celsius** — Temperature and Outdoor Temp only: show °C when on, °F when off
+- **Offset** — Temperature only: correction applied to the indoor sensor reading (−15 to +5°)
+- **Auto color** — Air Quality (AQI) and UV only: when on, the color is assigned dynamically by level (overrides the fixed/per-item color)
 
 Drag any row to reorder. Changes save instantly and persist across reboots.
 
@@ -146,7 +151,7 @@ Drag any row to reorder. Changes save instantly and persist across reboots.
 ### Fecha/Hora / Time/Date
 
 - **Time Format / Date Format** — strftime format strings
-- **Time Mode** — Plain Text, Calendar, Calendar Alt, Big Digits, Binary
+- **Time Mode** — display style, 7 options: 1) Plain text (day below), 2) Calendar (day below), 3) Calendar (day above), 4) Calendar Alt (day below), 5) Calendar Alt (day above), 6) Big digits, 7) Binary. (With time formats that include seconds, only Plain text and Binary are available.)
 - **Start on Monday** — week starts Monday
 - **Show Weekday** — weekday indicator bar
 - **Time / Date Color** — individual colors

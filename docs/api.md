@@ -43,8 +43,11 @@ Accede a varias estadísticas del dispositivo como batería, RAM y más:
 | `[PREFIX]/stats/effects`       | `http://[IP]/api/effects`         | Lista de todos los efectos                    |
 | `[PREFIX]/stats/transitions`   | `http://[IP]/api/transitions`     | Lista de todos los efectos de transición      |
 | `[PREFIX]/stats/loop`          | `http://[IP]/api/loop`            | Lista de todas las apps en el ciclo           |
+| `N/A`                          | `http://[IP]/api/apps`            | Lista de apps con sus datos de icono          |
 
 > **Nota:** MQTT también transmite otros datos, como pulsaciones de botones y la app actual.
+
+> **Nota:** `GET /api/apps` devuelve las apps con sus iconos. `POST /api/apps` (cuerpo JSON) actualiza el vector de apps; también disponible vía MQTT en `[PREFIX]/apps`.
 
 ## Vista en Vivo
 
@@ -89,6 +92,12 @@ Reproduce un sonido RTTTL desde una cadena RTTTL dada:
 | Topic MQTT       | URL HTTP                    | Payload/Body    | Método HTTP |
 | ---------------- | --------------------------- | --------------- | ----------- |
 | `[PREFIX]/rtttl` | `http://[IP]/api/rtttl`     | `cadena rtttl`  | POST        |
+
+Reproduce sonidos al estilo R2-D2 generados a partir de una cadena de descripción de sonido:
+
+| Topic MQTT       | URL HTTP                    | Payload/Body    | Método HTTP |
+| ---------------- | --------------------------- | --------------- | ----------- |
+| `[PREFIX]/r2d2`  | `http://[IP]/api/r2d2`      | cadena R2D2     | POST        |
 
 
 ## Iluminación Ambiental
@@ -411,6 +420,121 @@ Agregar un rastreador de precio de Bitcoin:
 - **Polling round-robin**: una fuente se verifica por ciclo de loop para evitar bloqueos
 - Las fuentes se persisten en flash y se restauran al arrancar
 - También puedes configurar fuentes vía la [interfaz web](./webinterface) en `http://[IP]/datafetcher`
+
+
+## Rotación (Apps + Efectos)
+
+Configuración unificada de rotación: el orden de las apps y efectos, junto con la duración y el color por elemento. Reemplaza los antiguos endpoints `/api/reorder` y `/api/playlist`.
+
+| URL HTTP                       | Payload/Body | Método HTTP | Descripción |
+| ------------------------------ | ------------ | ----------- | ----------- |
+| `http://[IP]/api/rotation`     | -            | GET         | Obtiene la configuración de rotación actual |
+| `http://[IP]/api/rotation`     | JSON         | POST        | Guarda la configuración de rotación |
+
+> **Nota:** Solo HTTP, no hay topics MQTT.
+
+El cuerpo y la respuesta usan una clave `items` que contiene un arreglo de elementos de rotación (apps y efectos, cada uno con su duración y color opcionales).
+
+**Ejemplo:**
+```json
+{
+  "items": [
+    {"type": "app", "name": "Time", "duration": 7},
+    {"type": "effect", "name": "Plasma", "duration": 10, "color": "#FF00FF"}
+  ]
+}
+```
+
+
+## Despertador y Recordatorios
+
+Gestiona las alarmas del despertador y recordatorios. Funciona sin WiFi gracias al RTC. Hasta un máximo de alarmas configurables.
+
+| Topic MQTT              | URL HTTP                     | Payload/Body | Método HTTP | Descripción |
+| ----------------------- | ---------------------------- | ------------ | ----------- | ----------- |
+| `N/A`                   | `http://[IP]/api/alarms`     | -            | GET         | Lista todas las alarmas y el estado de sonado |
+| `[PREFIX]/alarm/add`    | `http://[IP]/api/alarms`     | JSON         | POST        | Añade una nueva alarma (o acción snooze/dismiss) |
+| `N/A`                   | `http://[IP]/api/alarms`     | JSON         | PUT         | Actualiza una alarma existente (por `id`) |
+| `N/A`                   | `http://[IP]/api/alarms?id=X`| -            | DELETE      | Elimina la alarma con el `id` dado |
+| `[PREFIX]/alarm/snooze` | `http://[IP]/api/alarms`     | `{"action":"snooze","minutes":N}` | POST | Pospone la alarma que está sonando |
+| `[PREFIX]/alarm/dismiss`| `http://[IP]/api/alarms`     | `{"action":"dismiss"}` | POST | Descarta la alarma que está sonando |
+
+### Propiedades JSON de la alarma
+
+| Clave | Tipo | Descripción | Por defecto |
+| --- | ---- | ----------- | ----------- |
+| `id` | integer | Identificador de la alarma (solo para PUT). | 0 |
+| `hour` | integer | Hora (0–23). | 0 |
+| `minute` | integer | Minuto (0–59). | 0 |
+| `days` | integer | Máscara de bits de los días de la semana activos. `0x7F` = todos los días. | `0x7F` (127) |
+| `enabled` | boolean | Si la alarma está activa. | true |
+| `oneTime` | boolean | Alarma de una sola vez (se desactiva tras sonar). | false |
+| `snoozeMinutes` | integer | Minutos a posponer al usar snooze. | 5 |
+| `label` | string | Etiqueta de texto opcional. | `""` |
+| `melody` | string | Sonido a reproducir: nombre de archivo RTTTL de la carpeta MELODIES o cadena RTTTL completa. | `""` |
+
+> **Nota:** Para snooze por MQTT en `[PREFIX]/alarm/snooze` puedes enviar `{"minutes":N}`; si se omite, usa el `snoozeMinutes` de la alarma. La respuesta GET incluye además el campo `ringing` (booleano) indicando si hay una alarma sonando.
+
+**Ejemplo de alarma:**
+```json
+{
+  "hour": 7,
+  "minute": 30,
+  "days": 127,
+  "enabled": true,
+  "oneTime": false,
+  "snoozeMinutes": 9,
+  "label": "Despertar",
+  "melody": "alarma"
+}
+```
+
+
+## Clima
+
+Configura y consulta los datos del clima exterior (requiere clave API). Las apps de clima se muestran en la rotación según los conmutadores `showOutdoorTemp`, `showOutdoorHumidity`, `showPressure`, `showAirQuality` y `showUV`.
+
+| URL HTTP                          | Payload/Body | Método HTTP | Descripción |
+| --------------------------------- | ------------ | ----------- | ----------- |
+| `http://[IP]/api/weather`         | -            | GET         | Obtiene la configuración del clima |
+| `http://[IP]/api/weather`         | JSON         | POST        | Actualiza la configuración del clima |
+| `http://[IP]/api/weather/fetch`   | -            | POST        | Fuerza una actualización inmediata de los datos |
+| `http://[IP]/api/weather/data`    | -            | GET         | Obtiene los datos actuales del clima |
+
+> **Nota:** Solo HTTP, no hay topics MQTT.
+
+### JSON de configuración del clima
+
+| Clave | Tipo | Descripción |
+| --- | ---- | ----------- |
+| `apiKey` | string | Clave API del proveedor del clima. |
+| `locationType` | integer | Tipo de ubicación (0 = ciudad, 1 = coordenadas, 2 = ID de estación). |
+| `city` | string | Nombre de la ciudad. |
+| `latitude` | float | Latitud. |
+| `longitude` | float | Longitud. |
+| `stationId` | string | ID de la estación meteorológica. |
+| `updateInterval` | integer | Intervalo de actualización en minutos. |
+| `showOutdoorTemp` | boolean | Mostrar app de temperatura exterior. |
+| `showOutdoorHumidity` | boolean | Mostrar app de humedad exterior. |
+| `showPressure` | boolean | Mostrar app de presión. |
+| `showAirQuality` | boolean | Mostrar app de calidad del aire (AQI). |
+| `showIndoorTemp` | boolean | Mostrar app de temperatura interior. |
+| `showIndoorHumidity` | boolean | Mostrar app de humedad interior. |
+| `showUV` | boolean | Mostrar app de índice UV. |
+| `outdoorTempColor` | integer | Color de la temperatura exterior (entero RGB). |
+| `outdoorHumColor` | integer | Color de la humedad exterior (entero RGB). |
+| `pressureColor` | integer | Color de la presión (entero RGB). |
+| `aqiColor` | integer | Color del AQI (entero RGB). |
+| `uvColor` | integer | Color del índice UV (entero RGB). |
+| `aqiAutoColor` | boolean | Colorear automáticamente el AQI según el nivel. |
+| `uvAutoColor` | boolean | Colorear automáticamente el índice UV según el nivel. |
+| `outdoorTempDuration` | integer | Duración de la app de temperatura exterior (segundos). |
+| `outdoorHumDuration` | integer | Duración de la app de humedad exterior (segundos). |
+| `pressureDuration` | integer | Duración de la app de presión (segundos). |
+| `aqiDuration` | integer | Duración de la app de AQI (segundos). |
+| `uvDuration` | integer | Duración de la app de índice UV (segundos). |
+
+`GET /api/weather/data` devuelve los datos actuales: `valid`, `outdoorTemp`, `outdoorHumidity`, `pressure`, `aqi`, `uv`, `condition`, `conditionCode`, `lastUpdate`.
 
 
 ## Cambiar Configuración

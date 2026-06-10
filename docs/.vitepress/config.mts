@@ -42,7 +42,7 @@ function sidebarEs() {
       collapsed: false,
       items: [
         { text: 'MQTT / HTTP', link: '/api' },
-        { text: 'Home Assistant', link: '/en/home-assistant' }
+        { text: 'Home Assistant', link: '/home-assistant' }
       ]
     }
   ]
@@ -130,7 +130,7 @@ function sidebarUk() {
       collapsed: false,
       items: [
         { text: 'MQTT / HTTP', link: '/uk/api' },
-        { text: 'Home Assistant', link: '/en/home-assistant' }
+        { text: 'Home Assistant', link: '/uk/home-assistant' }
       ]
     }
   ]

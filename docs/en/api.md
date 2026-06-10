@@ -43,8 +43,11 @@ Access various device statistics like battery, RAM, and more:
 | `[PREFIX]/stats/effects`        | `http://[IP]/api/effects`          | List of all effects                            |
 | `[PREFIX]/stats/transitions`    | `http://[IP]/api/transitions`      | List of all transition effects                 |
 | `[PREFIX]/stats/loop`           | `http://[IP]/api/loop`             | List of all apps in the loop                   |
+| `N/A`                           | `http://[IP]/api/apps`             | List of apps with their icon data              |
 
 > **Note:** MQTT also broadcasts other data, such as button presses and the current app.
+
+> **Note:** `GET /api/apps` returns the apps with their icons. `POST /api/apps` (JSON body) updates the app vector; also available via MQTT at `[PREFIX]/apps`.
 
 ## LiveView
 
@@ -89,6 +92,12 @@ Play a RTTTL sound from a given RTTTL string:
 | MQTT Topic        | HTTP URL                     | Payload/Body  | HTTP Method |
 | ----------------- | ---------------------------- | ------------- | ----------- |
 | `[PREFIX]/rtttl`  | `http://[IP]/api/rtttl`      | `rttl string` | POST        |
+
+Play R2-D2-style sounds generated from a sound-description string:
+
+| MQTT Topic       | HTTP URL                    | Payload/Body    | HTTP Method |
+| ---------------- | --------------------------- | --------------- | ----------- |
+| `[PREFIX]/r2d2`  | `http://[IP]/api/r2d2`      | R2D2 string     | POST        |
 
 
 ## Mood Lighting
@@ -411,6 +420,121 @@ Add a Bitcoin price tracker:
 - **Round-robin polling**: one source is checked per loop cycle to avoid blocking
 - Sources are persisted in flash and restored on boot
 - You can also configure sources via the [web interface](./webinterface) at `http://[IP]/datafetcher`
+
+
+## Rotation (Apps + Effects)
+
+Unified rotation config: the order of apps and effects, with per-item duration and color. Replaces the old `/api/reorder` and `/api/playlist` endpoints.
+
+| HTTP URL                       | Payload/Body | HTTP Method | Description |
+| ------------------------------ | ------------ | ----------- | ----------- |
+| `http://[IP]/api/rotation`     | -            | GET         | Get the current rotation config |
+| `http://[IP]/api/rotation`     | JSON         | POST        | Save the rotation config |
+
+> **Note:** HTTP only, no MQTT topics.
+
+The body and response use an `items` key holding an array of rotation items (apps and effects, each with optional duration and color).
+
+**Example:**
+```json
+{
+  "items": [
+    {"type": "app", "name": "Time", "duration": 7},
+    {"type": "effect", "name": "Plasma", "duration": 10, "color": "#FF00FF"}
+  ]
+}
+```
+
+
+## Alarms & Reminders
+
+Manage alarm-clock entries and reminders. Works without WiFi thanks to the RTC.
+
+| MQTT Topic              | HTTP URL                     | Payload/Body | HTTP Method | Description |
+| ----------------------- | ---------------------------- | ------------ | ----------- | ----------- |
+| `N/A`                   | `http://[IP]/api/alarms`     | -            | GET         | List all alarms and the ringing state |
+| `[PREFIX]/alarm/add`    | `http://[IP]/api/alarms`     | JSON         | POST        | Add a new alarm (or snooze/dismiss action) |
+| `N/A`                   | `http://[IP]/api/alarms`     | JSON         | PUT         | Update an existing alarm (by `id`) |
+| `N/A`                   | `http://[IP]/api/alarms?id=X`| -            | DELETE      | Delete the alarm with the given `id` |
+| `[PREFIX]/alarm/snooze` | `http://[IP]/api/alarms`     | `{"action":"snooze","minutes":N}` | POST | Snooze the ringing alarm |
+| `[PREFIX]/alarm/dismiss`| `http://[IP]/api/alarms`     | `{"action":"dismiss"}` | POST | Dismiss the ringing alarm |
+
+### Alarm JSON properties
+
+| Key | Type | Description | Default |
+| --- | ---- | ----------- | ------- |
+| `id` | integer | Alarm identifier (PUT only). | 0 |
+| `hour` | integer | Hour (0–23). | 0 |
+| `minute` | integer | Minute (0–59). | 0 |
+| `days` | integer | Bitmask of active weekdays. `0x7F` = every day. | `0x7F` (127) |
+| `enabled` | boolean | Whether the alarm is active. | true |
+| `oneTime` | boolean | One-time alarm (disables itself after ringing). | false |
+| `snoozeMinutes` | integer | Minutes to snooze. | 5 |
+| `label` | string | Optional text label. | `""` |
+| `melody` | string | Sound to play: an RTTTL filename from the MELODIES folder or a full RTTTL string. | `""` |
+
+> **Note:** For MQTT snooze on `[PREFIX]/alarm/snooze` you may send `{"minutes":N}`; if omitted, the alarm's `snoozeMinutes` is used. The GET response also includes a `ringing` (boolean) field indicating whether an alarm is currently ringing.
+
+**Alarm example:**
+```json
+{
+  "hour": 7,
+  "minute": 30,
+  "days": 127,
+  "enabled": true,
+  "oneTime": false,
+  "snoozeMinutes": 9,
+  "label": "Wake up",
+  "melody": "alarm"
+}
+```
+
+
+## Weather
+
+Configure and query outdoor weather data (requires an API key). Weather apps appear in the rotation according to the `showOutdoorTemp`, `showOutdoorHumidity`, `showPressure`, `showAirQuality` and `showUV` switches.
+
+| HTTP URL                          | Payload/Body | HTTP Method | Description |
+| --------------------------------- | ------------ | ----------- | ----------- |
+| `http://[IP]/api/weather`         | -            | GET         | Get the weather config |
+| `http://[IP]/api/weather`         | JSON         | POST        | Update the weather config |
+| `http://[IP]/api/weather/fetch`   | -            | POST        | Force an immediate data refresh |
+| `http://[IP]/api/weather/data`    | -            | GET         | Get the current weather data |
+
+> **Note:** HTTP only, no MQTT topics.
+
+### Weather config JSON
+
+| Key | Type | Description |
+| --- | ---- | ----------- |
+| `apiKey` | string | Weather provider API key. |
+| `locationType` | integer | Location type (0 = city, 1 = coordinates, 2 = station ID). |
+| `city` | string | City name. |
+| `latitude` | float | Latitude. |
+| `longitude` | float | Longitude. |
+| `stationId` | string | Weather station ID. |
+| `updateInterval` | integer | Update interval in minutes. |
+| `showOutdoorTemp` | boolean | Show the outdoor temperature app. |
+| `showOutdoorHumidity` | boolean | Show the outdoor humidity app. |
+| `showPressure` | boolean | Show the pressure app. |
+| `showAirQuality` | boolean | Show the air quality (AQI) app. |
+| `showIndoorTemp` | boolean | Show the indoor temperature app. |
+| `showIndoorHumidity` | boolean | Show the indoor humidity app. |
+| `showUV` | boolean | Show the UV index app. |
+| `outdoorTempColor` | integer | Outdoor temperature color (RGB integer). |
+| `outdoorHumColor` | integer | Outdoor humidity color (RGB integer). |
+| `pressureColor` | integer | Pressure color (RGB integer). |
+| `aqiColor` | integer | AQI color (RGB integer). |
+| `uvColor` | integer | UV index color (RGB integer). |
+| `aqiAutoColor` | boolean | Auto-color the AQI by level. |
+| `uvAutoColor` | boolean | Auto-color the UV index by level. |
+| `outdoorTempDuration` | integer | Outdoor temperature app duration (seconds). |
+| `outdoorHumDuration` | integer | Outdoor humidity app duration (seconds). |
+| `pressureDuration` | integer | Pressure app duration (seconds). |
+| `aqiDuration` | integer | AQI app duration (seconds). |
+| `uvDuration` | integer | UV index app duration (seconds). |
+
+`GET /api/weather/data` returns the current data: `valid`, `outdoorTemp`, `outdoorHumidity`, `pressure`, `aqi`, `uv`, `condition`, `conditionCode`, `lastUpdate`.
 
 
 ## Change Settings

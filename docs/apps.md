@@ -120,8 +120,8 @@ Las apps del clima también son **nativas** (integradas en el firmware), pero re
 | **Temp. Exterior** | Temperatura exterior. Color configurable; respeta la escala Celsius/Fahrenheit. |
 | **Humedad Exterior** | Humedad relativa exterior (%). Color configurable. |
 | **Presión** | Presión atmosférica (mb/hPa). Color configurable. |
-| **Calidad del Aire (AQI)** | Índice de calidad del aire (US EPA, 1–6). Color automático según el nivel (verde → amarillo → naranja → rojo) o color fijo. |
-| **Índice UV** | Índice ultravioleta (0–11+). Color automático según el nivel o color fijo. |
+| **Calidad del Aire (AQI)** | Índice de calidad del aire (US EPA, 1–6). Color automático según el nivel (verde → amarillo → naranja → rojo) o color fijo. Con el interruptor de color automático activado, el color del nivel tiene prioridad y anula cualquier color fijo o por elemento configurado (sigue respetando el modo nocturno). |
+| **Índice UV** | Índice ultravioleta (0–11+). Color automático según el nivel o color fijo. Con el interruptor de color automático activado, el color del nivel tiene prioridad y anula cualquier color fijo o por elemento configurado (sigue respetando el modo nocturno). |
 
 Cada app del clima tiene su propia **duración** configurable y se activa/desactiva de forma individual. El intervalo de actualización de los datos se ajusta en la sección de API del Clima.
 
