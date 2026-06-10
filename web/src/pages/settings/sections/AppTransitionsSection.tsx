@@ -40,6 +40,9 @@ export function AppTransitionsSection() {
         />
         <Slider label={t.apps.transitionSpeed} min={100} max={2000} step={100} value={s.TSPEED} onChange={(v) => autoSave({ TSPEED: v })} unit="ms" />
         <Slider label={t.apps.scrollSpeed} min={10} max={100} value={s.SSPEED} onChange={(v) => autoSave({ SSPEED: v })} />
+        {/* Global default app dwell (ATIME, seconds). Per-app duration steppers
+            override it; matches the on-device ROTACION > APP field (1-30s). */}
+        <Slider label={t.apps.appDuration} min={1} max={30} value={s.ATIME ?? 7} onChange={(v) => autoSave({ ATIME: v })} unit="s" />
         <Toggle label={t.apps.blockNavigation} checked={s.BLOCKN} onChange={(v) => instantSave({ BLOCKN: v })} />
       </div>
     </Card>
