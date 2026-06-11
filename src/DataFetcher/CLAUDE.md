@@ -6,8 +6,8 @@ Singleton module that periodically fetches values from external HTTP/HTTPS APIs 
 
 | File | LOC | Purpose |
 |------|-----|---------|
-| `DataFetcher.h` | 45 | Public API, singleton definition |
-| `DataFetcher.cpp` | 422 | HTTP fetching, JSON extraction, source CRUD, LittleFS persistence |
+| `DataFetcher.h` | 74 | Public API, singleton, worker task + queue handles |
+| `DataFetcher.cpp` | 845 | Background worker, HTTP fetching, JSON extraction, source CRUD, LittleFS persistence |
 | `DataFetcherConfig.h` | 18 | `DataSourceConfig` struct — per-source configuration |
 
 ## Interfaces
@@ -58,11 +58,36 @@ IDisplayNavigation::parseCustomPage(name, json, true)
 Display shows as custom app
 ```
 
+## Concurrency model — background worker (core 0)
+
+All blocking HTTP/TLS work runs on a dedicated FreeRTOS task pinned to **core 0**
+(the Arduino render loop runs on core 1), so a stalled request can never freeze
+the display. Created once in `setup()`: `xTaskCreatePinnedToCore(..., 10 KB stack,
+priority 1, core 0)`.
+
+```
+main loop (core 1)                     worker task (core 0)
+  tick():                                workerLoop():
+   ├─ drainResults()  ◄───resultQueue───  performCustomFetch() / performWeatherFetch()
+   │   apply to display / weatherData      (HTTP GET + JSON parse only)
+   └─ enqueueCustom()/enqueueWeather() ─requestQueue─► (no display access)
+```
+
+- **Worker = network only.** It builds a `FetchResult` (formatted app JSON or a
+  parsed `WeatherData`) and never touches the display, `sources_`, or globals.
+- **Main loop = all mutation.** `drainResults()` is the ONLY place that calls
+  `parseCustomPage()` / writes `weatherData`, keeping display access single-core.
+- **Handoff:** two FreeRTOS queues carry heap-allocated `FetchRequest*` /
+  `FetchResult*` pointers (length `QUEUE_LEN=6`); the receiver takes ownership and
+  `delete`s. Non-blocking sends — if a queue is full the item is dropped and
+  retried next round (`lastFetch_` only advances on a successful enqueue).
+
 ## Tick Behavior
 
-- **Round-robin**: checks one source per `tick()` call to avoid blocking the main loop
-- **Heap guard**: skips fetch if free heap < 40 KB (`MIN_FREE_HEAP`)
-- **Auto-fetch on boot**: sources with `lastFetch_==0` fetch immediately on first eligible tick
+- **Round-robin**: enqueues at most one source per `tick()` call (staggered load)
+- **Heap guard**: skips enqueue if free heap < `MIN_FREE_HEAP`; a second check
+  runs inside the worker before SSL allocation
+- **Auto-fetch on boot**: sources with `lastFetch_==0` enqueue on first eligible tick
 - **Disabled sources skipped**: sources with `enabled=false` are not fetched
 - Only runs when `nav_` is set and `sources_` is non-empty
 
@@ -70,8 +95,8 @@ Display shows as custom app
 
 | Method | Description |
 |--------|-------------|
-| `setup()` | Creates `/DATAFETCHER/` dir, loads sources from LittleFS |
-| `tick()` | Round-robin poll — checks one source per call |
+| `setup()` | Creates `/DATAFETCHER/` dir, loads sources, spins up worker task + queues |
+| `tick()` | Drains completed results onto the display, then round-robin enqueues one due source per call (non-blocking) |
 | `addSource(json)` | Parse JSON config, upsert by name, save to LittleFS — rejects unsafe `displayFormat` (returns false → HTTP 400) |
 | `removeSource(name)` | Remove source + clear its custom app from display |
 | `forceFetch(name)` | Immediately fetch a specific source (used by API) |
@@ -82,7 +107,9 @@ Display shows as custom app
 
 | Method | Description |
 |--------|-------------|
-| `fetchAndPush(index)` | HTTP GET + extract + format + push to display |
+| `enqueueCustom(src)` / `enqueueWeather()` | Build a `FetchRequest` and post it to the worker (main loop) |
+| `performCustomFetch(req)` / `performWeatherFetch(req)` | HTTP GET + extract + format → `FetchResult` (worker, core 0) |
+| `drainResults()` | Apply completed `FetchResult`s: `parseCustomPage()` / write `weatherData` (main loop) |
 | `extractJsonValue(json, path)` | Walk dot-notation path through ArduinoJson (supports objects + arrays) |
 | `formatValue(src, raw)` | Apply printf-style `displayFormat` to raw value (validates with `isSafeSingleArgFormat`; returns raw on unsafe format) |
 | `buildCustomAppJson(src, value)` | Build JSON for `parseCustomPage()` with text, icon, color, lifetime=0 |
@@ -168,8 +195,9 @@ if (ServerManager.isConnected) {
 
 - Max response body: 4 KB (`MAX_RESPONSE_SIZE`) — larger responses truncated
 - JSON parsing buffer: 4 KB `DynamicJsonDocument` for response extraction (handles large exchange rate APIs)
-- Connect timeout: 10 s, read timeout: 15 s
-- One HTTP request per tick (round-robin) to avoid blocking
+- Connect timeout: 10 s, read timeout: 15 s — these still apply, but they now
+  block only the worker task (core 0), never the render loop
+- One HTTP request in flight per tick (round-robin) handled off the main loop
 - Custom apps created with `lifetime: 0` — DataFetcher manages their lifecycle, they never auto-expire
 - On `removeSource()`, the custom app is cleared from display via `parseCustomPage(name, "{}", false)`
 - On disabling a source (`enabled=false`), its custom app is removed from display
