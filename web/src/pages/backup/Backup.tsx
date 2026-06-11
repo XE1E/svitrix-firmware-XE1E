@@ -4,6 +4,7 @@ import type { FileEntry } from "../../api/types";
 import { toast } from "../../components/Toast";
 import { FileInput } from "../../components/ui";
 import { useT } from "../../i18n";
+import { saveBlob } from "../../utils/saveFile";
 import styles from "./Backup.module.css";
 
 interface BackupData {
@@ -58,12 +59,8 @@ export function BackupPage(_props: { path?: string }) {
       const blob = new Blob([JSON.stringify(backup, null, 2)], {
         type: "application/json",
       });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "svitrix-backup.json";
-      a.click();
-      URL.revokeObjectURL(a.href);
-      toast(t.ok);
+      const saved = await saveBlob(blob, "svitrix-backup.json", "application/json");
+      if (saved) toast(t.ok);
     } catch {
       toast(t.error);
     }

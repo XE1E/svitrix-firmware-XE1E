@@ -326,16 +326,19 @@ export function UnifiedRotationSection() {
                           onCommit={(v) => updateItem(item.id, { duration: v })}
                           defaultDuration={settings?.ATIME ?? 7}
                         />
-                        <div class={styles.rotationField}>
-                          <label>Color:</label>
-                          <input
-                            type="color"
-                            value={item.color ? "#" + item.color.toString(16).padStart(6, "0") : "#ffffff"}
-                            onInput={(e) => updateItem(item.id, { color: parseInt((e.target as HTMLInputElement).value.replace("#", ""), 16) })}
-                          />
-                          {item.color === 0 && <span class={styles.hint}>(default)</span>}
-                        </div>
-                        {item.name !== "Time" && item.name !== "Date" && (
+                        {/* Effects don't use a per-item color or icon — only duration applies. */}
+                        {item.type === "app" && (
+                          <div class={styles.rotationField}>
+                            <label>Color:</label>
+                            <input
+                              type="color"
+                              value={item.color ? "#" + item.color.toString(16).padStart(6, "0") : "#ffffff"}
+                              onInput={(e) => updateItem(item.id, { color: parseInt((e.target as HTMLInputElement).value.replace("#", ""), 16) })}
+                            />
+                            {item.color === 0 && <span class={styles.hint}>(default)</span>}
+                          </div>
+                        )}
+                        {item.type === "app" && item.name !== "Time" && item.name !== "Date" && (
                           <div class={styles.rotationField}>
                             <label>{t.apps.icon || "Icono"}:</label>
                             <input

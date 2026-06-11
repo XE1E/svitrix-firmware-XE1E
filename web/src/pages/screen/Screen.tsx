@@ -1,6 +1,7 @@
 import { useRef, useEffect } from "preact/hooks";
 import { getScreen, nextApp, previousApp } from "../../api/client";
 import { useT } from "../../i18n";
+import { saveBlob } from "../../utils/saveFile";
 import styles from "./Screen.module.css";
 
 const COLS = 32;
@@ -52,10 +53,9 @@ export function ScreenPage(_props: { path?: string; default?: boolean }) {
   }, []);
 
   function downloadPng() {
-    const a = document.createElement("a");
-    a.download = "svitrix-screen.png";
-    a.href = canvasRef.current!.toDataURL("image/png");
-    a.click();
+    canvasRef.current!.toBlob((blob) => {
+      if (blob) saveBlob(blob, "svitrix-screen.png", "image/png");
+    }, "image/png");
   }
 
   return (
