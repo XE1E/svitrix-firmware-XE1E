@@ -24,6 +24,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          # Always deploy main's content. When called from the tag-triggered
+          # release (main.yml), github.ref is the tag — which predates the
+          # "release: vX" auto-commit that refreshes the web-flasher binaries and
+          # manifest. Checking out main publishes those fresh files.
+          ref: main
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
