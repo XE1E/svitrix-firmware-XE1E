@@ -23,8 +23,8 @@ static constexpr uint32_t WORKER_STACK = 10240;        // 10 KB — proven 8 KB 
 static constexpr UBaseType_t WORKER_PRIORITY = 1;      // same as boot animation task
 static constexpr BaseType_t WORKER_CORE = 0;           // Arduino loop runs on core 1
 static constexpr UBaseType_t QUEUE_LEN = 6;            // pending fetch requests / results
-static constexpr int FETCH_ATTEMPTS = 3;               // GET tries before declaring failure
-static constexpr uint32_t FETCH_RETRY_DELAY_MS = 1000; // backoff between attempts
+static constexpr int FETCH_ATTEMPTS = 1;               // one GET per fetch — retrying an instant -1 only churns sockets; the 60s fast-retry handles re-attempts with spacing
+static constexpr uint32_t FETCH_RETRY_DELAY_MS = 1000; // backoff between attempts (only used if FETCH_ATTEMPTS > 1)
 static constexpr uint32_t WEATHER_RETRY_MS = 60000;    // re-attempt 60s after a failed weather fetch (vs full interval)
 static constexpr uint32_t HANDSHAKE_TIMEOUT_S = 10;    // bound the TLS handshake (default is 120s — a stall hangs the worker)
 
@@ -326,13 +326,19 @@ int DataFetcher_::httpGetWithRetry(const String& url, bool isHttps, String& outB
         {
             outBody = http.getString();
             http.end();
+            // Force-close the socket. http.end() can leave a failed/torn TLS
+            // socket fd dangling; unreleased fds accumulate until connect() fails
+            // instantly with -1 forever (only a reboot clears it). Verified on
+            // hardware: this stop() eliminated the -1 storm entirely.
+            secClient.stop();
+            plainClient.stop();
             return httpCode;
         }
         http.end();
+        secClient.stop();
+        plainClient.stop();
 
-        // -1/-11 etc. are transient connection failures — common when this task
-        // races the web server / MQTT for the TLS stack. Back off briefly and retry.
-        DEBUG_PRINTF("DataFetcher: GET attempt %d/%d failed: %d", attempt + 1, FETCH_ATTEMPTS, httpCode);
+        DEBUG_PRINTF("DataFetcher: GET failed: %d (heap %d)", httpCode, ESP.getFreeHeap());
         if (attempt + 1 < FETCH_ATTEMPTS)
             vTaskDelay(pdMS_TO_TICKS(FETCH_RETRY_DELAY_MS));
     }
