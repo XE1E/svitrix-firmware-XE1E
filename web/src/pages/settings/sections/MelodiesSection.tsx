@@ -17,6 +17,7 @@ export function MelodiesSection() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileContent, setFileContent] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const t = useT();
 
   async function loadMelodies() {
@@ -141,6 +142,23 @@ export function MelodiesSection() {
     setEditorName(extractMelodyName(content));
   }
 
+  // Load a saved melody into the RTTTL editor. The editor sits below the list,
+  // so scroll to it and confirm — otherwise clicking "edit" looks like a no-op.
+  async function editMelody(name: string) {
+    try {
+      const content = await readFile(`/MELODIES/${name}`);
+      if (!content) {
+        toast(t.sound.editFailed || "Could not load melody");
+        return;
+      }
+      copyToEditor(content);
+      editorRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      toast(t.sound.melodyLoaded || "Loaded into editor");
+    } catch {
+      toast(t.sound.editFailed || "Could not load melody");
+    }
+  }
+
   return (
     <>
       {/* Saved Melodies */}
@@ -171,10 +189,7 @@ export function MelodiesSection() {
                     </button>
                     <button
                       class={styles.melodyBtn}
-                      onClick={async () => {
-                        const content = await readFile(`/MELODIES/${melody.name}`);
-                        copyToEditor(content);
-                      }}
+                      onClick={() => editMelody(melody.name)}
                       title={t.sound.editMelody || "Edit"}
                     >
                       ✎
@@ -195,6 +210,7 @@ export function MelodiesSection() {
       </Card>
 
       {/* RTTTL Editor */}
+      <div ref={editorRef}>
       <Card title={t.sound.rtttlEditor || "RTTTL Editor"}>
         <div class={styles.stack}>
           <TextField
@@ -235,6 +251,7 @@ export function MelodiesSection() {
           </div>
         </div>
       </Card>
+      </div>
 
       {/* Upload from File */}
       <Card title={t.sound.uploadMelody || "Upload Melody"}>
