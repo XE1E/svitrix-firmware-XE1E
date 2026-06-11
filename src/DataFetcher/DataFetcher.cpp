@@ -26,6 +26,7 @@ static constexpr UBaseType_t QUEUE_LEN = 6;            // pending fetch requests
 static constexpr int FETCH_ATTEMPTS = 3;               // GET tries before declaring failure
 static constexpr uint32_t FETCH_RETRY_DELAY_MS = 1000; // backoff between attempts
 static constexpr uint32_t WEATHER_RETRY_MS = 60000;    // re-attempt 60s after a failed weather fetch (vs full interval)
+static constexpr uint32_t HANDSHAKE_TIMEOUT_S = 10;    // bound the TLS handshake (default is 120s — a stall hangs the worker)
 
 // Work items exchanged with the worker. Only pointers cross the queues
 // (Strings can't be byte-copied through a queue without double-free), so the
@@ -304,6 +305,11 @@ int DataFetcher_::httpGetWithRetry(const String& url, bool isHttps, String& outB
             // whose CAs we can't pin in advance. Do NOT call secClient.setTimeout()
             // — it hangs some hosts; HTTPClient's timeouts handle it correctly.
             secClient.setInsecure();
+            // Bound the TLS handshake. Its default is 120s and it is NOT covered by
+            // setConnectTimeout/setTimeout — a stalled handshake (seen under
+            // concurrent load) would otherwise hang the worker and freeze all
+            // background fetching until reboot.
+            secClient.setHandshakeTimeout(HANDSHAKE_TIMEOUT_S);
             http.begin(secClient, url);
         }
         else
