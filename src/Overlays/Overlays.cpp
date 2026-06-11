@@ -10,19 +10,45 @@
 #include "NeoMatrixCanvas.h"
 #include "MQTTManager.h"
 #include "LayoutEngine.h"
+#include "DataFetcher/DataFetcher.h"
+#include "Globals.h"
 
 std::deque<Notification> notifications;
 bool notifyFlag = false;
 
 void StatusOverlay(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, GifPlayer *gifPlayer)
 {
-    if (!WiFi.isConnected())
+    // Hard square-wave blink periods (ms). TextEffect(color, 0, period) returns
+    // the color for the first half of each period and black for the second.
+    constexpr uint32_t kFastBlink = 300;  // urgent
+    constexpr uint32_t kSlowBlink = 1100; // advisory
+    constexpr uint32_t kRed = 0xFF0000;
+    constexpr uint32_t kYellow = 0xFFFF00;
+
+    // --- WiFi indicator: top-left (0,0), red ---
+    //   solid       = AP mode (waiting for configuration)
+    //   fast blink  = WiFi dropped, reconnecting
+    //   slow blink  = WiFi up but fetches failing (likely no internet)
+    //   off         = connected and healthy
+    if (systemConfig.apMode)
     {
-        matrix->drawPixel(0, 0, fadeColor(0xFF0000, 2000));
+        matrix->drawPixel(0, 0, kRed);
     }
-    if (!MQTTManager.isConnected())
+    else if (!WiFi.isConnected())
     {
-        matrix->drawPixel(0, 7, fadeColor(0xFFFF00, 2000));
+        matrix->drawPixel(0, 0, TextEffect(kRed, 0, kFastBlink));
+    }
+    else if (!DataFetcher.fetchHealthy())
+    {
+        matrix->drawPixel(0, 0, TextEffect(kRed, 0, kSlowBlink));
+    }
+
+    // --- HA/MQTT indicator: bottom-left (0,7), yellow ---
+    //   slow blink  = MQTT configured but disconnected from the broker
+    //   off         = connected, or MQTT not configured (keeps the corner clean)
+    if (!mqttConfig.host.isEmpty() && !MQTTManager.isConnected())
+    {
+        matrix->drawPixel(0, 7, TextEffect(kYellow, 0, kSlowBlink));
     }
 }
 
