@@ -6,8 +6,8 @@ Singleton module that periodically fetches values from external HTTP/HTTPS APIs 
 
 | File | LOC | Purpose |
 |------|-----|---------|
-| `DataFetcher.h` | 74 | Public API, singleton, worker task + queue handles |
-| `DataFetcher.cpp` | 845 | Background worker, HTTP fetching, JSON extraction, source CRUD, LittleFS persistence |
+| `DataFetcher.h` | 67 | Public API, singleton definition |
+| `DataFetcher.cpp` | 689 | Synchronous HTTP fetching, JSON extraction, source CRUD, LittleFS persistence |
 | `DataFetcherConfig.h` | 18 | `DataSourceConfig` struct — per-source configuration |
 
 ## Interfaces
@@ -58,76 +58,63 @@ IDisplayNavigation::parseCustomPage(name, json, true)
 Display shows as custom app
 ```
 
-## Concurrency model — background worker (core 0)
+## Fetch model — synchronous on the main loop
 
-All blocking HTTP/TLS work runs on a dedicated FreeRTOS task pinned to **core 0**
-(the Arduino render loop runs on core 1), so a stalled request can never freeze
-the display. Created once in `setup()`: `xTaskCreatePinnedToCore(..., 10 KB stack,
-priority 1, core 0)`.
+Fetches run **synchronously** inside `tick()` on the Arduino loop (core 1): one
+weather fetch (if due) plus one round-robin custom source per call. A working
+weatherapi fetch blocks the loop ~2 s; tight timeouts cap a failing one —
+`HTTP_CONNECT_TIMEOUT` / `HTTP_READ_TIMEOUT` = 4 s, `HANDSHAKE_TIMEOUT_S` = 4 s
+(the handshake's default is 120 s and is NOT covered by the other two).
 
-```
-main loop (core 1)                     worker task (core 0)
-  tick():                                workerLoop():
-   ├─ drainResults()  ◄───resultQueue───  performCustomFetch() / performWeatherFetch()
-   │   apply to display / weatherData      (HTTP GET + JSON parse only)
-   └─ enqueueCustom()/enqueueWeather() ─requestQueue─► (no display access)
-```
+> **Why not a background task?** An earlier version ran fetches on a dedicated
+> core-0 FreeRTOS task to avoid the loop stall. It worked for periodic fetches, but
+> running TLS in parallel with the AsyncWebServer/MQTT triggered a socket-fd leak:
+> after a manual "fetch now" with the web UI open, every HTTPS `connect()` returned
+> `-1` forever until reboot (weather silently froze on its last value, LED stuck).
+> The synchronous design — the project's original, proven-stable approach — has no
+> such concurrency and is back.
 
-- **Worker = network only.** It builds a `FetchResult` (formatted app JSON or a
-  parsed `WeatherData`) and never touches the display, `sources_`, or globals.
-- **Main loop = all mutation.** `drainResults()` is the ONLY place that calls
-  `parseCustomPage()` / writes `weatherData`, keeping display access single-core.
-- **Handoff:** two FreeRTOS queues carry heap-allocated `FetchRequest*` /
-  `FetchResult*` pointers (length `QUEUE_LEN=6`); the receiver takes ownership and
-  `delete`s. Non-blocking sends — if a queue is full the item is dropped and
-  retried next round (`lastFetch_` only advances on a successful enqueue).
+- **`fetchWeather()` / `fetchAndPush(idx)`** do GET + JSON parse + apply
+  (`weatherData` / `parseCustomPage()`) inline. `httpGet()` is a single GET that
+  always closes its socket (`secClient.stop()` / `plainClient.stop()`).
+- **Manual refresh is deferred, never run in the web handler.** `forceWeatherFetch()`
+  / `forceFetch()` only mark the item due (`lastWeatherFetch_ = 0` /
+  `lastFetch_[idx] = 0`); the main loop does the actual fetch on its next tick.
+  This avoids blocking the AsyncWebServer task and the socket contention a
+  handler-context fetch caused.
 
-### Resilience to transient failures
+### Resilience
 
-The worker connects concurrently with the web server / MQTT. Three layers keep
-fetching robust and the display stable:
-
-- **Socket hygiene** — `httpGetWithRetry()` does **one** GET per fetch
-  (`FETCH_ATTEMPTS = 1`) and calls `secClient.stop()` / `plainClient.stop()`
-  after every attempt. This is the critical fix: `http.end()` alone could leave a
-  failed/torn TLS socket fd dangling, and unreleased fds accumulated until
-  `connect()` failed instantly with `-1` **forever** (only a reboot cleared it —
-  weather silently froze on its last value). Explicit `stop()` + not churning
-  sockets on retries eliminated the `-1` storm entirely (0 in a 28-min hardware
-  soak vs ~10% before). The `FETCH_ATTEMPTS` loop is retained for flexibility but
-  retrying an instant `-1` only wastes sockets — the 60 s fast-retry handles
-  re-attempts with spacing instead.
-- **Keep last good weather** — `drainResults()` overwrites `weatherData` only on a
-  *successful* fetch; a failed refresh leaves the last reading on screen instead
-  of blanking the weather apps to `--`.
+- **Keep last good weather** — `fetchWeather()` overwrites `weatherData` only on a
+  *successful* fetch; a failed refresh leaves the last reading on screen instead of
+  blanking the weather apps to `--`.
 - **Fast retry after failure** — a failed weather fetch schedules a re-attempt in
   `WEATHER_RETRY_MS` (60 s) via `weatherRetryAt_`, instead of waiting the full
   `updateInterval`. Covers the boot fetch failing before WiFi/DNS settle.
+- **Heap guard** — `tick()` skips a fetch when free heap < `MIN_FREE_HEAP`.
 
-Also `HANDSHAKE_TIMEOUT_S` (10 s) bounds the TLS handshake (its default is 120 s,
-not covered by setConnectTimeout/setTimeout).
-
-`fetchHealthy()` trips on a network-layer failure and clears on **any** success
-(weather sets `FetchResult::success` too — required so the WiFi status LED clears).
+`fetchHealthy()` trips on a network-layer failure and clears on the next
+successful fetch — drives the WiFi status LED (slow red blink while fetches fail).
 
 ## Tick Behavior
 
-- **Round-robin**: enqueues at most one source per `tick()` call (staggered load)
-- **Heap guard**: skips enqueue if free heap < `MIN_FREE_HEAP`; a second check
-  runs inside the worker before SSL allocation
-- **Auto-fetch on boot**: sources with `lastFetch_==0` enqueue on first eligible tick
+- **Round-robin**: at most one weather + one custom source fetched per `tick()` call
+- **Heap guard**: skips a fetch if free heap < `MIN_FREE_HEAP` (a second check
+  guards HTTPS custom sources before SSL allocation)
+- **Auto-fetch on boot**: sources with `lastFetch_==0` fetch on first eligible tick
 - **Disabled sources skipped**: sources with `enabled=false` are not fetched
-- Only runs when `nav_` is set and `sources_` is non-empty
+- Custom round-robin only runs when `nav_` is set and `sources_` is non-empty
 
 ## Key Methods
 
 | Method | Description |
 |--------|-------------|
-| `setup()` | Creates `/DATAFETCHER/` dir, loads sources, spins up worker task + queues |
-| `tick()` | Drains completed results onto the display, then round-robin enqueues one due source per call (non-blocking) |
+| `setup()` | Creates `/DATAFETCHER/` dir, loads sources, cleans orphaned apps |
+| `tick()` | Synchronously fetch one due weather + one round-robin source per call |
 | `addSource(json)` | Parse JSON config, upsert by name, save to LittleFS — rejects unsafe `displayFormat` (returns false → HTTP 400) |
 | `removeSource(name)` | Remove source + clear its custom app from display |
-| `forceFetch(name)` | Immediately fetch a specific source (used by API) |
+| `forceFetch(name)` | Mark a source due (`lastFetch_=0`); fetched on the next tick |
+| `forceWeatherFetch()` | Mark weather due (`lastWeatherFetch_=0`); fetched on the next tick |
 | `getSourcesAsJson()` | Serialize all sources as JSON array |
 | `loadSources()` / `saveSources()` | LittleFS persistence to `/DATAFETCHER/sources.json` — `loadSources()` downgrades any persisted unsafe `displayFormat` to empty (raw) and logs the source name |
 
@@ -135,9 +122,9 @@ not covered by setConnectTimeout/setTimeout).
 
 | Method | Description |
 |--------|-------------|
-| `enqueueCustom(src)` / `enqueueWeather()` | Build a `FetchRequest` and post it to the worker (main loop) |
-| `performCustomFetch(req)` / `performWeatherFetch(req)` | HTTP GET + extract + format → `FetchResult` (worker, core 0) |
-| `drainResults()` | Apply completed `FetchResult`s: `parseCustomPage()` / write `weatherData` (main loop) |
+| `fetchWeather()` | GET weatherapi + parse → write `weatherData` (keep-last-value on failure) |
+| `fetchAndPush(idx)` | GET source + extract + format → `parseCustomPage()` |
+| `httpGet(url, isHttps, &body)` | Single GET; always `stop()`s the socket; returns the HTTP code |
 | `extractJsonValue(json, path)` | Walk dot-notation path through ArduinoJson (supports objects + arrays) |
 | `formatValue(src, raw)` | Apply printf-style `displayFormat` to raw value (validates with `isSafeSingleArgFormat`; returns raw on unsafe format) |
 | `buildCustomAppJson(src, value)` | Build JSON for `parseCustomPage()` with text, icon, color, lifetime=0 |

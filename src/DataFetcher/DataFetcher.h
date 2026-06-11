@@ -2,18 +2,9 @@
 
 #include <Arduino.h>
 #include <vector>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <freertos/queue.h>
 #include "DataFetcherConfig.h"
 
 class IDisplayNavigation;
-
-// Heap-allocated work items exchanged with the background worker task.
-// Defined in DataFetcher.cpp — only pointers cross the FreeRTOS queues, so
-// the full definitions stay private to the implementation.
-struct FetchRequest;
-struct FetchResult;
 
 class DataFetcher_
 {
@@ -32,28 +23,17 @@ class DataFetcher_
     unsigned long lastWeatherFetch_ = 0;
     unsigned long weatherRetryAt_ = 0; // millis() of a scheduled fast retry (0 = none)
 
-    // Connectivity health: false after a fetch fails on the network layer,
-    // true again after any fetch succeeds. Read by the WiFi status LED.
-    // Touched only on the main loop (drainResults / render), so no locking.
+    // Connectivity health: false after a network-layer fetch fails, true again
+    // after a fetch succeeds. Read by the WiFi status LED. Touched only on the
+    // main loop (fetches + render), so no locking.
     bool fetchHealthy_ = true;
 
-    // Background fetch task (core 0) + lock-free handoff queues.
-    // The worker only touches the network and JSON parsing; the main loop
-    // owns all display / weatherData mutation via drainResults().
-    TaskHandle_t workerHandle_ = nullptr;
-    QueueHandle_t requestQueue_ = nullptr; // main -> worker (FetchRequest*)
-    QueueHandle_t resultQueue_ = nullptr;  // worker -> main (FetchResult*)
-
-    static void workerTask(void *param);
-    void workerLoop();
-    FetchResult *performCustomFetch(const FetchRequest& req);  // runs on worker
-    FetchResult *performWeatherFetch(const FetchRequest& req); // runs on worker
-    // GET with a few retries on connection-level failures (worker only). On
-    // HTTP_CODE_OK, fills outBody; returns the final HTTP code otherwise.
-    int httpGetWithRetry(const String& url, bool isHttps, String& outBody);
-    void drainResults();                             // runs on main loop
-    bool enqueueCustom(const DataSourceConfig& src); // runs on main loop
-    bool enqueueWeather();                           // runs on main loop
+    // Synchronous fetch helpers (run on the main loop in tick()).
+    bool fetchAndPush(size_t index); // custom source -> parseCustomPage
+    void fetchWeather();             // weather API -> weatherData
+    // Single HTTP GET with socket cleanup. On HTTP_CODE_OK fills outBody;
+    // returns the final HTTP code otherwise.
+    int httpGet(const String& url, bool isHttps, String& outBody);
 
     String extractJsonValue(const String& json, const String& path);
     static String buildCustomAppJson(const DataSourceConfig& src, const String& value);

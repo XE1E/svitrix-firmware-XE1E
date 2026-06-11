@@ -31,6 +31,7 @@ class GifPlayer
     int newframeDelay;
     CRGB FrameBuffer[HEIGHT][WIDTH];
     bool lastFrameDrawn = false;
+    bool gifRestarting_ = false; // guards the end-of-GIF restart against unbounded recursion
     unsigned long nextFrameTime = 0;
     FastLED_NeoMatrix *mtx;
 
@@ -666,7 +667,16 @@ class GifPlayer
                 parseGifHeader();
                 parseLogicalScreenDescriptor();
                 parseGlobalColorTable();
-                drawFrame();
+                // Restart the GIF to draw frame 0 — but never recurse more than one
+                // level. A malformed/frameless GIF re-enters this branch on every
+                // call (lastFrameTime never advances), and the original unguarded
+                // recursion overflowed the loopTask stack (canary crash -> reboot).
+                if (!gifRestarting_)
+                {
+                    gifRestarting_ = true;
+                    drawFrame();
+                    gifRestarting_ = false;
+                }
                 return ERROR_FINISHED;
             }
         }
