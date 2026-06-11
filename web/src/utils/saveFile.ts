@@ -1,7 +1,10 @@
 // Save a Blob to disk. When the browser supports the File System Access API
-// (Chromium-based: Chrome/Edge/Opera), open a save dialog so the user can pick
-// the folder and file name. Otherwise fall back to a normal anchor download,
-// which lands in the browser's default download folder.
+// (Chromium-based: Chrome/Edge/Opera) AND the page is a secure context
+// (HTTPS or localhost), open a save dialog so the user can pick the folder and
+// file name. Note: the device serves this SPA over plain HTTP at its LAN IP,
+// which is NOT a secure context, so showSaveFilePicker is undefined there and we
+// fall back to a normal anchor download (the browser's default folder, or its
+// "ask where to save each file" prompt if the user enabled it).
 
 interface SaveFilePickerWindow extends Window {
   showSaveFilePicker?: (opts: {
