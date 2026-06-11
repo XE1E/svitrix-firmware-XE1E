@@ -82,6 +82,27 @@ main loop (core 1)                     worker task (core 0)
   `delete`s. Non-blocking sends — if a queue is full the item is dropped and
   retried next round (`lastFetch_` only advances on a successful enqueue).
 
+### Resilience to transient failures
+
+The worker connects concurrently with the web server / MQTT, so it sees
+occasional transient TLS connection failures (`httpCode == -1`, measured ~10% on
+hardware) that the old serialized loop never hit. Three layers keep the display
+stable:
+
+- **Retry in-fetch** — `httpGetWithRetry()` retries the GET up to `FETCH_ATTEMPTS`
+  (3) times with `FETCH_RETRY_DELAY_MS` (1 s) backoff before declaring failure.
+  Runs on the worker, so retries never block rendering. Drops the effective
+  failure rate to ~0.1%.
+- **Keep last good weather** — `drainResults()` overwrites `weatherData` only on a
+  *successful* fetch; a failed refresh leaves the last reading on screen instead
+  of blanking the weather apps to `--`.
+- **Fast retry after failure** — a failed weather fetch schedules a re-attempt in
+  `WEATHER_RETRY_MS` (60 s) via `weatherRetryAt_`, instead of waiting the full
+  `updateInterval`. Covers the boot fetch failing before WiFi/DNS settle.
+
+`fetchHealthy()` trips on a network-layer failure and clears on **any** success
+(weather sets `FetchResult::success` too — required so the WiFi status LED clears).
+
 ## Tick Behavior
 
 - **Round-robin**: enqueues at most one source per `tick()` call (staggered load)

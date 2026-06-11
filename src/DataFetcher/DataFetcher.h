@@ -30,6 +30,7 @@ class DataFetcher_
     size_t nextFetchIndex_ = 0;
 
     unsigned long lastWeatherFetch_ = 0;
+    unsigned long weatherRetryAt_ = 0; // millis() of a scheduled fast retry (0 = none)
 
     // Connectivity health: false after a fetch fails on the network layer,
     // true again after any fetch succeeds. Read by the WiFi status LED.
@@ -47,9 +48,12 @@ class DataFetcher_
     void workerLoop();
     FetchResult *performCustomFetch(const FetchRequest& req);  // runs on worker
     FetchResult *performWeatherFetch(const FetchRequest& req); // runs on worker
-    void drainResults();                                       // runs on main loop
-    bool enqueueCustom(const DataSourceConfig& src);           // runs on main loop
-    bool enqueueWeather();                                     // runs on main loop
+    // GET with a few retries on connection-level failures (worker only). On
+    // HTTP_CODE_OK, fills outBody; returns the final HTTP code otherwise.
+    int httpGetWithRetry(const String& url, bool isHttps, String& outBody);
+    void drainResults();                             // runs on main loop
+    bool enqueueCustom(const DataSourceConfig& src); // runs on main loop
+    bool enqueueWeather();                           // runs on main loop
 
     String extractJsonValue(const String& json, const String& path);
     static String buildCustomAppJson(const DataSourceConfig& src, const String& value);

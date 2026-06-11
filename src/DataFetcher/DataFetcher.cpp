@@ -19,10 +19,13 @@ static constexpr uint32_t MIN_FREE_HEAP = 60000;        // Increased for SSL ove
 
 // Background worker task: all blocking HTTP/TLS work happens here on core 0
 // so a stalled request can never freeze the render loop (core 1).
-static constexpr uint32_t WORKER_STACK = 10240;   // 10 KB — proven 8 KB TLS path + margin
-static constexpr UBaseType_t WORKER_PRIORITY = 1; // same as boot animation task
-static constexpr BaseType_t WORKER_CORE = 0;      // Arduino loop runs on core 1
-static constexpr UBaseType_t QUEUE_LEN = 6;       // pending fetch requests / results
+static constexpr uint32_t WORKER_STACK = 10240;        // 10 KB — proven 8 KB TLS path + margin
+static constexpr UBaseType_t WORKER_PRIORITY = 1;      // same as boot animation task
+static constexpr BaseType_t WORKER_CORE = 0;           // Arduino loop runs on core 1
+static constexpr UBaseType_t QUEUE_LEN = 6;            // pending fetch requests / results
+static constexpr int FETCH_ATTEMPTS = 3;               // GET tries before declaring failure
+static constexpr uint32_t FETCH_RETRY_DELAY_MS = 1000; // backoff between attempts
+static constexpr uint32_t WEATHER_RETRY_MS = 60000;    // re-attempt 60s after a failed weather fetch (vs full interval)
 
 // Work items exchanged with the worker. Only pointers cross the queues
 // (Strings can't be byte-copied through a queue without double-free), so the
@@ -105,13 +108,20 @@ void DataFetcher_::tick()
     if (!weatherConfig.apiKey.isEmpty())
     {
         unsigned long weatherInterval = weatherConfig.updateInterval * 60000UL;
-        // Fetch immediately on first tick (lastWeatherFetch_ == 0) or after interval
-        if (lastWeatherFetch_ == 0 || now - lastWeatherFetch_ >= weatherInterval)
+        // Due on first tick (lastWeatherFetch_==0), after the normal interval, or
+        // for a fast retry scheduled after a failed fetch (so a boot/transient
+        // failure recovers in ~60s instead of waiting the full interval).
+        bool due = (lastWeatherFetch_ == 0) || (now - lastWeatherFetch_ >= weatherInterval);
+        bool retryDue = (weatherRetryAt_ != 0) && ((long)(now - weatherRetryAt_) >= 0);
+        if (due || retryDue)
         {
             if (ESP.getFreeHeap() > MIN_FREE_HEAP)
             {
                 if (enqueueWeather())
+                {
                     lastWeatherFetch_ = now;
+                    weatherRetryAt_ = 0; // suppress re-enqueue until the result returns
+                }
             }
             else
             {
@@ -224,7 +234,19 @@ void DataFetcher_::drainResults()
         }
         else // WEATHER
         {
-            weatherData = res->weather; // includes valid flag (true/false)
+            if (res->weather.valid)
+            {
+                // Keep the last good reading on a failed refresh so the display
+                // doesn't blank to "--"; overwrite only on success.
+                weatherData = res->weather;
+                weatherRetryAt_ = 0; // got data, back to normal interval
+            }
+            else
+            {
+                // Failed (incl. the boot fetch before WiFi/DNS settle): retry
+                // soon instead of waiting the full 30-min interval.
+                weatherRetryAt_ = millis() + WEATHER_RETRY_MS;
+            }
         }
         delete res;
     }
@@ -265,6 +287,52 @@ void DataFetcher_::workerLoop()
     }
 }
 
+// ---------- HTTP GET with retry (worker only) ----------
+
+int DataFetcher_::httpGetWithRetry(const String& url, bool isHttps, String& outBody)
+{
+    int httpCode = 0;
+    for (int attempt = 0; attempt < FETCH_ATTEMPTS; attempt++)
+    {
+        HTTPClient http;
+        WiFiClientSecure secClient;
+        WiFiClient plainClient;
+
+        if (isHttps)
+        {
+            // Don't validate cert — DataFetcher hits arbitrary third-party APIs
+            // whose CAs we can't pin in advance. Do NOT call secClient.setTimeout()
+            // — it hangs some hosts; HTTPClient's timeouts handle it correctly.
+            secClient.setInsecure();
+            http.begin(secClient, url);
+        }
+        else
+        {
+            http.begin(plainClient, url);
+        }
+
+        http.setConnectTimeout(HTTP_CONNECT_TIMEOUT);
+        http.setTimeout(HTTP_READ_TIMEOUT);
+        http.addHeader("Accept", "application/json");
+
+        httpCode = http.GET();
+        if (httpCode == HTTP_CODE_OK)
+        {
+            outBody = http.getString();
+            http.end();
+            return httpCode;
+        }
+        http.end();
+
+        // -1/-11 etc. are transient connection failures — common when this task
+        // races the web server / MQTT for the TLS stack. Back off briefly and retry.
+        DEBUG_PRINTF("DataFetcher: GET attempt %d/%d failed: %d", attempt + 1, FETCH_ATTEMPTS, httpCode);
+        if (attempt + 1 < FETCH_ATTEMPTS)
+            vTaskDelay(pdMS_TO_TICKS(FETCH_RETRY_DELAY_MS));
+    }
+    return httpCode;
+}
+
 // ---------- HTTP fetch (custom source) — runs on the worker task ----------
 
 FetchResult *DataFetcher_::performCustomFetch(const FetchRequest& req)
@@ -283,53 +351,15 @@ FetchResult *DataFetcher_::performCustomFetch(const FetchRequest& req)
         return res; // success=false
     }
 
-    HTTPClient http;
-    WiFiClientSecure secClient;
-    WiFiClient plainClient;
-
-    if (isHttps)
-    {
-        // Don't validate cert — DataFetcher hits arbitrary third-party APIs
-        // whose CAs we can't pin in advance.
-        // Note: Do NOT call secClient.setTimeout() — it causes hangs on some hosts.
-        // HTTPClient's setConnectTimeout/setTimeout handle timeouts correctly.
-        secClient.setInsecure();
-        DEBUG_PRINTF("DataFetcher: HTTPS request to %s (heap: %d)", src.url.c_str(), ESP.getFreeHeap());
-        http.begin(secClient, src.url);
-    }
-    else
-    {
-        http.begin(plainClient, src.url);
-    }
-
-    http.setConnectTimeout(HTTP_CONNECT_TIMEOUT);
-    http.setTimeout(HTTP_READ_TIMEOUT);
-    http.addHeader("Accept", "application/json");
-
-    DEBUG_PRINTF("DataFetcher: GET %s...", src.name.c_str());
-    int httpCode = http.GET();
-    DEBUG_PRINTF("DataFetcher: %s httpCode=%d", src.name.c_str(), httpCode);
+    DEBUG_PRINTF("DataFetcher: GET %s (heap: %d)...", src.name.c_str(), ESP.getFreeHeap());
+    String body;
+    int httpCode = httpGetWithRetry(src.url, isHttps, body);
     if (httpCode != HTTP_CODE_OK)
     {
         DEBUG_PRINTF("DataFetcher: GET %s failed: %d", src.name.c_str(), httpCode);
-        http.end();
         res->networkError = true; // connectivity problem, not a data problem
         return res;               // success=false
     }
-
-    int contentLength = http.getSize();
-    if (contentLength > (int)MAX_RESPONSE_SIZE)
-    {
-        DEBUG_PRINTF("DataFetcher: response too large (%d bytes)", contentLength);
-        http.end();
-        return res; // success=false
-    }
-
-    // HTTPClient::getString() handles chunked encoding automatically.
-    // For chunked responses (contentLength == -1), we can't pre-check size,
-    // so we read and check after. Most JSON APIs return < 4KB anyway.
-    String body = http.getString();
-    http.end();
 
     if (body.length() > MAX_RESPONSE_SIZE)
     {
@@ -785,26 +815,14 @@ FetchResult *DataFetcher_::performWeatherFetch(const FetchRequest& req)
 
     DEBUG_PRINTF("DataFetcher: fetching weather from %s", req.url.c_str());
 
-    HTTPClient http;
-    WiFiClientSecure secClient;
-    secClient.setInsecure();
-
-    http.begin(secClient, req.url);
-    http.setConnectTimeout(HTTP_CONNECT_TIMEOUT);
-    http.setTimeout(HTTP_READ_TIMEOUT);
-    http.addHeader("Accept", "application/json");
-
-    int httpCode = http.GET();
+    String body;
+    int httpCode = httpGetWithRetry(req.url, true, body);
     if (httpCode != HTTP_CODE_OK)
     {
         DEBUG_PRINTF("DataFetcher: weather fetch failed: %d", httpCode);
-        http.end();
         res->networkError = true; // connectivity problem
         return res;               // weather.valid = false
     }
-
-    String body = http.getString();
-    http.end();
 
     DynamicJsonDocument doc(2048);
     DeserializationError err = deserializeJson(doc, body);
@@ -846,6 +864,7 @@ FetchResult *DataFetcher_::performWeatherFetch(const FetchRequest& req)
 
     w.lastUpdate = millis();
     w.valid = true;
+    res->success = true; // clears the connectivity-health flag (drainResults)
 
     DEBUG_PRINTF("DataFetcher: weather fetched - %.1f%s, %s, AQI=%d, UV=%.1f",
                  w.outdoorTemp, req.isCelsius ? "C" : "F",
