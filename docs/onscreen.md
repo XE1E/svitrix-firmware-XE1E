@@ -46,3 +46,30 @@ Agrupa los cuatro ajustes de rotación de apps. Dentro del submenú:
 ::: tip
 Los valores de tiempo (`TRA`, `APP`) se muestran sin la letra "s"; el prefijo y la magnitud ya indican que son segundos.
 :::
+
+## Indicadores de estado (LEDs de esquina)
+
+El reloj muestra dos píxeles de estado en las esquinas izquierdas de la matriz
+para diagnosticar la conectividad de un vistazo. Cuando todo va bien, **ambos
+están apagados**.
+
+**Esquina superior izquierda — WiFi (rojo):**
+
+| Patrón | Significado |
+| --- | --- |
+| Apagado | Conectado y con internet |
+| Parpadeo lento | WiFi conectado pero sin acceso a internet (fallan las descargas, p. ej. el clima) |
+| Parpadeo rápido | WiFi caído, reconectando |
+| Encendido fijo | Modo AP — esperando configuración WiFi |
+
+**Esquina inferior izquierda — Home Assistant / MQTT (amarillo):**
+
+| Patrón | Significado |
+| --- | --- |
+| Apagado | Conectado, o MQTT no configurado |
+| Parpadeo lento | MQTT configurado pero sin conexión con el broker |
+
+::: tip
+El indicador de WiFi se apaga en cuanto la conexión y las descargas vuelven a
+funcionar, así que un parpadeo momentáneo solo señala un fallo pasajero.
+:::

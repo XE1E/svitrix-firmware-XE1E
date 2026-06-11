@@ -125,6 +125,12 @@ Weather apps are also **native** (built into the firmware), but require the **We
 
 Each weather app has its own configurable **duration** and can be toggled individually. The data refresh interval is set in the Weather API section.
 
+::: tip
+If a weather refresh fails (e.g. flaky internet), the last reading stays on
+screen instead of showing `--`, and it retries automatically after ~1 minute.
+The WiFi indicator (top-left corner) blinks red while downloads are failing.
+:::
+
 ---
 # Custom Apps
 

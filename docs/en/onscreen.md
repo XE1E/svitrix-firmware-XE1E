@@ -48,3 +48,29 @@ Groups the four app-rotation settings. Inside the submenu:
 Time values (`TRA`, `APP`) are shown without an "s" suffix; the prefix and
 magnitude already imply seconds.
 :::
+
+## Status indicators (corner LEDs)
+
+The clock shows two status pixels in the left corners of the matrix for an
+at-a-glance connectivity check. When everything is fine, **both are off**.
+
+**Top-left — WiFi (red):**
+
+| Pattern | Meaning |
+| --- | --- |
+| Off | Connected, internet reachable |
+| Slow blink | WiFi connected but no internet access (downloads failing, e.g. weather) |
+| Fast blink | WiFi down, reconnecting |
+| Solid on | AP mode — waiting for WiFi configuration |
+
+**Bottom-left — Home Assistant / MQTT (yellow):**
+
+| Pattern | Meaning |
+| --- | --- |
+| Off | Connected, or MQTT not configured |
+| Slow blink | MQTT configured but not connected to the broker |
+
+::: tip
+The WiFi indicator clears as soon as the connection and downloads recover, so a
+brief blink only signals a transient hiccup.
+:::

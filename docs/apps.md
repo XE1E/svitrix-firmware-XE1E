@@ -125,6 +125,13 @@ Las apps del clima también son **nativas** (integradas en el firmware), pero re
 
 Cada app del clima tiene su propia **duración** configurable y se activa/desactiva de forma individual. El intervalo de actualización de los datos se ajusta en la sección de API del Clima.
 
+::: tip
+Si una actualización del clima falla (p. ej. internet intermitente), se mantiene
+en pantalla el último valor leído en lugar de mostrar `--`, y se reintenta
+automáticamente al cabo de ~1 minuto. El indicador WiFi (esquina superior
+izquierda) parpadea en rojo mientras las descargas fallan.
+:::
+
 ---
 # Apps Personalizadas
 
