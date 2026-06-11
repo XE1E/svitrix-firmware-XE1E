@@ -84,21 +84,28 @@ main loop (core 1)                     worker task (core 0)
 
 ### Resilience to transient failures
 
-The worker connects concurrently with the web server / MQTT, so it sees
-occasional transient TLS connection failures (`httpCode == -1`, measured ~10% on
-hardware) that the old serialized loop never hit. Three layers keep the display
-stable:
+The worker connects concurrently with the web server / MQTT. Three layers keep
+fetching robust and the display stable:
 
-- **Retry in-fetch** — `httpGetWithRetry()` retries the GET up to `FETCH_ATTEMPTS`
-  (3) times with `FETCH_RETRY_DELAY_MS` (1 s) backoff before declaring failure.
-  Runs on the worker, so retries never block rendering. Drops the effective
-  failure rate to ~0.1%.
+- **Socket hygiene** — `httpGetWithRetry()` does **one** GET per fetch
+  (`FETCH_ATTEMPTS = 1`) and calls `secClient.stop()` / `plainClient.stop()`
+  after every attempt. This is the critical fix: `http.end()` alone could leave a
+  failed/torn TLS socket fd dangling, and unreleased fds accumulated until
+  `connect()` failed instantly with `-1` **forever** (only a reboot cleared it —
+  weather silently froze on its last value). Explicit `stop()` + not churning
+  sockets on retries eliminated the `-1` storm entirely (0 in a 28-min hardware
+  soak vs ~10% before). The `FETCH_ATTEMPTS` loop is retained for flexibility but
+  retrying an instant `-1` only wastes sockets — the 60 s fast-retry handles
+  re-attempts with spacing instead.
 - **Keep last good weather** — `drainResults()` overwrites `weatherData` only on a
   *successful* fetch; a failed refresh leaves the last reading on screen instead
   of blanking the weather apps to `--`.
 - **Fast retry after failure** — a failed weather fetch schedules a re-attempt in
   `WEATHER_RETRY_MS` (60 s) via `weatherRetryAt_`, instead of waiting the full
   `updateInterval`. Covers the boot fetch failing before WiFi/DNS settle.
+
+Also `HANDSHAKE_TIMEOUT_S` (10 s) bounds the TLS handshake (its default is 120 s,
+not covered by setConnectTimeout/setTimeout).
 
 `fetchHealthy()` trips on a network-layer failure and clears on **any** success
 (weather sets `FetchResult::success` too — required so the WiFi status LED clears).
