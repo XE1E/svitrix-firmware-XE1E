@@ -37,6 +37,7 @@
 #include "PeripheryManager/DS1307Provider.h"
 #include "AlarmManager/AlarmManager.h"
 #include "policies/NightModePolicy.h"
+#include "FreezeDebug.h"
 #include "Apps/Apps.h"
 #include "ResetReason.h"
 #include <cassert>
@@ -82,6 +83,7 @@ void setup()
     digitalWrite(15, LOW);
     delay(2000);
     Serial.begin(115200);
+    startFreezeMonitor(); // no-op unless -DFREEZE_DEBUG
     // Capture last reset reason before anything else can mutate state.
     // The cause is preserved by hardware across reboots; cheap to query.
     lastResetReason = resetReasonToString(static_cast<uint8_t>(esp_reset_reason()));
@@ -226,14 +228,22 @@ void setup()
 
 void loop()
 {
+    FZ_LOOPTICK();
+    FZ_LOOP("timer");
     timer_tick();
+    FZ_LOOP("server");
     ServerManager.tick();
+    FZ_LOOP("display");
     DisplayManager.tick();
+    FZ_LOOP("periphery");
     PeripheryManager.tick();
+    FZ_LOOP("alarm");
     AlarmManager.tick(time(nullptr)); // Alarms work even without WiFi
     if (ServerManager.isConnected)
     {
+        FZ_LOOP("mqtt");
         MQTTManager.tick();
+        FZ_LOOP("fetch");
         DataFetcher.tick();
 
         // Sync NTP → RTC once after time becomes valid

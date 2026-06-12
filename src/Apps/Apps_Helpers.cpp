@@ -12,6 +12,7 @@
 #include "INotifier.h"
 #include "PlaceholderUtils.h"
 #include "DisplayManager_internal.h"
+#include "FreezeDebug.h"
 
 static INotifier *appsNotifier_ = nullptr;
 
@@ -34,6 +35,7 @@ bool nativeAppGuard(const char *appName)
     // Rotation effect-only mode: only render background effect, skip app content
     if (rotationEffectOnly)
         return true;
+    FZ_APP(appName);
     DisplayManager.setCurrentApp(appName);
     currentCustomApp = "";
     return false;

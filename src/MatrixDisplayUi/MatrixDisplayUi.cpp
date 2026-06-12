@@ -37,6 +37,7 @@
 #include "WeatherOverlay.h"
 #include "NeoMatrixCanvas.h"
 #include "Globals.h"
+#include "FreezeDebug.h"
 
 // ── Global state (shared via MatrixDisplayUi_internal.h) ────────────
 GifPlayer gif1;
@@ -310,20 +311,31 @@ void MatrixDisplayUi::tick()
         }
     }
 
+    FZ_RENDER("clear");
     this->matrix->clear();
+    FZ_RENDER("background");
     this->renderBackground();
 
     if (this->AppCount > 0)
+    {
+        FZ_RENDER("drawApp");
         this->drawApp();
+    }
+    FZ_RENDER("overlays");
     this->drawOverlays();
+    FZ_RENDER("indicators");
     this->drawIndicators();
     if (globalOverlay_ > 0)
     {
+        FZ_RENDER("globalOverlay");
         NeoMatrixCanvas canvas(matrix);
         EffectOverlay(canvas, 0, 0, globalOverlay_);
     }
+    FZ_RENDER("gamma");
     host_->gammaCorrection();
+    FZ_RENDER("show");
     this->matrix->show();
+    FZ_RENDER("tick-done");
 }
 
 // ── Drawing ─────────────────────────────────────────────────────────

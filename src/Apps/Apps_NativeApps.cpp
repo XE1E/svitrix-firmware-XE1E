@@ -11,6 +11,7 @@
 #include "icons.h"
 #include "LayoutEngine.h"
 #include "AlarmManager/AlarmManager.h"
+#include "FreezeDebug.h"
 #include <LittleFS.h>
 
 // ── Big-digit clock data ───────────────────────────────────────────
@@ -370,16 +371,24 @@ void OutdoorTempApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int1
     if (nativeAppGuard("OutdoorTemp"))
         return;
 
+    // Snapshot the weather data driving this render so the freeze monitor can
+    // capture the exact value in play if the loop wedges here.
+    FZ_WEATHER(weatherData.conditionCode, weatherData.outdoorTemp, weatherData.valid);
+
+    FZ_RENDER("OT:color");
     applyNativeAppColor(weatherConfig.outdoorTempColor, "OutdoorTemp");
 
+    FZ_RENDER("OT:layout");
     LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
 
     if (m.hasIcon)
     {
+        FZ_RENDER("OT:icon");
         const uint16_t *condIcon = getWeatherConditionIcon(weatherData.conditionCode);
         matrix->drawRGBBitmap(x + m.iconX, y, condIcon, 8, 8);
     }
 
+    FZ_RENDER("OT:format");
     String tempStr;
     if (weatherData.valid)
     {
@@ -390,10 +399,12 @@ void OutdoorTempApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int1
         tempStr = "--.-°" + String(timeConfig.isCelsius ? "C" : "F");
     }
 
+    FZ_RENDER("OT:textwidth");
     uint16_t textWidth = getTextWidth(tempStr.c_str(), 0);
     LayoutMetrics tm = LayoutEngine::computeLayout(appConfig.nativeIconLayout, textWidth);
     int16_t textX = tm.textCenterX;
 
+    FZ_RENDER("OT:print");
     DisplayManager.setCursor(textX + x, 6 + y);
     DisplayManager.matrixPrint(tempStr.c_str());
 }
