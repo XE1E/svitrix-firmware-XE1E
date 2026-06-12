@@ -23,11 +23,6 @@ class DataFetcher_
     unsigned long lastWeatherFetch_ = 0;
     unsigned long weatherRetryAt_ = 0; // millis() of a scheduled fast retry (0 = none)
 
-    // Connectivity health: false after a network-layer fetch fails, true again
-    // after a fetch succeeds. Read by the WiFi status LED. Touched only on the
-    // main loop (fetches + render), so no locking.
-    bool fetchHealthy_ = true;
-
     // Synchronous fetch helpers (run on the main loop in tick()).
     bool fetchAndPush(size_t index); // custom source -> parseCustomPage
     void fetchWeather();             // weather API -> weatherData
@@ -50,10 +45,6 @@ class DataFetcher_
 
     void setup();
     void tick();
-
-    /// True while the last network-layer fetch succeeded (or none has failed);
-    /// false after a connectivity failure. Drives the WiFi status LED.
-    bool fetchHealthy() const;
 
     bool addSource(const char *json);
     bool removeSource(const String& name);

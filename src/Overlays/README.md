@@ -28,13 +28,12 @@ the period, black the second).
 
 | State | Pattern | Condition |
 |-------|---------|-----------|
-| Connected & healthy | off | — |
-| WiFi up but fetches failing (likely no internet) | slow blink (1100 ms) | `!DataFetcher.fetchHealthy()` |
+| Connected | off | — |
 | WiFi dropped, reconnecting | fast blink (300 ms) | `!WiFi.isConnected()` |
 | AP mode (awaiting config) | solid | `systemConfig.apMode` |
 
-Priority: AP mode > WiFi down > fetch unhealthy. `fetchHealthy()` reflects the
-last *network-layer* fetch outcome (a bad jsonPath/parse error does not trip it).
+Priority: AP mode > WiFi down. Pure WiFi-connectivity indicator — it does **not**
+reflect data-fetch health (a failing data source no longer makes it blink).
 
 **MQTT/HA — bottom-left (0,7), yellow:**
 

@@ -10,7 +10,6 @@
 #include "NeoMatrixCanvas.h"
 #include "MQTTManager.h"
 #include "LayoutEngine.h"
-#include "DataFetcher/DataFetcher.h"
 #include "Globals.h"
 
 std::deque<Notification> notifications;
@@ -28,8 +27,7 @@ void StatusOverlay(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, GifPl
     // --- WiFi indicator: top-left (0,0), red ---
     //   solid       = AP mode (waiting for configuration)
     //   fast blink  = WiFi dropped, reconnecting
-    //   slow blink  = WiFi up but fetches failing (likely no internet)
-    //   off         = connected and healthy
+    //   off         = connected
     if (systemConfig.apMode)
     {
         matrix->drawPixel(0, 0, kRed);
@@ -37,10 +35,6 @@ void StatusOverlay(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, GifPl
     else if (!WiFi.isConnected())
     {
         matrix->drawPixel(0, 0, TextEffect(kRed, 0, kFastBlink));
-    }
-    else if (!DataFetcher.fetchHealthy())
-    {
-        matrix->drawPixel(0, 0, TextEffect(kRed, 0, kSlowBlink));
     }
 
     // --- HA/MQTT indicator: bottom-left (0,7), yellow ---
