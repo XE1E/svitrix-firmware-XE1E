@@ -93,8 +93,9 @@ weatherapi fetch blocks the loop ~2 s; tight timeouts cap a failing one —
   `updateInterval`. Covers the boot fetch failing before WiFi/DNS settle.
 - **Heap guard** — `tick()` skips a fetch when free heap < `MIN_FREE_HEAP`.
 
-`fetchHealthy()` trips on a network-layer failure and clears on the next
-successful fetch — drives the WiFi status LED (slow red blink while fetches fail).
+A failed fetch keeps the last good value on screen and schedules a fast retry; it
+does **not** drive any status LED. (The WiFi corner LED is now a pure
+WiFi-connectivity indicator — see [Overlays](../Overlays/README.md).)
 
 ## Tick Behavior
 

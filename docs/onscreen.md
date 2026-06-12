@@ -57,8 +57,7 @@ están apagados**.
 
 | Patrón | Significado |
 | --- | --- |
-| Apagado | Conectado y con internet |
-| Parpadeo lento | WiFi conectado pero sin acceso a internet (fallan las descargas, p. ej. el clima) |
+| Apagado | Conectado al WiFi |
 | Parpadeo rápido | WiFi caído, reconectando |
 | Encendido fijo | Modo AP — esperando configuración WiFi |
 
@@ -70,6 +69,7 @@ están apagados**.
 | Parpadeo lento | MQTT configurado pero sin conexión con el broker |
 
 ::: tip
-El indicador de WiFi se apaga en cuanto la conexión y las descargas vuelven a
-funcionar, así que un parpadeo momentáneo solo señala un fallo pasajero.
+El indicador de WiFi solo refleja la conexión WiFi: se apaga en cuanto el reloj
+se reconecta. Un fallo de descarga de datos (p. ej. el clima) ya no lo enciende —
+en ese caso el reloj conserva el último valor en pantalla y reintenta en segundo plano.
 :::

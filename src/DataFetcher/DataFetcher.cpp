@@ -108,11 +108,6 @@ void DataFetcher_::tick()
     }
 }
 
-bool DataFetcher_::fetchHealthy() const
-{
-    return fetchHealthy_;
-}
-
 // ---------- single HTTP GET with socket cleanup ----------
 
 int DataFetcher_::httpGet(const String& url, bool isHttps, String& outBody)
@@ -172,7 +167,6 @@ bool DataFetcher_::fetchAndPush(size_t index)
     if (httpCode != HTTP_CODE_OK)
     {
         DEBUG_PRINTF("DataFetcher: GET %s failed: %d", src.name.c_str(), httpCode);
-        fetchHealthy_ = false; // connectivity problem
         return false;
     }
 
@@ -196,7 +190,6 @@ bool DataFetcher_::fetchAndPush(size_t index)
     if (nav_)
         nav_->parseCustomPage(src.name, appJson.c_str(), false);
 
-    fetchHealthy_ = true;
     DEBUG_PRINTF("DataFetcher: %s = %s (done)", src.name.c_str(), formatted.c_str());
     return true;
 }
@@ -634,7 +627,6 @@ void DataFetcher_::fetchWeather()
     if (httpCode != HTTP_CODE_OK)
     {
         DEBUG_PRINTF("DataFetcher: weather fetch failed: %d", httpCode);
-        fetchHealthy_ = false;                         // connectivity problem -> LED
         weatherRetryAt_ = millis() + WEATHER_RETRY_MS; // retry soon; keep last value
         return;                                        // weatherData left intact
     }
@@ -672,7 +664,6 @@ void DataFetcher_::fetchWeather()
     weatherData.lastUpdate = millis();
     weatherData.valid = true;
 
-    fetchHealthy_ = true;
     weatherRetryAt_ = 0;
     DEBUG_PRINTF("DataFetcher: weather updated - %.1f%s, %s, AQI=%d, UV=%.1f",
                  weatherData.outdoorTemp, timeConfig.isCelsius ? "C" : "F",

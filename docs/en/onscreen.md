@@ -58,8 +58,7 @@ at-a-glance connectivity check. When everything is fine, **both are off**.
 
 | Pattern | Meaning |
 | --- | --- |
-| Off | Connected, internet reachable |
-| Slow blink | WiFi connected but no internet access (downloads failing, e.g. weather) |
+| Off | Connected to WiFi |
 | Fast blink | WiFi down, reconnecting |
 | Solid on | AP mode — waiting for WiFi configuration |
 
@@ -71,6 +70,7 @@ at-a-glance connectivity check. When everything is fine, **both are off**.
 | Slow blink | MQTT configured but not connected to the broker |
 
 ::: tip
-The WiFi indicator clears as soon as the connection and downloads recover, so a
-brief blink only signals a transient hiccup.
+The WiFi indicator reflects the WiFi connection only: it clears as soon as the
+clock reconnects. A failed data download (e.g. weather) no longer lights it — in
+that case the clock keeps the last value on screen and retries in the background.
 :::
