@@ -128,7 +128,7 @@ El **ESP32-S3-DevKitC-1** es la placa de desarrollo oficial de Espressif que inc
 │  │    │    GPIO17 ──► BUZZER         │                   │   │    │
 │  │    │         │                    │                   │   │    │
 │  │    │    GPIO1  ◄──► I2C SDA ◄──► SHT31/BME280        │   │    │
-│  │    │    GPIO2  ◄──► I2C SCL       DS1307 RTC         │   │    │
+│  │    │    GPIO2  ◄──► I2C SCL       DS3231 RTC         │   │    │
 │  │    │         │                    │                   │   │    │
 │  │    │    GPIO4  ◄── LDR            │                   │   │    │
 │  │    │    GPIO5  ◄── VBAT (opcional)│                   │   │    │
@@ -149,7 +149,7 @@ El **ESP32-S3-DevKitC-1** es la placa de desarrollo oficial de Espressif que inc
 | 1 | **ESP32-S3-DevKitC-1** | N16R8 (16MB Flash, 8MB PSRAM) | 1 | $8-12 | Espressif oficial |
 | 2 | Matriz LED WS2812B 32×8 | Panel flexible o rígido | 1 | $8-15 | 256 LEDs |
 | 3 | SHT31 Module | I2C temp/humidity | 1 | $2-4 | Alternativa: BME280 |
-| 4 | DS1307 RTC Module | I2C con batería CR2032 | 1 | $1-2 | Opcional pero recomendado |
+| 4 | **DS3231 RTC Module** | I2C (TCXO ±2ppm) con batería LIR2032/CR2032 | 1 | $1-3 | Recomendado (ZS-042). Ver §5.5.1. DS1307 también soportado |
 | 5 | LDR GL5516 | Fotoresistor 5-10kΩ @10lux | 1 | $0.10 | Para auto-brillo |
 | 6 | Buzzer pasivo | 3.3V/5V, piezo | 1 | $0.30 | Para alarmas/RTTTL |
 | 7 | Tactile buttons | 6×6mm, 4-pin | 4 | $0.40 | Momentary, NO |
@@ -390,9 +390,9 @@ Comportamiento:
                     │                                 └─────────┬───────┘ │
                     │                                           │         │
                     │                                 ┌─────────┴───────┐ │
-                    │                        ────────►│ DS1307 RTC      │ │
+                    │                        ────────►│ DS3231 RTC      │ │
                     │                                 │   Addr: 0x68    │ │
-                    │                        ────────►│   + CR2032      │ │
+                    │                        ────────►│   + LIR2032     │ │
                     │                                 └─────────┬───────┘ │
                     │                                           │         │
     GND ────────────┼───────────────────────────────────────────┴────────┤
@@ -401,6 +401,46 @@ Comportamiento:
 
 Nota: Muchos módulos I2C ya incluyen pull-ups. Verificar antes de agregar.
 ```
+
+### 5.5.1 RTC DS3231 — Detalle
+
+El **DS3231** es un RTC de alta precisión con oscilador compensado por temperatura
+(TCXO, **±2 ppm ≈ 1 min/año** vs varios minutos/mes del DS1307). Mantiene la hora sin
+WiFi/NTP y permite que las **alarmas y el modo nocturno funcionen offline** (vía RTC).
+Comparte la dirección I2C `0x68` con el DS1307 y es register-compatible para la hora.
+
+**Conexiones (módulo ZS-042, 4 pines):**
+
+```
+    DevKitC-1 / Ulanzi          DS3231 (ZS-042)
+    3V3   ─────────────────────► VCC    (3.3V — NO 5V si comparte bus 3V3)
+    GND   ─────────────────────► GND
+    SDA   ─────────────────────► SDA    (GPIO1 en S3 · GPIO21 en Ulanzi)
+    SCL   ─────────────────────► SCL    (GPIO2 en S3 · GPIO22 en Ulanzi)
+                                 SQW/32K → sin conexión (no se usan)
+```
+
+| Pin | ESP32-S3 | Ulanzi (ESP32) | Notas |
+|-----|----------|----------------|-------|
+| SDA | GPIO1 | GPIO21 | Mismo bus que SHT3x/BME280 |
+| SCL | GPIO2 | GPIO22 | Pull-up 4.7kΩ (suele venir en el módulo) |
+
+> ⚠️ **Batería:** los módulos ZS-042 traen un circuito de carga pensado para
+> **LIR2032 recargable**. Si usas una **CR2032 no recargable**, quita el diodo/resistencia
+> de carga del módulo para no dañar la pila.
+>
+> ⚠️ **Pull-ups en paralelo:** si DS3231 + sensor de temp comparten bus y ambos módulos
+> traen pull-ups, quedan en paralelo (~2.4kΩ). Aceptable a 400kHz; si hay errores I2C,
+> quita los pull-ups de uno de los módulos.
+
+**Sensor de temperatura interno:** el DS3231 expone su temperatura (regs `0x11`–`0x12`,
+±3 °C). Mide el chip, no el ambiente (lee 2–4 °C por encima del aire), así que sirve solo
+como respaldo si no hay SHT3x/BME280. Integración opcional (Fase 2).
+
+**Firmware:** el driver `DS3231Provider` (implementa `IRtcProvider`) se selecciona con el
+flag de compilación **`-DRTC_DS3231`**; el env `[env:esp32s3]` lo activa por defecto. El
+DS1307 sigue siendo el default del Ulanzi. Detalle completo y pasos de implementación en
+[`docs/plan-ds3231-rtc.md`](./plan-ds3231-rtc.md).
 
 ### 5.6 Buzzer
 
@@ -484,8 +524,8 @@ agregar transistor NPN como amplificador.
 │    │  GPIO17 ─────────┼──────────► Buzzer (+)                            │  │
 │    │  GND ────────────┼──────────► Buzzer (-)                            │  │
 │    │                  │                                                  │  │
-│    │  GPIO1 ──────────┼──────────► I2C SDA ──► SHT31, DS1307             │  │
-│    │  GPIO2 ──────────┼──────────► I2C SCL ──► SHT31, DS1307             │  │
+│    │  GPIO1 ──────────┼──────────► I2C SDA ──► SHT31, DS3231             │  │
+│    │  GPIO2 ──────────┼──────────► I2C SCL ──► SHT31, DS3231             │  │
 │    │  3.3V ───────────┼──[4.7kΩ]─┬─► SDA                                 │  │
 │    │  3.3V ───────────┼──[4.7kΩ]─┴─► SCL                                 │  │
 │    │                  │                                                  │  │
@@ -528,7 +568,7 @@ PASO 3: Conectar botones (sin LEDs)
 
 PASO 4: Conectar sensores I2C
 ├── Conectar SHT31 / BME280
-├── Conectar DS1307 RTC
+├── Conectar DS3231 RTC
 ├── Agregar pull-ups si necesario
 └── Verificar I2C scan en serial
 
@@ -676,6 +716,7 @@ build_flags =
     -DBOARD_HAS_PSRAM
     -DARDUINO_USB_MODE=1
     -DARDUINO_USB_CDC_ON_BOOT=1
+    -DRTC_DS3231      ; selecciona el driver DS3231 (ver §5.5.1 y docs/plan-ds3231-rtc.md)
 
 monitor_speed = 115200
 upload_speed = 921600
@@ -840,7 +881,7 @@ Diseño minimalista para impresión 3D que aloja la matriz LED 32×8 WS2812B est
 │         │   └────────────────────────────────────┘     │                    │
 │         │                                              │                    │
 │         │   ┌─────────────┐                            │ ◄── DevKitC-1     │
-│         │   │  ESP32-S3   │   [SHT31] [DS1307]         │                    │
+│         │   │  ESP32-S3   │   [SHT31] [DS3231]         │                    │
 │         │   │  DevKitC-1  │                            │                    │
 │         │   └─────────────┘                            │                    │
 │         │      [BUZZER]                                │                    │
