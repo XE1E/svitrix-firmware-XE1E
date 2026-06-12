@@ -250,6 +250,21 @@ Things grep won't tell you — reach for these before hypothesizing:
 - `lifetime=0` = never expires (indefinite). `repeat=0` = loop forever. Both together → app never releases the loop slot.
 - Parsed by `parseCustomPage()` in `DisplayManager_CustomApps.cpp`; renderer is `AppContentRenderer.cpp` (shared with notifications — bugs here affect both).
 
+### Rotation stuck on one app, but system fully responsive
+
+- Different from a freeze: `loop()` runs, web/menu/buttons all work, no data loss —
+  only the **auto-rotation** stops, often after many hours, cleared only by reboot.
+- Root cause is almost always the `setAutoTransition` flag being left `false`. The
+  persistent setting lives in `appConfig.autoTransition`; the live UI flag
+  (`MatrixDisplayUi::setAutoTransition`) mirrors it and is re-applied by
+  `applyAllSettings()` (web `/save`, MQTT switch, ROTACION/COLOR menu exit, boot).
+- The **custom-app renderer no longer touches that flag** — it uses the per-frame
+  `requestRotationHold()` instead (see [MatrixDisplayUi/CLAUDE.md](../MatrixDisplayUi/CLAUDE.md)
+  → *Rotation hold*). If you reintroduce a `setAutoTransition(false)` call from any
+  per-frame render path, you risk re-creating the old permanent-freeze bug.
+- Note: `setAutoTransition(active)` returns `false` and force-disables when
+  `ui->AppCount < 2` — a rotation with only one enabled app legitimately won't cycle.
+
 ### Matrix freezes but no crash
 
 - Likely `tick()` blocked inside a long-running operation. Check:

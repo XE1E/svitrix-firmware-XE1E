@@ -68,6 +68,28 @@ RANDOM (0) selects a random effect per cycle.
 
 Progress: `ticksSinceLastStateSwitch / ticksPerTransition` (0.0 → 1.0)
 
+## Rotation hold (per-frame, self-healing)
+
+`requestRotationHold()` lets the **app render path** keep the current app on screen
+for one frame without touching the persistent `setAutoTransition` setting. Used by
+the custom-app renderer (`Apps_CustomApp.cpp`) to hold a long-text app until it has
+scrolled its `repeat` cycles.
+
+- The flag (`holdRotationRequest_`) is **cleared at the start of every `drawApp()`**,
+  so the current app must re-assert it each frame to keep holding.
+- The `FIXED → IN_TRANSITION` decision fires only when
+  `setAutoTransition && !holdRotationRequest_`.
+- The moment the requesting app stops rendering (a notification takes over, a native
+  app is shown, the app is removed/reordered), the hold evaporates within one frame
+  and rotation resumes — it can **never** wedge the rotation.
+
+> **Why:** this replaced the old pattern where the renderer toggled the global
+> `setAutoTransition` flag directly (`setAutoTransition(false)` to hold). That flag
+> could be left stuck `false` by any early-return in the renderer (`notifyFlag`,
+> `rotationEffectOnly`) or by landing on a native app (which never re-enabled it),
+> freezing the rotation on one app until reboot while web/menu/buttons still worked.
+> `setAutoTransition` is now owned solely by `appConfig.autoTransition`.
+
 ## App Framework
 
 ### Callback Types

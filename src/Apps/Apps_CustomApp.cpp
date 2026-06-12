@@ -120,11 +120,13 @@ void ShowCustomApp(const String& name, FastLED_NeoMatrix *matrix, const MatrixDi
     if (ca->topText)
         renderAppIcon(*ca, gifPlayer, x, y, noScrolling, hasIcon, &ca->currentFrame);
 
-    // Auto-transition control
+    // Hold the rotation while this long-text app is still scrolling through its
+    // `repeat` cycles. requestRotationHold() is a per-frame request that the UI
+    // auto-clears every drawApp(), so — unlike the old setAutoTransition(false)
+    // toggle — it can never be left stuck and freeze the rotation. The persistent
+    // auto-transition setting is owned solely by appConfig now; we don't touch it.
     if ((ca->repeat > 0) && (textWidth > availableWidth) && (state->appState == FIXED))
-        DisplayManager.setAutoTransition(false);
-    else
-        DisplayManager.setAutoTransition(true);
+        DisplayManager.requestRotationHold();
 
     // Scroll reset (custom-app-specific repeat logic with currentRepeat counter)
     if (textWidth > availableWidth && !(state->appState == IN_TRANSITION))
@@ -136,7 +138,8 @@ void ShowCustomApp(const String& name, FastLED_NeoMatrix *matrix, const MatrixDi
 
             if ((ca->currentRepeat + 1 >= ca->repeat) && (ca->repeat > 0))
             {
-                DisplayManager.setAutoTransition(true);
+                // Done scrolling all repeats: stop holding (by not requesting again
+                // next frame) and advance immediately. No setAutoTransition() needed.
                 ca->currentRepeat = 0;
                 DisplayManager.nextApp();
                 ca->scrollDelay = 0;

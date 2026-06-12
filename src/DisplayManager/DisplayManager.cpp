@@ -423,6 +423,15 @@ void DisplayManager_::applyAllSettings()
     parseRotationConfig();
 }
 
+/// Forwards a per-frame "hold the current app" request to the UI framework.
+/// Used by the custom-app renderer to keep a long-text app on screen until it
+/// finishes scrolling, without ever mutating the persistent auto-transition flag.
+void DisplayManager_::requestRotationHold()
+{
+    if (ui)
+        ui->requestRotationHold();
+}
+
 void DisplayManager_::setAppTime(long duration)
 {
     ui->setTimePerApp(duration);

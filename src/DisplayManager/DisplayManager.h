@@ -97,6 +97,7 @@ class DisplayManager_ : public IButtonHandler, public IMatrixHost, public IDispl
     void previousApp() override;                  ///< Switch to previous app (with debug log)
     void forceNextApp();                          ///< Force immediate app switch + MQTT publish
     bool setAutoTransition(bool active) override; ///< Enable/disable auto app cycling
+    void requestRotationHold();                   ///< Per-frame "hold current app" request (forwards to ui)
     void setAppTime(long duration);               ///< Override time per app (ms)
     void setMatrixLayout(int layout);             ///< Recreate matrix with new pixel wiring layout
 

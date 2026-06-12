@@ -106,6 +106,11 @@ void MatrixDisplayUi::disablesetAutoTransition()
     this->setAutoTransition = false;
 }
 
+void MatrixDisplayUi::requestRotationHold()
+{
+    this->holdRotationRequest_ = true;
+}
+
 void MatrixDisplayUi::setsetAutoTransitionForwards()
 {
     this->state.appTransitionDirection = 1;
@@ -273,7 +278,12 @@ void MatrixDisplayUi::tick()
             }
             if (this->state.ticksSinceLastStateSwitch >= this->ticksPerApp)
             {
-                if (this->setAutoTransition)
+                // holdRotationRequest_ is asserted by the current app's render path
+                // (set during the PREVIOUS drawApp(), e.g. a long-text custom app still
+                // scrolling). It auto-clears at the start of each drawApp(), so a stale
+                // hold can delay at most one transition decision and never freezes the
+                // rotation. The user's setAutoTransition setting remains authoritative.
+                if (this->setAutoTransition && !this->holdRotationRequest_)
                 {
                     // Ask host for next app (playlist mode may override)
                     int8_t resolved = host_->resolveNextApp(this->state.currentApp, this->state.appTransitionDirection);
@@ -334,6 +344,13 @@ void MatrixDisplayUi::renderBackground()
 /// In FIXED state, also selects the transition type for the next cycle.
 void MatrixDisplayUi::drawApp()
 {
+    // Clear the per-frame hold request before rendering. The app callback may
+    // re-assert it (via requestRotationHold()) if it still needs to hold the
+    // rotation this frame; apps that don't care (all native apps) leave it false.
+    // This is what makes the hold self-healing — it cannot persist across a frame
+    // in which the requesting app stops being rendered.
+    this->holdRotationRequest_ = false;
+
     switch (this->state.appState)
     {
     case IN_TRANSITION:

@@ -155,7 +155,12 @@ class MatrixDisplayUi
     unsigned long ticksPerApp = 151;  ///< Ticks to display each app (~5000ms at 30 FPS)
     uint16_t ticksPerTransition = 15; ///< Ticks for transition animation (~500ms at 30 FPS)
 
-    bool setAutoTransition = true;         ///< Whether apps cycle automatically
+    bool setAutoTransition = true;         ///< Whether apps cycle automatically (user setting)
+    bool holdRotationRequest_ = false;     ///< Per-frame "hold current app" request from the
+                                           ///< app render path (e.g. a long-text custom app still
+                                           ///< scrolling). Auto-cleared at the start of every
+                                           ///< drawApp() so it can never get stuck — the current
+                                           ///< app must re-assert it each frame to keep holding.
     std::vector<AppCallback> AppFunctions; ///< Registered app callbacks
 
     int8_t nextAppNumber = -1; ///< Target app index for directed transition, -1 = sequential
@@ -302,6 +307,15 @@ class MatrixDisplayUi
     /// Main loop method. Call each iteration. Renders a frame if enough time has elapsed.
     /// @return Remaining time budget in ms (negative = frame overrun)
     int16_t update();
+
+    /// Request that the current app be held (no auto-transition) for THIS frame only.
+    /// Called from the app render path (e.g. a long-text custom app that is still
+    /// scrolling). The request is cleared automatically at the start of each drawApp(),
+    /// so the moment the app stops asserting it — or a different (e.g. native) app is
+    /// shown — the hold evaporates and normal rotation resumes. This replaces the old
+    /// approach of toggling the global `setAutoTransition` flag from the renderer, which
+    /// could be left stuck `false` and freeze rotation until reboot.
+    void requestRotationHold();
 
     // ── Indicator state (public for direct access by DisplayManager) ──
     uint32_t indicator1Color = 0xFF0000; ///< Indicator 1 color (default: red)
