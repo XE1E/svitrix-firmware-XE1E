@@ -22,6 +22,11 @@ class GifPlayer
     static constexpr int DISPOSAL_LEAVE = 1;
     static constexpr int DISPOSAL_BACKGROUND = 2;
     static constexpr int DISPOSAL_RESTORE = 3;
+    // Hard cap on the frame-rewind loop in playGif(). drawFrame() resets
+    // currentFrame to 0 at the GIF trailer, so a stale/oversized frame index (or a
+    // malformed/misaligned clip) could otherwise rewind forever and hang the main
+    // loop. 300 > the uint8_t currentFrame range, so it never clips a legit rewind.
+    static constexpr uint16_t kGifRewindCap = 300;
 
   public:
     uint8_t currentFrame;
@@ -543,7 +548,14 @@ class GifPlayer
         offsetX = x;
         offsetY = y;
 
-        if (imageFile->name() == file.name())
+        // Compare by NAME CONTENT, not pointer. File::name() returns a const char*,
+        // so the original `==` compared addresses (always unequal across two File
+        // objects) — forcing a full re-parse + frame rewind on every call, and with
+        // the GifPlayer shared across weather apps, on every single frame. strcmp
+        // lets the "same GIF, just advance the animation" fast path actually trigger.
+        const char *reqName = imageFile->name();
+        const char *curName = file.name();
+        if (reqName && curName && strcmp(reqName, curName) == 0)
         {
             drawFrame();
             return lsdWidth;
@@ -566,10 +578,18 @@ class GifPlayer
                 parseGifHeader();
                 parseLogicalScreenDescriptor();
                 parseGlobalColorTable();
+                // Rewind to the requested frame, BOUNDED so it can never spin
+                // forever. drawFrame() resets currentFrame to 0 at the GIF trailer,
+                // so if `frame` is past the clip's frame count — or the decoder stops
+                // advancing on a malformed/misaligned read — currentFrame would never
+                // reach `frame`. The cap mirrors the sibling recursion guard
+                // (gifRestarting_). This was the outdoor-humidity freeze: a stale
+                // frame index wedged this loop and hung the whole main loop.
+                uint16_t rewindGuard = 0;
                 do
                 {
                     drawFrame(true);
-                } while (currentFrame < frame);
+                } while (currentFrame < frame && ++rewindGuard < kGifRewindCap);
             }
             else
             {
