@@ -521,7 +521,16 @@ void DisplayManager_::tick()
                     setAutoTransition(false);
                     int timeIdx = findAppIndexByName("Time");
                     if (timeIdx >= 0)
+                    {
+                        // If a standalone rotation effect is on screen when the
+                        // policy activates, drop the effect-only state and restore
+                        // the normal background — otherwise nativeAppGuard() suppresses
+                        // the Time render and the effect stays up (just dimmed)
+                        // instead of switching to the night clock.
+                        rotationEffectOnly = false;
+                        ui->setBackgroundEffect(displayConfig.backgroundEffect);
                         ui->switchToApp(timeIdx);
+                    }
                 }
             }
             else
