@@ -294,6 +294,8 @@ export const translations = {
       downloadPng: "Descargar PNG",
       prev: "Ant",
       next: "Sig",
+      paused: "Espejo en pausa para cuidar la conexión",
+      resume: "Reanudar",
     },
 
     // Stats bar
@@ -777,6 +779,8 @@ export const translations = {
       downloadPng: "Download PNG",
       prev: "Prev",
       next: "Next",
+      paused: "Mirror paused to spare the connection",
+      resume: "Resume",
     },
 
     // Stats bar
