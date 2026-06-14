@@ -276,18 +276,29 @@ export function UnifiedRotationSection() {
                 <div key={item.id}>
                   <div
                     class={`${styles.orderItem} ${styles.playlistItem} ${dragIndex === i ? styles.orderItemDragging : ""} ${overIndex === i ? styles.orderItemOver : ""} ${!item.enabled ? styles.orderItemDisabled : ""}`}
-                    draggable
-                    onDragStart={() => setDragIndex(i)}
+                    style={{ cursor: "pointer" }}
                     onDragOver={(e) => { e.preventDefault(); setOverIndex(i); }}
-                    onDragEnd={() => { setDragIndex(null); setOverIndex(null); }}
                     onDrop={(e) => { e.preventDefault(); handleDrop(i); }}
+                    onClick={() => toggleExpand(item.id)}
                   >
-                    <span class={styles.dragHandle}>☰</span>
-                    <Toggle
-                      checked={item.enabled}
-                      onChange={(v) => toggleItem(item.id, v)}
-                      compact
-                    />
+                    {/* Left handle: drag-and-drop reorder only (doesn't toggle expand). */}
+                    <span
+                      class={styles.dragHandle}
+                      draggable
+                      onDragStart={() => setDragIndex(i)}
+                      onDragEnd={() => { setDragIndex(null); setOverIndex(null); }}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ cursor: "grab" }}
+                    >
+                      ☰
+                    </span>
+                    <span onClick={(e) => e.stopPropagation()}>
+                      <Toggle
+                        checked={item.enabled}
+                        onChange={(v) => toggleItem(item.id, v)}
+                        compact
+                      />
+                    </span>
                     <span class={styles.orderName} style={{ opacity: item.enabled ? 1 : 0.5 }}>
                       {item.type === "effect" ? `✨ ${item.name}` : label(item.name)}
                     </span>
@@ -304,14 +315,14 @@ export function UnifiedRotationSection() {
                     )}
                     <button
                       class={styles.expandBtn}
-                      onClick={() => toggleExpand(item.id)}
+                      onClick={(e) => { e.stopPropagation(); toggleExpand(item.id); }}
                       title="Settings"
                     >
                       {expandedId === item.id ? "▲" : "▼"}
                     </button>
                     <button
                       class={styles.playlistDeleteBtn}
-                      onClick={() => deleteItem(item.id)}
+                      onClick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
                       title={t.apps.playlistDelete}
                     >
                       ✕
