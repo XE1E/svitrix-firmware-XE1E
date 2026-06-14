@@ -161,11 +161,11 @@ class MatrixDisplayUi
     int8_t nextAppNumber = -1; ///< Target app index for directed transition, -1 = sequential
 
     // ── Effect crossfade (animated fade when entering/leaving a standalone effect) ──
-    bool effectCrossfade_ = false;  ///< True while crossfading to/from a standalone effect
-    bool xfadeFromEffect_ = false;  ///< Outgoing side is a standalone effect
-    int xfadeFromEffectIdx_ = -1;   ///< Outgoing effect index (for callEffect), -1 = none
-    bool xfadeToEffect_ = false;    ///< Incoming side is a standalone effect
-    int xfadeToEffectIdx_ = -1;     ///< Incoming effect index (for callEffect), -1 = none
+    bool effectCrossfade_ = false; ///< True while crossfading to/from a standalone effect
+    bool xfadeFromEffect_ = false; ///< Outgoing side is a standalone effect
+    int xfadeFromEffectIdx_ = -1;  ///< Outgoing effect index (for callEffect), -1 = none
+    bool xfadeToEffect_ = false;   ///< Incoming side is a standalone effect
+    int xfadeToEffectIdx_ = -1;    ///< Incoming effect index (for callEffect), -1 = none
 
     OverlayCallback *overlayFunctions = nullptr;     ///< Array of overlay callbacks (not owned)
     BackgroundCallback backgroundFunction = nullptr; ///< Background effect callback (not owned)
@@ -218,7 +218,10 @@ class MatrixDisplayUi
 
     /// Current background effect index (-1 = none). Lets the host capture the
     /// outgoing effect when starting an effect crossfade.
-    int getBackgroundEffect() const { return BackgroundEffect; }
+    int getBackgroundEffect() const
+    {
+        return BackgroundEffect;
+    }
 
     /// Configure an animated crossfade involving a standalone effect (entering,
     /// leaving, or effect→effect). Called by the host's resolveNextApp(); the
