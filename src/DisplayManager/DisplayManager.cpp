@@ -51,6 +51,10 @@ static bool lastHasEnabledAlarms = false;
 static bool lastAlarmRinging = false;
 
 // Display calibration (declared extern in DisplayManager_internal.h)
+// User "Gamma" slider (web Display tab). Neutral = 1.9: at this value the
+// brightness-derived base curve is used unchanged. Higher = more contrast,
+// lower = flatter. Applied in gammaCorrection().
+static constexpr float kDisplayGammaNeutral = 1.9f;
 float displayGamma = 0;
 CRGB colorCorrection;
 CRGB colorTemperature;
@@ -438,7 +442,7 @@ void DisplayManager_::setup()
     FastLED.addLeds<NEOPIXEL, MATRIX_PIN>(leds, MATRIX_WIDTH * MATRIX_HEIGHT);
     setMatrixLayout(displayConfig.matrixLayout);
     matrix->setRotation(displayConfig.rotateScreen ? 1 : 0);
-    displayGamma = 1.9;
+    displayGamma = kDisplayGammaNeutral;
     if (colorCorrection)
     {
         FastLED.setCorrection(colorCorrection);
@@ -825,9 +829,15 @@ void DisplayManager_::setPower(bool state)
 /// At very low brightness (1-5), applies additional dimming for better low-light control.
 void DisplayManager_::gammaCorrection()
 {
-    float gamma = calculateGamma(actualBri);
+    // Base curve maps brightness → gamma exponent (and compensates low-brightness
+    // dropout). The user "Gamma" slider scales it: displayGamma == kDisplayGammaNeutral
+    // (1.9) leaves the curve unchanged; higher raises the exponent → darker
+    // mid-tones → more contrast; lower flattens it. Guard a zero/garbage value
+    // (e.g. before settings load) so gamma correction is never disabled.
+    float userGamma = (displayGamma > 0.1f) ? displayGamma : kDisplayGammaNeutral;
+    float gamma = calculateGamma(actualBri) * (userGamma / kDisplayGammaNeutral);
     // The per-channel gamma curve is identical for every pixel and only depends
-    // on `gamma`, which changes solely when brightness changes. Cache it as a
+    // on `gamma`, which changes only with brightness or the user gamma slider. Cache it as a
     // 256-entry LUT so the hot path does table lookups instead of 768 pow()
     // calls per frame (3 channels x 256 px). Output is byte-identical to
     // calling applyGamma_video() per channel.
