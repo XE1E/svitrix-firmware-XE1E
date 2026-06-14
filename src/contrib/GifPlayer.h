@@ -564,6 +564,14 @@ class GifPlayer
         {
             currentFrame = 0;
             file = *imageFile;
+            // Parse from the GIF header. The read primitives (readByte/readWord/
+            // readIntoBuffer) read from the file's CURRENT position, and this File
+            // handle is shared/persistent across calls — a previous play can leave
+            // it mid-clip (the rewind stops at the target frame, not the trailer).
+            // Without this seek, a reparse from a stale offset reads garbage; the
+            // bad parse can leave the position even more wrong, so the icon stays
+            // blank until reboot (intermittent, surfaces after hours of rotation).
+            file.seek(0, SeekSet);
 
             memset(FrameBuffer, 0, sizeof(FrameBuffer));
             memset(gifPalette, 0, sizeof(gifPalette));
