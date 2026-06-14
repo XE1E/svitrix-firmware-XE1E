@@ -160,6 +160,13 @@ class MatrixDisplayUi
 
     int8_t nextAppNumber = -1; ///< Target app index for directed transition, -1 = sequential
 
+    // ── Effect crossfade (animated fade when entering/leaving a standalone effect) ──
+    bool effectCrossfade_ = false;  ///< True while crossfading to/from a standalone effect
+    bool xfadeFromEffect_ = false;  ///< Outgoing side is a standalone effect
+    int xfadeFromEffectIdx_ = -1;   ///< Outgoing effect index (for callEffect), -1 = none
+    bool xfadeToEffect_ = false;    ///< Incoming side is a standalone effect
+    int xfadeToEffectIdx_ = -1;     ///< Incoming effect index (for callEffect), -1 = none
+
     OverlayCallback *overlayFunctions = nullptr;     ///< Array of overlay callbacks (not owned)
     BackgroundCallback backgroundFunction = nullptr; ///< Background effect callback (not owned)
     uint8_t overlayCount = 0;                        ///< Number of registered overlays
@@ -189,6 +196,7 @@ class MatrixDisplayUi
     void blinkTransition();
     void reloadTransition();
     void crossfadeTransition();
+    void effectCrossfadeRender(); ///< Crossfade between an app and a standalone effect (either side)
 
   public:
     MatrixDisplayUi(FastLED_NeoMatrix *matrix, IMatrixHost *host);
@@ -207,6 +215,16 @@ class MatrixDisplayUi
 
     /// Set background visual effect index. Pass -1 to disable.
     void setBackgroundEffect(int effect);
+
+    /// Current background effect index (-1 = none). Lets the host capture the
+    /// outgoing effect when starting an effect crossfade.
+    int getBackgroundEffect() const { return BackgroundEffect; }
+
+    /// Configure an animated crossfade involving a standalone effect (entering,
+    /// leaving, or effect→effect). Called by the host's resolveNextApp(); the
+    /// IN_TRANSITION is started by tick() when resolveNextApp() returns -3. Both
+    /// sides render live each frame and blend by progress (same duration as apps).
+    void prepareEffectCrossfade(bool fromEffect, int fromEffectIdx, bool toEffect, int toEffectIdx, int toAppIdx);
 
     /// Set the global weather overlay effect applied to all apps.
     void setGlobalOverlay(OverlayEffect e);

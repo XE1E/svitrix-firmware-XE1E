@@ -158,6 +158,11 @@ int8_t DisplayManager_::resolveNextApp(int8_t currentApp, int8_t direction)
     if (currentRotationItem && currentRotationItem->type == 0)
         prevRotationItem = currentRotationItem;
 
+    // Capture the OUTGOING side before advancing — the effect crossfade renders it
+    // live (an effect is drawn full-screen via callEffect; an app via its callback).
+    bool fromEffect = rotationEffectOnly;
+    int fromEffectIdx = fromEffect ? ui->getBackgroundEffect() : -1;
+
     // Try to find a valid item, but limit attempts to prevent infinite loop
     for (size_t attempts = 0; attempts < rotationItems.size(); attempts++)
     {
@@ -172,10 +177,6 @@ int8_t DisplayManager_::resolveNextApp(int8_t currentApp, int8_t direction)
 
         if (item.type == 0) // App
         {
-            bool wasEffectOnly = rotationEffectOnly;
-            rotationEffectOnly = false;
-            ui->setBackgroundEffect(displayConfig.backgroundEffect);
-
             // Find app index
             for (size_t i = 0; i < Apps.size(); i++)
             {
@@ -185,13 +186,20 @@ int8_t DisplayManager_::resolveNextApp(int8_t currentApp, int8_t direction)
                     long dur = item.duration > 0 ? item.duration * 1000L : appConfig.timePerApp;
                     ui->setTimePerApp(dur);
 
-                    // If coming from an effect, switch instantly (no transition animation)
-                    // to avoid showing the stale "previous app" during transition
-                    if (wasEffectOnly)
+                    if (fromEffect)
                     {
-                        ui->switchToApp((uint8_t)i);
-                        return -2; // Signal: already switched, don't start transition
+                        // Leaving a standalone effect → animated crossfade to the app
+                        // (used to be an instant switch). During the fade run normal
+                        // mode + background; finalizeEffectTransition() leaves effect mode.
+                        rotationEffectOnly = false;
+                        ui->setBackgroundEffect(displayConfig.backgroundEffect);
+                        pendingEffectIdx_ = -1; // finalize → app
+                        ui->prepareEffectCrossfade(true, fromEffectIdx, false, -1, (int)i);
+                        return -3; // start effect crossfade
                     }
+                    // App → app: normal animated transition (chosen transition effect).
+                    rotationEffectOnly = false;
+                    ui->setBackgroundEffect(displayConfig.backgroundEffect);
                     return (int8_t)i;
                 }
             }
@@ -202,8 +210,6 @@ int8_t DisplayManager_::resolveNextApp(int8_t currentApp, int8_t direction)
             int effectIdx = getEffectIndex(item.name.c_str());
             if (effectIdx >= 0)
             {
-                rotationEffectOnly = true;
-                ui->setBackgroundEffect(effectIdx);
                 // Set duration for effect display
                 long dur = item.duration > 0 ? item.duration * 1000L : appConfig.timePerApp;
                 ui->setTimePerApp(dur);
@@ -211,8 +217,16 @@ int8_t DisplayManager_::resolveNextApp(int8_t currentApp, int8_t direction)
                 setCurrentApp(String("Effect: ") + item.name);
                 if (notifier_)
                     notifier_->setCurrentApp(getCurrentApp());
-                // Return -2 to signal "don't change app, just reset timer"
-                return -2;
+
+                // Animated crossfade INTO the effect (from an app or another effect).
+                // During the fade keep normal mode + background; the effect is rendered
+                // live by the crossfade. finalizeEffectTransition() then sets effect-only
+                // mode + this effect as the background.
+                rotationEffectOnly = false;
+                ui->setBackgroundEffect(displayConfig.backgroundEffect);
+                pendingEffectIdx_ = effectIdx; // finalize → effect
+                ui->prepareEffectCrossfade(fromEffect, fromEffectIdx, true, effectIdx, -1);
+                return -3; // start effect crossfade
             }
             // Effect not found, continue to next item
             rotationEffectOnly = false;
@@ -222,4 +236,22 @@ int8_t DisplayManager_::resolveNextApp(int8_t currentApp, int8_t direction)
     // No valid items found, fall back to default behavior
     currentRotationItem = nullptr;
     return -1;
+}
+
+/// Apply the incoming side's final rotation state once an effect crossfade ends.
+/// pendingEffectIdx_ >= 0 → we entered an effect (effect-only mode + that effect as
+/// background); -1 → we entered an app (normal mode + configured background).
+void DisplayManager_::finalizeEffectTransition()
+{
+    if (pendingEffectIdx_ >= 0)
+    {
+        rotationEffectOnly = true;
+        ui->setBackgroundEffect(pendingEffectIdx_);
+    }
+    else
+    {
+        rotationEffectOnly = false;
+        ui->setBackgroundEffect(displayConfig.backgroundEffect);
+    }
+    pendingEffectIdx_ = -1;
 }

@@ -192,6 +192,7 @@ bool MatrixDisplayUi::switchToApp(uint8_t app)
 {
     if (app >= this->AppCount)
         return false;
+    this->effectCrossfade_ = false; // an instant switch cancels any pending effect crossfade
     this->state.ticksSinceLastStateSwitch = 0;
     if (app == this->state.currentApp)
         return false;
@@ -263,6 +264,13 @@ void MatrixDisplayUi::tick()
                 this->state.currentApp = getnextAppNumber();
                 this->state.ticksSinceLastStateSwitch = 0;
                 this->nextAppNumber = -1;
+                if (this->effectCrossfade_)
+                {
+                    // Fade finished — apply the incoming side's final rotation state
+                    // (effect-only + background effect, or normal app mode).
+                    this->effectCrossfade_ = false;
+                    host_->finalizeEffectTransition();
+                }
             }
             break;
         case FIXED:
@@ -281,6 +289,13 @@ void MatrixDisplayUi::tick()
                     {
                         // Stay on current app (e.g., standalone effect in playlist)
                         // Just reset timer, no transition
+                    }
+                    else if (resolved == -3)
+                    {
+                        // Effect crossfade: prepareEffectCrossfade() already armed the
+                        // fade state; just enter the transition (effectCrossfadeRender
+                        // animates the fade between the app and the standalone effect).
+                        this->state.appState = IN_TRANSITION;
                     }
                     else if (resolved >= 0)
                     {
@@ -329,6 +344,67 @@ void MatrixDisplayUi::renderBackground()
     }
 }
 
+/// Arm an effect crossfade. The host's resolveNextApp() calls this and returns
+/// -3; tick() then enters IN_TRANSITION and drawApp() dispatches to
+/// effectCrossfadeRender(). nextAppNumber holds the incoming app (or stays -1 so
+/// currentApp is preserved when the incoming side is an effect).
+void MatrixDisplayUi::prepareEffectCrossfade(bool fromEffect, int fromEffectIdx, bool toEffect, int toEffectIdx, int toAppIdx)
+{
+    this->effectCrossfade_ = true;
+    this->xfadeFromEffect_ = fromEffect;
+    this->xfadeFromEffectIdx_ = fromEffectIdx;
+    this->xfadeToEffect_ = toEffect;
+    this->xfadeToEffectIdx_ = toEffectIdx;
+    this->nextAppNumber = toEffect ? -1 : (int8_t)toAppIdx;
+}
+
+/// Crossfade between an app and a standalone effect (either or both sides may be
+/// an effect). Mirrors crossfadeTransition() but renders each side as an app
+/// callback or a full-screen effect. Both sides render live every frame, so
+/// animations keep running through the fade. Duration = ticksPerTransition.
+void MatrixDisplayUi::effectCrossfadeRender()
+{
+    float progress = (float)this->state.ticksSinceLastStateSwitch / (float)this->ticksPerTransition;
+    if (progress > 1.0f)
+        progress = 1.0f;
+
+    // Outgoing side (tick() already cleared + drew the normal background).
+    if (this->xfadeFromEffect_ && this->xfadeFromEffectIdx_ >= 0)
+    {
+        NeoMatrixCanvas canvas(this->matrix);
+        callEffect(canvas, 0, 0, this->xfadeFromEffectIdx_);
+    }
+    else if (!this->xfadeFromEffect_)
+    {
+        (this->AppFunctions[this->state.currentApp])(this->matrix, &this->state, 0, 0, &gif1);
+    }
+    for (int i = 0; i < 32; i++)
+        for (int j = 0; j < 8; j++)
+            ledsCopy[i + j * 32] = host_->getLeds()[this->matrix->XY(i, j)];
+
+    // Incoming side over a fresh background.
+    this->matrix->fillScreen(0);
+    this->renderBackground();
+    if (this->xfadeToEffect_ && this->xfadeToEffectIdx_ >= 0)
+    {
+        NeoMatrixCanvas canvas(this->matrix);
+        callEffect(canvas, 0, 0, this->xfadeToEffectIdx_);
+    }
+    else if (!this->xfadeToEffect_)
+    {
+        (this->AppFunctions[this->getnextAppNumber()])(this->matrix, &this->state, 0, 0, &gif2);
+    }
+
+    // Blend outgoing → incoming by progress.
+    for (int i = 0; i < 32; i++)
+        for (int j = 0; j < 8; j++)
+        {
+            CRGB pixelOld = ledsCopy[i + j * 32];
+            CRGB pixelNew = host_->getLeds()[this->matrix->XY(i, j)];
+            host_->getLeds()[this->matrix->XY(i, j)] = pixelOld.lerp8(pixelNew, (uint8_t)(progress * 255));
+        }
+}
+
 /// Dispatches rendering to the appropriate transition effect (IN_TRANSITION)
 /// or directly invokes the current app callback (FIXED).
 /// In FIXED state, also selects the transition type for the next cycle.
@@ -338,6 +414,14 @@ void MatrixDisplayUi::drawApp()
     {
     case IN_TRANSITION:
     {
+        if (this->effectCrossfade_)
+        {
+            // Standalone effect entering/leaving — always a crossfade, regardless
+            // of the configured app transition (slide/zoom/etc. don't fit a
+            // full-screen effect).
+            this->effectCrossfadeRender();
+            break;
+        }
         swapped = false;
         gotNewTransition = false;
         if (currentTransition == SLIDE)

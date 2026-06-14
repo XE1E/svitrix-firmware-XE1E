@@ -11,7 +11,7 @@
 | **IDisplayNavigation** | 12 | DisplayManager_ | MenuManager, ServerManager, MQTTManager, DataFetcher |
 | **IDisplayNotifier** | 9 | NotificationManager_ | ServerManager, MQTTManager |
 | **IDisplayPolicy** | 4 | NightModePolicy | DisplayManager |
-| **IMatrixHost** | 4 | DisplayManager_ | MatrixDisplayUi |
+| **IMatrixHost** | 6 | DisplayManager_ | MatrixDisplayUi |
 | **IButtonHandler** | 4 | DisplayManager_, MenuManager_ | PeripheryManager |
 | **IButtonReporter** | 1 | MQTTManager_, ServerManager_ | PeripheryManager |
 | **INotifier** | 7 | MQTTManager_ | DisplayManager, NotificationManager, Apps |
@@ -88,12 +88,14 @@ void setIndicator{1,2,3}Color(uint32_t);
 void setIndicator{1,2,3}State(bool);
 ```
 
-### IMatrixHost (4 methods)
+### IMatrixHost (6 methods)
 ```cpp
 CRGB* getLeds();
 void gammaCorrection();
 void sendAppLoop();
 bool setAutoTransition(bool);
+int8_t resolveNextApp(int8_t currentApp, int8_t direction); // -1 default, -2 stay, -3 effect crossfade, >=0 app idx
+void finalizeEffectTransition();                            // apply incoming state after an effect crossfade
 ```
 
 ### IButtonHandler (4 methods)
