@@ -34,3 +34,6 @@ web/node_modules
 
 # Internal docs (not for public repo)
 ANALYSIS.md
+
+# Device serial capture logs (debug)
+logs/

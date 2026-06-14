@@ -60,6 +60,9 @@ class DisplayManager_ : public IButtonHandler, public IMatrixHost, public IDispl
     IDisplayPolicy *activePolicy_ = nullptr; ///< Cached first-active policy (nullptr == none)
     bool policyDirty_ = false;               ///< Force override re-application on next tick
 
+    int pendingEffectIdx_ = -1; ///< Incoming effect index for an in-progress effect crossfade
+                                ///< (>=0 → enter effect; -1 → enter app). Applied by finalizeEffectTransition().
+
   public:
     static DisplayManager_& getInstance();
     bool appIsSwitching; ///< True while an app transition animation is in progress
@@ -125,6 +128,7 @@ class DisplayManager_ : public IButtonHandler, public IMatrixHost, public IDispl
     String getTransitionNames() override;
     CRGB *getLeds() override;
     int8_t resolveNextApp(int8_t currentApp, int8_t direction) override;
+    void finalizeEffectTransition() override; ///< Apply incoming side state after an effect crossfade
 
     // ── Artnet & Moodlight (DisplayManager_Artnet.cpp) ─────────────
     void startArtnet();
