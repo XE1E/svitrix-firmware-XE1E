@@ -457,10 +457,10 @@ void DisplayManager_::setup()
     ui->setTimePerApp(appConfig.timePerApp);
     ui->setTimePerTransition(appConfig.timePerTransition);
     ui->setOverlays(overlays, 3);
-    ui->setBackgroundEffect(displayConfig.backgroundEffect);
-    // Only apply config's auto-transition if no active policy blocks it.
-    // Query policies directly (not the cached activePolicy_) to handle
-    // calls from setNewSettings() before the next tick() updates the cache.
+    // Only apply config's auto-transition and background effect if no active
+    // policy blocks transitions. Query policies directly (not the cached
+    // activePolicy_) to handle calls from setNewSettings() before the next
+    // tick() updates the cache.
     bool policyBlocks = false;
     for (auto *p : policies_)
     {
@@ -470,6 +470,9 @@ void DisplayManager_::setup()
             break;
         }
     }
+    // A blocking policy (e.g. night mode) shows the clock only — suppress the
+    // background effect so it doesn't render behind the night clock.
+    ui->setBackgroundEffect(policyBlocks ? -1 : displayConfig.backgroundEffect);
     setAutoTransition(policyBlocks ? false : appConfig.autoTransition);
 
     ui->init();
@@ -526,13 +529,12 @@ void DisplayManager_::tick()
                     int timeIdx = findAppIndexByName("Time");
                     if (timeIdx >= 0)
                     {
-                        // If a standalone rotation effect is on screen when the
-                        // policy activates, drop the effect-only state and restore
-                        // the normal background — otherwise nativeAppGuard() suppresses
-                        // the Time render and the effect stays up (just dimmed)
-                        // instead of switching to the night clock.
+                        // Night mode shows the clock only. Drop any standalone
+                        // effect-only state AND suppress the configured background
+                        // effect — otherwise it keeps rendering behind the night
+                        // clock (just dimmed, not gone). Restored on deactivation.
                         rotationEffectOnly = false;
-                        ui->setBackgroundEffect(displayConfig.backgroundEffect);
+                        ui->setBackgroundEffect(-1);
                         ui->switchToApp(timeIdx);
                     }
                 }
@@ -541,6 +543,9 @@ void DisplayManager_::tick()
             {
                 setTextColor(colorConfig.textColor);
                 setAutoTransition(appConfig.autoTransition);
+                // Restore the configured background effect that night mode
+                // suppressed; the resumed rotation re-applies per-item effects.
+                ui->setBackgroundEffect(displayConfig.backgroundEffect);
             }
             // Reapply brightness so the clamp inside setBrightness() takes
             // effect (or is released) immediately on the transition edge.
