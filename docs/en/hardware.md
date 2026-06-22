@@ -1,6 +1,6 @@
-# DIY Hardware
+# Hardware (Ulanzi TC001)
 
-If you want to build your own SVITRIX, here is the hardware reference for the Ulanzi TC001 clock.
+Hardware reference for the Ulanzi TC001 clock, the platform SVITRIX runs on.
 
 ## Microcontroller
 
