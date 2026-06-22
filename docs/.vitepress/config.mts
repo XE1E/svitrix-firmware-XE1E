@@ -140,6 +140,9 @@ export default defineConfig({
   title: 'Svitrix - XE1E',
   base: '/svitrix-firmware-XE1E/',
 
+  // Internal planning/analysis docs — kept in the repo but not published to the site.
+  srcExclude: ['internal/**'],
+
   head: [
     ['link', { rel: 'icon', href: '/svitrix-firmware-XE1E/assets/icon.png' }]
   ],
