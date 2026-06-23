@@ -47,7 +47,7 @@ External API
     │  HTTP GET (every N seconds)
     ▼
 DataFetcher_::fetchAndPush()
-    │  1. HTTP GET → response body (max 4 KB)
+    │  1. HTTP GET → response body (max 8 KB)
     │  2. extractJsonValue(body, jsonPath) → raw value string
     │  3. formatValue(src, raw) → printf-formatted string
     │  4. buildCustomAppJson(src, formatted) → {"text","icon","color","lifetime":0}
@@ -209,11 +209,18 @@ if (ServerManager.isConnected) {
 
 ## Important Constraints
 
-- Max response body: 4 KB (`MAX_RESPONSE_SIZE`) — larger responses truncated
-- JSON parsing buffer: 4 KB `DynamicJsonDocument` for response extraction (handles large exchange rate APIs)
-- Connect timeout: 10 s, read timeout: 15 s — these still apply, but they now
-  block only the worker task (core 0), never the render loop
-- One HTTP request in flight per tick (round-robin) handled off the main loop
+- Max response body: 8 KB (`MAX_RESPONSE_SIZE`) — larger responses truncated
+- JSON parsing buffer: 8 KB `DynamicJsonDocument` (`JSON_DOC_SIZE`) for response extraction (handles large exchange-rate / finance APIs); weather parse buffer is 4 KB
+- Connect/read timeouts 4 s, TLS handshake 4 s — they bound how long the
+  **synchronous** fetch can stall the render loop (there is no worker task)
+- One HTTP request in flight per tick (round-robin), run synchronously on the loop
+- **Thread-safety:** `sources_` / `lastFetch_` / `nextFetchIndex_` are guarded by
+  `sourcesMutex_` (`std::mutex`). Source CRUD (`addSource`/`removeSource`/
+  `getSourcesAsJson`/`forceFetch`) runs in the AsyncWebServer task; `tick()` runs
+  on the loop. `tick()` copies the due source under the lock and fetches OUTSIDE
+  it, so a blocking GET never makes a web handler wait on the mutex.
+- **Fast retry on failure:** a failed custom fetch reschedules a retry in
+  `CUSTOM_RETRY_MS` (60 s) instead of waiting the full interval (mirrors weather)
 - Custom apps created with `lifetime: 0` — DataFetcher manages their lifecycle, they never auto-expire
 - On `removeSource()`, the custom app is cleared from display via `parseCustomPage(name, "{}", false)`
 - On disabling a source (`enabled=false`), its custom app is removed from display

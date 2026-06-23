@@ -7,13 +7,15 @@
 #include <WiFiClientSecure.h>
 #include <LittleFS.h>
 #include <algorithm>
+#include <cctype>
 
 extern const char *rootCACertificate;
 
 static const char *TAG = "DataFetcher";
 static const char *SOURCES_PATH = "/DATAFETCHER/sources.json";
-static constexpr size_t MAX_RESPONSE_SIZE = 4096;
-static constexpr uint32_t MIN_FREE_HEAP = 60000; // headroom for SSL allocation
+static constexpr size_t MAX_RESPONSE_SIZE = 8192; // many exchange/finance APIs return 4-8 KB
+static constexpr size_t JSON_DOC_SIZE = 8192;     // parse buffer, matches MAX_RESPONSE_SIZE
+static constexpr uint32_t MIN_FREE_HEAP = 60000;  // headroom for SSL allocation
 
 // Fetches run synchronously on the main loop (no background worker — a parallel
 // TLS task triggered a socket-fd leak that froze fetching until reboot). Tight
@@ -23,6 +25,7 @@ static constexpr uint32_t HTTP_CONNECT_TIMEOUT = 4000; // TCP connect
 static constexpr uint32_t HTTP_READ_TIMEOUT = 4000;    // response read
 static constexpr uint32_t HANDSHAKE_TIMEOUT_S = 4;     // TLS handshake (default 120s)
 static constexpr uint32_t WEATHER_RETRY_MS = 60000;    // re-attempt 60s after a failed weather fetch (vs full interval)
+static constexpr uint32_t CUSTOM_RETRY_MS = 60000;     // same fast retry for failed custom sources (vs the full interval)
 
 DataFetcher_& DataFetcher_::getInstance()
 {
@@ -80,30 +83,54 @@ void DataFetcher_::tick()
         }
     }
 
-    // Custom data sources (round-robin, one per tick)
-    if (!nav_ || sources_.empty())
-        return;
-
-    size_t idx = nextFetchIndex_ % sources_.size();
-    nextFetchIndex_ = (idx + 1) % sources_.size();
-
-    if (!sources_[idx].enabled)
-        return;
-
-    // Fetch immediately if never fetched (lastFetch_==0 — forceFetch sets this),
-    // or after the interval elapsed.
-    bool shouldFetch = (lastFetch_[idx] == 0) ||
-                       (now - lastFetch_[idx] >= sources_[idx].interval * 1000UL);
-    if (shouldFetch)
+    // Custom data sources (round-robin, one per tick). Pick + copy the due
+    // source under the lock, then fetch OUTSIDE the lock so the ~2-4 s blocking
+    // GET never stalls a web-handler waiting on the mutex.
+    DataSourceConfig srcCopy;
     {
-        if (ESP.getFreeHeap() > MIN_FREE_HEAP)
-        {
-            lastFetch_[idx] = now;
-            fetchAndPush(idx);
-        }
-        else
+        std::lock_guard<std::mutex> lk(sourcesMutex_);
+        if (!nav_ || sources_.empty())
+            return;
+
+        size_t idx = nextFetchIndex_ % sources_.size();
+        nextFetchIndex_ = (idx + 1) % sources_.size();
+
+        if (!sources_[idx].enabled)
+            return;
+
+        // Fetch immediately if never fetched (lastFetch_==0 — forceFetch sets this),
+        // or after the interval elapsed.
+        bool shouldFetch = (lastFetch_[idx] == 0) ||
+                           (now - lastFetch_[idx] >= sources_[idx].interval * 1000UL);
+        if (!shouldFetch)
+            return;
+
+        if (ESP.getFreeHeap() <= MIN_FREE_HEAP)
         {
             DEBUG_PRINTLN(F("DataFetcher: low heap, skipping fetch"));
+            return;
+        }
+
+        lastFetch_[idx] = now;
+        srcCopy = sources_[idx];
+    }
+
+    if (!fetchAndPush(srcCopy))
+    {
+        // Failed fetch: schedule a fast retry (~60 s) instead of waiting the full
+        // interval. Re-find by name under the lock — the index may have shifted
+        // if a source was added/removed during the fetch.
+        std::lock_guard<std::mutex> lk(sourcesMutex_);
+        for (size_t i = 0; i < sources_.size(); i++)
+        {
+            if (sources_[i].name == srcCopy.name)
+            {
+                unsigned long intervalMs = sources_[i].interval * 1000UL;
+                // Make it due again CUSTOM_RETRY_MS from now (clamped so we never
+                // push the next attempt earlier than a normal cycle would).
+                lastFetch_[i] = (intervalMs > CUSTOM_RETRY_MS) ? (now - (intervalMs - CUSTOM_RETRY_MS)) : now;
+                break;
+            }
         }
     }
 }
@@ -149,9 +176,8 @@ int DataFetcher_::httpGet(const String& url, bool isHttps, String& outBody)
 
 // ---------- HTTP fetch (custom source) — synchronous ----------
 
-bool DataFetcher_::fetchAndPush(size_t index)
+bool DataFetcher_::fetchAndPush(const DataSourceConfig& src)
 {
-    const DataSourceConfig& src = sources_[index];
     bool isHttps = src.url.startsWith("https");
 
     // Extra heap check before SSL allocation
@@ -198,8 +224,8 @@ bool DataFetcher_::fetchAndPush(size_t index)
 
 String DataFetcher_::extractJsonValue(const String& json, const String& path)
 {
-    // Use larger buffer - some exchange rate APIs return 3KB+ with all currencies
-    DynamicJsonDocument doc(4096);
+    // Use larger buffer - some exchange rate APIs return 4-8 KB with all currencies
+    DynamicJsonDocument doc(JSON_DOC_SIZE);
     DeserializationError err = deserializeJson(doc, json);
     if (err)
         return "";
@@ -218,8 +244,14 @@ String DataFetcher_::extractJsonValue(const String& json, const String& path)
 
         if (current.is<JsonArray>())
         {
-            int idx = segment.toInt();
-            current = current[idx];
+            // Array segments must be numeric ("data.0.price"); a non-numeric
+            // segment is a path error, not silently index 0.
+            for (size_t c = 0; c < segment.length(); c++)
+            {
+                if (!isdigit(static_cast<unsigned char>(segment[c])))
+                    return "";
+            }
+            current = current[segment.toInt()];
         }
         else if (current.is<JsonObject>())
         {
@@ -343,55 +375,65 @@ bool DataFetcher_::addSource(const char *json)
         return false;
     }
 
-    // Update existing or add new
-    auto existing = std::find_if(sources_.begin(), sources_.end(),
-                                 [&](const DataSourceConfig& s)
-                                 { return s.name == cfg.name; });
-    if (existing != sources_.end())
+    // Mutate the shared vectors under the lock (called from the web task);
+    // defer the display update until after we release it.
+    bool justDisabled = false;
     {
-        DEBUG_PRINTF("DataFetcher: updating source '%s' (enabled=%d)", cfg.name.c_str(), cfg.enabled);
-        bool wasEnabled = existing->enabled;
-        *existing = cfg;
-        saveSources();
-
-        // If source was just disabled, remove its custom app from display
-        if (wasEnabled && !cfg.enabled && nav_)
+        std::lock_guard<std::mutex> lk(sourcesMutex_);
+        auto existing = std::find_if(sources_.begin(), sources_.end(),
+                                     [&](const DataSourceConfig& s)
+                                     { return s.name == cfg.name; });
+        if (existing != sources_.end())
         {
-            nav_->parseCustomPage(cfg.name, "{}", false);
+            DEBUG_PRINTF("DataFetcher: updating source '%s' (enabled=%d)", cfg.name.c_str(), cfg.enabled);
+            bool wasEnabled = existing->enabled;
+            auto idx = std::distance(sources_.begin(), existing);
+            *existing = cfg;
+            lastFetch_[idx] = 0; // re-fetch soon after an edit (new URL/interval/re-enable)
+            saveSources();
+            justDisabled = (wasEnabled && !cfg.enabled);
         }
-        return true;
+        else
+        {
+            if (sources_.size() >= DataSourceConfig::MAX_SOURCES)
+            {
+                DEBUG_PRINTLN(F("DataFetcher: max sources reached"));
+                return false;
+            }
+            sources_.push_back(cfg);
+            lastFetch_.push_back(0);
+            saveSources();
+        }
     }
 
-    if (sources_.size() >= DataSourceConfig::MAX_SOURCES)
-    {
-        DEBUG_PRINTLN(F("DataFetcher: max sources reached"));
-        return false;
-    }
-
-    sources_.push_back(cfg);
-    lastFetch_.push_back(0);
-    saveSources();
+    // If the source was just disabled, clear its custom app from the display.
+    if (justDisabled && nav_)
+        nav_->parseCustomPage(cfg.name, "{}", false);
     return true;
 }
 
 bool DataFetcher_::removeSource(const String& name)
 {
-    auto it = std::find_if(sources_.begin(), sources_.end(),
-                           [&](const DataSourceConfig& s)
-                           { return s.name == name; });
-    if (it == sources_.end())
-        return false;
+    {
+        std::lock_guard<std::mutex> lk(sourcesMutex_);
+        auto it = std::find_if(sources_.begin(), sources_.end(),
+                               [&](const DataSourceConfig& s)
+                               { return s.name == name; });
+        if (it == sources_.end())
+            return false;
 
+        auto idx = std::distance(sources_.begin(), it);
+        sources_.erase(it);
+        lastFetch_.erase(lastFetch_.begin() + idx);
+        if (nextFetchIndex_ >= sources_.size() && !sources_.empty())
+            nextFetchIndex_ = 0;
+
+        saveSources();
+    }
+
+    // Clear its custom app from the display (outside the lock).
     if (nav_)
         nav_->parseCustomPage(name, "{}", false);
-
-    auto idx = std::distance(sources_.begin(), it);
-    sources_.erase(it);
-    lastFetch_.erase(lastFetch_.begin() + idx);
-    if (nextFetchIndex_ >= sources_.size() && !sources_.empty())
-        nextFetchIndex_ = 0;
-
-    saveSources();
     return true;
 }
 
@@ -400,6 +442,7 @@ String DataFetcher_::getSourcesAsJson()
     DynamicJsonDocument doc(2048);
     JsonArray arr = doc.to<JsonArray>();
 
+    std::lock_guard<std::mutex> lk(sourcesMutex_); // called from the web task
     for (const auto& src : sources_)
     {
         JsonObject obj = arr.createNestedObject();
@@ -421,6 +464,7 @@ String DataFetcher_::getSourcesAsJson()
 
 void DataFetcher_::forceFetch(const String& name)
 {
+    std::lock_guard<std::mutex> lk(sourcesMutex_); // called from the web task
     auto it = std::find_if(sources_.begin(), sources_.end(),
                            [&](const DataSourceConfig& s)
                            { return s.name == name; });
@@ -631,7 +675,7 @@ void DataFetcher_::fetchWeather()
         return;                                        // weatherData left intact
     }
 
-    DynamicJsonDocument doc(2048);
+    DynamicJsonDocument doc(4096); // weatherapi current.json + aqi can approach 2 KB
     DeserializationError err = deserializeJson(doc, body);
     if (err)
     {
