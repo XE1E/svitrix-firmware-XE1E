@@ -125,7 +125,12 @@ Reconnection handled internally by ArduinoHA. `onMqttConnected()` re-runs on eac
 ### Hot Reconnect (no reboot required)
 
 `reconnect()` allows changing MQTT broker settings without restarting the device:
-- Called from `/save` HTTP handler when MQTT config changes
+- Triggered by the `/save` HTTP handler (async task) via
+  `ServerManager.triggerMqttReconnect()`, which only **flags** it; the actual
+  `reconnect()` runs on the **main loop** in `ServerManager::tick()`. This keeps
+  `mqtt.disconnect()/begin()` (+ delays, + a first-time `setup()` allocating 63
+  entities) off the async task, so it never races with `mqtt.loop()` or blocks
+  the web server.
 - If entities exist → disconnect + `mqtt.begin()` with new credentials
 - If entities don't exist (first-time config) → full `setup()`
 - If host is empty → disconnect only (MQTT disabled)

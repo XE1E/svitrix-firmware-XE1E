@@ -617,6 +617,16 @@ void ServerManager_::tick()
 {
     mws.run();
 
+    // Apply a deferred MQTT reconnect on the loop (flagged by the async /save
+    // handler) so it never runs concurrently with mqtt.loop() or blocks the
+    // web task.
+    if (mqttReconnectPending_)
+    {
+        mqttReconnectPending_ = false;
+        if (onMqttConfigChanged_)
+            onMqttConfigChanged_();
+    }
+
     if (!systemConfig.apMode)
     {
         int packetSize = udp.parsePacket();
