@@ -41,7 +41,7 @@ SVITRIX-XE1E es un fork de [SVITRIX](https://github.com/svitrix/svitrix-firmware
 - **Hora** — múltiples modos incluyendo reloj de dígitos grandes, reloj binario, caja de calendario, barra de día de semana
 - **Fecha** — fecha formateada con indicador de día de la semana
 - **Temperatura y Humedad** — lecturas internas de sensores I2C (SHT3x, BME280, etc.)
-- **Batería** — porcentaje de carga con icono animado
+- **Batería** — porcentaje de carga con icono vertical dinámico (se llena por nivel y cambia de color: verde, amarillo, naranja, rojo)
 - **Luna (NUEVO)** — fase lunar dibujada en escala de grises con fondo de estrellas azules; texto rotativo configurable (nombre de fase, edad, % iluminación) y hemisferio norte/sur
 - **Apps de Clima (NUEVO)** — temperatura exterior, humedad, presión y calidad del aire vía [WeatherAPI.com](https://weatherapi.com)
   - Ubicación configurable (nombre de ciudad, coordenadas, auto-detectar por IP, o ID de estación)

@@ -73,7 +73,9 @@ Formatted date string + weekday bar at bottom.
 8x8 droplet icon (icon_2075) + humidity percentage.
 
 ### BatApp (ULANZI only)
-8x8 battery icon (icon_1486) + battery percentage.
+Dynamic vertical battery icon (drawn programmatically by `drawBatteryIcon()` —
+grey shell + nub, interior fills bottom-up proportional to charge, coloured by
+level: green ≥75, yellow 50–74, orange 20–49, red <20) + battery percentage.
 
 ### MoonApp
 Physically-shaded grayscale moon (programmatically drawn, no icon file) over a

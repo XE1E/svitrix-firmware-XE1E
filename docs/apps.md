@@ -101,7 +101,7 @@ Para una medición más precisa, puedes utilizar el [dev.json](./dev) para calib
 
 <img src="./assets/BAT.png" style="max-height:100px;">
 
-La App de Batería muestra el nivel de carga actual de la batería integrada.
+La App de Batería muestra el nivel de carga actual de la batería integrada con un **icono de batería vertical dinámico**: se llena de abajo hacia arriba en proporción a la carga y cambia de color por nivel (verde ≥75 %, amarillo 50–74 %, naranja 20–49 %, rojo <20 %).
 Debido a diferencias en lotes de baterías y la degradación de la batería barata con el tiempo, puede que necesites calibrarla manualmente.
 
 1. Usa la [API de Estado](./api#status-retrieval) para obtener las lecturas de `bat_raw`.

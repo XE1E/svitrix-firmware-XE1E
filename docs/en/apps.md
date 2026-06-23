@@ -101,7 +101,7 @@ For more precise messurement, you can utilize the [dev.json](./dev) to calibrate
 
 <img src="../assets/BAT.png" style="max-height:100px;">
 
-The Battery App displays the current charge level of the integrated battery.
+The Battery App displays the current charge level of the integrated battery with a **dynamic vertical battery icon**: it fills bottom-up in proportion to the charge and changes colour by level (green ≥75%, yellow 50–74%, orange 20–49%, red <20%).
 Due to differences in battery batches and the degradation of the cheap battery over time, you may need to calibrate it manually.
 
 1. Use the [Status API](./api#status-retrieval) to retrieve the `bat_raw` readings.
