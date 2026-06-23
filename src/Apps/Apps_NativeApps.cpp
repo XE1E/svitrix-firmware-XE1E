@@ -685,7 +685,8 @@ void UVApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, in
 
 // ── MoonApp ────────────────────────────────────────────────────────
 
-namespace {
+namespace
+{
 // Blue twinkling-star field drawn behind the moon.
 constexpr int kMoonStarCount = 12;
 struct MoonStar
@@ -736,9 +737,12 @@ void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
     uint8_t info = appConfig.moonInfo & 0x07;
     int items[3];
     int nItems = 0;
-    if (info & 0x01) items[nItems++] = 0; // phase name
-    if (info & 0x02) items[nItems++] = 1; // lunar age
-    if (info & 0x04) items[nItems++] = 2; // illumination %
+    if (info & 0x01)
+        items[nItems++] = 0; // phase name
+    if (info & 0x02)
+        items[nItems++] = 1; // lunar age
+    if (info & 0x04)
+        items[nItems++] = 2; // illumination %
     const bool onlyMoon = (nItems == 0);
     const uint8_t starXMin = onlyMoon ? 0 : 9;
     const float moonCx = onlyMoon ? 15.5f : 3.5f;
@@ -783,8 +787,8 @@ void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
     // ── 2. Rotating info text (right of the moon; clipped to a 1px gap) ──
     if (!onlyMoon)
     {
-        const int16_t areaX0 = 9;           // 1px gap after the 8px moon
-        const int16_t areaW = 32 - areaX0;  // 23px text area
+        const int16_t areaX0 = 9;          // 1px gap after the 8px moon
+        const int16_t areaW = 32 - areaX0; // 23px text area
         uint16_t spd = appConfig.scrollSpeed > 0 ? appConfig.scrollSpeed : 100;
 
         // Sequencer: show each enabled item in turn, restarting at slot 0
@@ -863,7 +867,7 @@ void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
     const float theta = static_cast<float>(moon.fraction) * 6.2831853f;
     const float sinT = sinf(theta), cosT = cosf(theta);
     const float hemi = (appConfig.moonHemisphere == 1) ? -1.0f : 1.0f; // S flips lit limb
-    const float kEarth = 0.06f; // earthshine floor on the dark side
+    const float kEarth = 0.06f;                                        // earthshine floor on the dark side
 
     // Iterate the columns around the disk center (cols 0..7 when left-anchored,
     // ~12..19 when centered) so the moon draws wherever cx places it.
@@ -915,11 +919,14 @@ void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
 
             bright *= coverage; // soften the rim
             int g = static_cast<int>(bright * 235.0f);
-            if (g < 0) g = 0;
-            if (g > 255) g = 255;
+            if (g < 0)
+                g = 0;
+            if (g > 255)
+                g = 255;
             // Cool grayscale (moonlight): neutral with a faint blue lift.
             int bl = g + (g >> 3);
-            if (bl > 255) bl = 255;
+            if (bl > 255)
+                bl = 255;
             uint32_t col = (static_cast<uint32_t>(g) << 16) | (static_cast<uint32_t>(g) << 8) | static_cast<uint32_t>(bl);
             DisplayManager.drawPixel(px + x, py + y, col);
         }
