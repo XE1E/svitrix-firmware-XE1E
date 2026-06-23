@@ -162,8 +162,25 @@ void setup()
 
     ServerManager.loadSettings();
     DisplayManager.setup();
-    DisplayManager.HSVtext(9, 6, VERSION, true, 0);
-    delay(2500);
+    // Show the firmware version. It's wider than the 32px display, so scroll it
+    // right-to-left once (rainbow) instead of clipping the trailing beta number;
+    // short versions that fit are shown statically.
+    {
+        int16_t vw = static_cast<int16_t>(getTextWidth(VERSION, 0, displayConfig.uppercaseLetters));
+        if (vw <= 32)
+        {
+            DisplayManager.HSVtext(0, 6, VERSION, true, 0);
+            delay(2500);
+        }
+        else
+        {
+            for (int16_t off = 32; off >= -vw; off--)
+            {
+                DisplayManager.HSVtext(off, 6, VERSION, true, 0);
+                delay(45);
+            }
+        }
+    }
     xTaskCreatePinnedToCore(BootAnimation, "Task", 10000, NULL, 1, &taskHandle, 0);
     ServerManager.setup();
     if (ServerManager.isConnected)
