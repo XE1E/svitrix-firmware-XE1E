@@ -53,7 +53,10 @@ repos:
           - '--suppress=uninitMemberVarPrivate'
           - '--suppress=unusedStructMember'
           - '--suppress=duplicateCondition'
-          - '--enable=warning,style,performance'
+          # warning,performance only (NOT style) to match CI
+          # (.github/workflows/ci.yml) — avoids blocking on style nits / false
+          # positives (e.g. ArduinoJson's `x | default`) that CI never checks.
+          - '--enable=warning,performance'
           - '--inline-suppr'
           - '--std=c++17'
         files: '^src/.*\.(cpp|h)$'

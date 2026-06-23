@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <vector>
+#include <mutex>
 #include "DataFetcherConfig.h"
 
 class IDisplayNavigation;
@@ -20,12 +21,19 @@ class DataFetcher_
     std::vector<unsigned long> lastFetch_;
     size_t nextFetchIndex_ = 0;
 
+    // Guards sources_ / lastFetch_ / nextFetchIndex_. Source CRUD runs in the
+    // AsyncWebServer task (core 0) while tick() iterates on the main loop
+    // (core 1); without this lock a concurrent push_back/erase realloc would
+    // corrupt the vector tick() is reading. Critical sections are kept tiny —
+    // tick() copies the due source under the lock and fetches outside it.
+    std::mutex sourcesMutex_;
+
     unsigned long lastWeatherFetch_ = 0;
     unsigned long weatherRetryAt_ = 0; // millis() of a scheduled fast retry (0 = none)
 
     // Synchronous fetch helpers (run on the main loop in tick()).
-    bool fetchAndPush(size_t index); // custom source -> parseCustomPage
-    void fetchWeather();             // weather API -> weatherData
+    bool fetchAndPush(const DataSourceConfig& src); // custom source -> parseCustomPage (operates on a copy, no shared-state access)
+    void fetchWeather();                            // weather API -> weatherData
     // Single HTTP GET with socket cleanup. On HTTP_CODE_OK fills outBody;
     // returns the final HTTP code otherwise.
     int httpGet(const String& url, bool isHttps, String& outBody);
