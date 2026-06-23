@@ -328,7 +328,56 @@ void HumApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, i
 
 // ── BatApp ─────────────────────────────────────────────────────────
 
-/// Native battery app showing charge percentage with battery icon (ULANZI only).
+/// Draws a dynamic 8×8 vertical battery icon: a grey shell with a terminal nub
+/// on top whose interior fills bottom-up proportionally to `pct`, coloured by
+/// level (green ≥75, yellow 50–74, orange 20–49, red <20). Fixed colours,
+/// independent of the app's text colour.
+static void drawBatteryIcon(int16_t ox, int16_t oy, int pct)
+{
+    if (pct < 0)
+        pct = 0;
+    if (pct > 100)
+        pct = 100;
+
+    const uint32_t shell = 0x707078;
+    uint32_t fill;
+    if (pct >= 75)
+        fill = 0x00C000; // green
+    else if (pct >= 50)
+        fill = 0xC0C000; // yellow
+    else if (pct >= 20)
+        fill = 0xC85000; // orange
+    else
+        fill = 0xC00000; // red
+
+    // Terminal nub on top (cols 3..4, row 0).
+    DisplayManager.drawPixel(ox + 3, oy + 0, shell);
+    DisplayManager.drawPixel(ox + 4, oy + 0, shell);
+
+    // Body outline: cols 1..6, rows 1..7.
+    for (int c = 1; c <= 6; c++)
+    {
+        DisplayManager.drawPixel(ox + c, oy + 1, shell);
+        DisplayManager.drawPixel(ox + c, oy + 7, shell);
+    }
+    for (int r = 1; r <= 7; r++)
+    {
+        DisplayManager.drawPixel(ox + 1, oy + r, shell);
+        DisplayManager.drawPixel(ox + 6, oy + r, shell);
+    }
+
+    // Interior fill: cols 2..5 (4 wide), rows 2..6 (5 segments), bottom-up.
+    int fillRows = (pct * 5 + 50) / 100; // 0..5, rounded
+    for (int i = 0; i < fillRows; i++)
+    {
+        int rr = 6 - i; // start at the bottom interior row, grow upward
+        for (int c = 2; c <= 5; c++)
+            DisplayManager.drawPixel(ox + c, oy + rr, fill);
+    }
+}
+
+/// Native battery app showing charge percentage with a dynamic battery icon
+/// that fills/recolours by charge level (ULANZI only).
 void BatApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer)
 {
     if (nativeAppGuard("Battery"))
@@ -340,7 +389,7 @@ void BatApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, i
 
     if (m.hasIcon)
     {
-        matrix->drawRGBBitmap(x + m.iconX, y, icon_1486, 8, 8);
+        drawBatteryIcon(x + m.iconX, y, static_cast<int>(batteryConfig.percent));
     }
 
     String batStr = String(static_cast<int>(batteryConfig.percent)) + "%";
