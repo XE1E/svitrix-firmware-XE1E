@@ -8,7 +8,7 @@
 |------|---------|
 | `Apps.h` | CustomApp struct (inherits AppContentBase), callback declarations, externs |
 | `Apps_internal.h` | Shared state for app modules |
-| `Apps_NativeApps.cpp` | TimeApp, DateApp, TempApp, HumApp, BatApp |
+| `Apps_NativeApps.cpp` | TimeApp, DateApp, TempApp, HumApp, BatApp, weather apps, MoonApp |
 | `Apps_CustomApp.cpp` | ShowCustomApp — uses shared rendering functions from AppContentRenderer |
 | `Apps_Helpers.cpp` | Guard, color, weekday bar, placeholders |
 | `Apps_Registry.cpp` | App name/index lookups, global vectors |
@@ -74,6 +74,15 @@ Formatted date string + weekday bar at bottom.
 
 ### BatApp (ULANZI only)
 8x8 battery icon (icon_1486) + battery percentage.
+
+### MoonApp
+Physically-shaded grayscale moon (programmatically drawn, no icon file) over a
+dynamic blue twinkling-star background, with rotating info text (phase name /
+lunar age / illumination %). Phase data from the pure `MoonPhase` service
+(`lib/services`, UTC-based). `appConfig.moonInfo` (bitmask) selects which
+readouts rotate; `moonHemisphere` flips the lit limb. With all readouts off,
+the moon centers and the stars span the full width. Moon pixels use fixed greys
+(ignores text color); only the info text honors per-item / night-mode color.
 
 ## ShowCustomApp Rendering Pipeline
 

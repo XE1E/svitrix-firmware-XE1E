@@ -550,6 +550,7 @@ void DisplayManager_::loadNativeApps()
     availableApps["Pressure"] = PressureApp;
     availableApps["AirQuality"] = AirQualityApp;
     availableApps["UV"] = UVApp;
+    availableApps["Moon"] = MoonApp;
 
     // Custom apps from customApps map (covers both Apps vector and newly-created apps)
     for (const auto& kv : customApps)

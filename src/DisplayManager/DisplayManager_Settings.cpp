@@ -103,6 +103,8 @@ String DisplayManager_::getSettings()
     doc["NBRI"] = appConfig.nightBrightness;
     doc["NCOL"] = appConfig.nightColor;
     doc["NBTRANS"] = appConfig.nightBlockTransition;
+    doc["MINFO"] = appConfig.moonInfo;
+    doc["MHEMI"] = appConfig.moonHemisphere;
     doc["TIM"] = appConfig.showTime;
     doc["DAT"] = appConfig.showDate;
     doc["HUM"] = appConfig.showHum;
@@ -205,6 +207,10 @@ void DisplayManager_::setNewSettings(const char *json)
     // (e.g. new nightColor) takes effect without waiting for the window to flip.
     if (nightFieldsChanged)
         markPolicyConfigDirty();
+    if (doc.containsKey("MINFO"))
+        appConfig.moonInfo = doc["MINFO"].as<uint8_t>() & 0x07;
+    if (doc.containsKey("MHEMI"))
+        appConfig.moonHemisphere = doc["MHEMI"].as<uint8_t>() ? 1 : 0;
     timeConfig.isCelsius = doc.containsKey("CEL") ? doc["CEL"] : timeConfig.isCelsius;
     timeConfig.startOnMonday = doc.containsKey("SOM") ? doc["SOM"].as<bool>() : timeConfig.startOnMonday;
     displayConfig.matrixOff = doc.containsKey("MATP") ? !doc["MATP"].as<bool>() : displayConfig.matrixOff;

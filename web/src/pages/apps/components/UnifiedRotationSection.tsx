@@ -14,7 +14,10 @@ const NATIVE_APPS_ORIGINAL = [
 const NATIVE_APPS_WEATHER = [
   "OutdoorTemp", "OutdoorHum", "Pressure", "AirQuality", "UV",
 ];
-const ALL_NATIVE_APPS = [...NATIVE_APPS_ORIGINAL, ...NATIVE_APPS_WEATHER];
+const NATIVE_APPS_EXTRA = [
+  "Moon",
+];
+const ALL_NATIVE_APPS = [...NATIVE_APPS_ORIGINAL, ...NATIVE_APPS_WEATHER, ...NATIVE_APPS_EXTRA];
 
 // Default icon numbers for native apps (from firmware icons.h / NativeApps.cpp)
 const DEFAULT_ICONS: Record<string, string> = {
@@ -28,6 +31,7 @@ const DEFAULT_ICONS: Record<string, string> = {
   Pressure: "66893",   // GIF
   AirQuality: "73559", // GIF
   UV: "64310",         // GIF
+  Moon: "-",           // drawn programmatically (no icon file)
 };
 
 function generateId(): string {
@@ -141,7 +145,7 @@ function DurationStepper({ value, onCommit, defaultDuration }: { value: number; 
 
 export function UnifiedRotationSection() {
   const t = useT();
-  const { settings, updateSettings, weatherConfig, updateWeatherConfig, saveWeatherConfig } = useSettings();
+  const { settings, updateSettings, instantSave, weatherConfig, updateWeatherConfig, saveWeatherConfig } = useSettings();
   const [config, setConfig] = useState<RotationConfig | null>(null);
   const [effects, setEffects] = useState<EffectInfo[]>([]);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -185,6 +189,7 @@ export function UnifiedRotationSection() {
       case "Pressure": return a.pressure;
       case "AirQuality": return a.airQuality;
       case "UV": return a.uvIndex;
+      case "Moon": return a.moon;
       default: return name;
     }
   }
@@ -349,7 +354,7 @@ export function UnifiedRotationSection() {
                             {item.color === 0 && <span class={styles.hint}>(default)</span>}
                           </div>
                         )}
-                        {item.type === "app" && item.name !== "Time" && item.name !== "Date" && (
+                        {item.type === "app" && item.name !== "Time" && item.name !== "Date" && item.name !== "Moon" && (
                           <div class={styles.rotationField}>
                             <label>{t.apps.icon || "Icono"}:</label>
                             <input
@@ -404,6 +409,41 @@ export function UnifiedRotationSection() {
                               onChange={(v) => { updateWeatherConfig({ uvAutoColor: v }); saveWeatherConfig(); }}
                             />
                           </div>
+                        )}
+                        {item.name === "Moon" && settings && (
+                          <>
+                            <div class={styles.rotationField}>
+                              <label>{t.apps.moonHemisphere}:</label>
+                              <select
+                                value={settings.MHEMI ?? 0}
+                                onChange={(e) => instantSave({ MHEMI: parseInt((e.target as HTMLSelectElement).value) || 0 })}
+                              >
+                                <option value={0}>{t.apps.moonNorth}</option>
+                                <option value={1}>{t.apps.moonSouth}</option>
+                              </select>
+                            </div>
+                            <div class={styles.rotationField}>
+                              <Toggle
+                                label={t.apps.moonShowName}
+                                checked={((settings.MINFO ?? 0) & 1) !== 0}
+                                onChange={(v) => instantSave({ MINFO: v ? (settings.MINFO ?? 0) | 1 : (settings.MINFO ?? 0) & ~1 })}
+                              />
+                            </div>
+                            <div class={styles.rotationField}>
+                              <Toggle
+                                label={t.apps.moonShowAge}
+                                checked={((settings.MINFO ?? 0) & 2) !== 0}
+                                onChange={(v) => instantSave({ MINFO: v ? (settings.MINFO ?? 0) | 2 : (settings.MINFO ?? 0) & ~2 })}
+                              />
+                            </div>
+                            <div class={styles.rotationField}>
+                              <Toggle
+                                label={t.apps.moonShowIllum}
+                                checked={((settings.MINFO ?? 0) & 4) !== 0}
+                                onChange={(v) => instantSave({ MINFO: v ? (settings.MINFO ?? 0) | 4 : (settings.MINFO ?? 0) & ~4 })}
+                              />
+                            </div>
+                          </>
                         )}
                       </div>
                     </div>

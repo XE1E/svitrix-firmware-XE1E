@@ -1,6 +1,6 @@
 # Services Library — AI Reference
 
-17 pure-logic utility libraries extracted from managers for testability. All stateless (except TextUtils), no hardware dependencies, 100% test coverage.
+18 pure-logic utility libraries extracted from managers for testability. All stateless (except TextUtils), no hardware dependencies, 100% test coverage.
 
 ## Service Map
 
@@ -13,6 +13,7 @@
 | **UnicodeFont** | Glyph lookup, UTF-8 decode, bitmap rendering | Yes | `findGlyph()`, `utf8NextCodepoint()`, `renderGlyph()`, `getUnicodeTextWidth()` |
 | **TimeEffects** | Sine fade, square blink (millis passed as param) | Yes | `fadeColorAt()`, `textEffectAt()` |
 | **SensorCalc** | Battery %, brightness, LDR inversion, calibration | Yes | `calculateBatteryPercent()`, `calculateBrightness()`, `applySensorOffset()` |
+| **MoonPhase** | Lunar phase from UTC: age, illumination %, 0–7 phase index, waxing flag + Spanish names | Yes | `computeMoonPhase()`, `moonPhaseName()` |
 | **StatsBuilder** | Device telemetry → JSON string (no ArduinoJson) | Yes | `buildStatsJson(StatsData&)` |
 | **AppRegistry** | Native app names, app list serialization | Yes | `getNativeAppNames()`, `isNativeApp()`, `serializeAppList()` |
 | **AppOrderUtils** | Merge persisted app order with available apps (unified app loop) | Yes | `orderApps(savedOrder, desired)` |

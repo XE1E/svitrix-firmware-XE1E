@@ -133,6 +133,28 @@ izquierda) parpadea en rojo mientras las descargas fallan.
 :::
 
 ---
+## Luna
+
+La app de Luna muestra la **fase lunar** actual con una luna dibujada en escala de grises (sombreado realista, terminador suave y un tenue *earthshine* en el lado oscuro), sobre un fondo de estrellas azules titilantes.
+
+Junto a la luna rotan, de forma configurable, hasta tres datos:
+
+- **Nombre de fase** (p. ej. "Cuarto creciente", "Llena")
+- **Edad lunar** en días
+- **Porcentaje de iluminación**
+
+Se configura desde **Apps → Moon** (expandiendo el elemento en la rotación):
+
+| Opción | Descripción |
+|--------|-------------|
+| **Hemisferio** | Norte o Sur — invierte el lado iluminado de la luna. |
+| **Mostrar nombre de fase / edad / %** | Activa o desactiva cada dato del texto rotativo. |
+
+Si desactivas los tres datos, se muestra **solo la luna**, centrada en la pantalla y con las estrellas azules ocupando todo el ancho.
+
+La **duración** y el **color del texto** se ajustan por elemento en la rotación, como en las demás apps. El cálculo de la fase es astronómico (basado en UTC), por lo que no requiere conexión a internet.
+
+---
 # Apps Personalizadas
 
 Además de las apps nativas, SVITRIX está diseñado para integrarse perfectamente con tu ecosistema de hogar inteligente, se pueden crear aplicaciones adicionales usando peticiones MQTT o HTTP.

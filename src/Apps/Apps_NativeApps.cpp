@@ -10,8 +10,11 @@
 #include "Functions.h"
 #include "icons.h"
 #include "LayoutEngine.h"
+#include "MoonPhase.h"
 #include "AlarmManager/AlarmManager.h"
 #include <LittleFS.h>
+#include <cmath>
+#include <ctime>
 
 // ── Big-digit clock data ───────────────────────────────────────────
 
@@ -678,4 +681,247 @@ void UVApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, in
 
     DisplayManager.setCursor(textX + x, 6 + y);
     DisplayManager.matrixPrint(uvStr.c_str());
+}
+
+// ── MoonApp ────────────────────────────────────────────────────────
+
+namespace {
+// Blue twinkling-star field drawn behind the moon.
+constexpr int kMoonStarCount = 12;
+struct MoonStar
+{
+    uint8_t sx, sy; // position
+    uint8_t phase;  // twinkle phase offset
+    uint8_t speed;  // twinkle speed
+    uint8_t peak;   // max blue brightness
+};
+
+// Lunar maria (dark patches) on the 8×8 disk, for a touch of realism.
+constexpr uint8_t kMariaCount = 4;
+constexpr uint8_t kMaria[kMariaCount][2] = {{3, 2}, {2, 4}, {4, 3}, {5, 5}};
+
+// Rotating-text cadence (ms per info item).
+constexpr uint32_t kMoonInfoPeriod = 3200;
+} // namespace
+
+/// Native moon-phase app: a physically-shaded grayscale moon anchored left,
+/// a blue twinkling-star background, and rotating info text (phase name /
+/// lunar age / illumination %) on the right. Phase, age and illumination come
+/// from the pure MoonPhase service (UTC-based). Hemisphere flips the lit limb.
+void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer)
+{
+    if (nativeAppGuard("Moon"))
+        return;
+
+    MoonData moon = computeMoonPhase(time(nullptr));
+    const uint32_t now = millis();
+
+    // Detect (re)entry: MoonApp is called every frame while visible, so a gap
+    // > 400ms means the rotation just switched to us. On entry we restart the
+    // info rotation at slot 0 (phase name) so it always begins the same way.
+    static uint32_t lastCallMs = 0;
+    static uint32_t appEnterMs = 0;
+    if (now - lastCallMs > 400)
+        appEnterMs = now;
+    lastCallMs = now;
+
+    // Erase whatever the global background effect drew — the Moon app brings
+    // its own (blue stars) and should look the same regardless of the
+    // configured background effect.
+    DisplayManager.drawFilledRect(0 + x, 0 + y, 32, 8, 0x000000);
+
+    // Layout: with info text the moon is anchored left and stars fill the area
+    // to its right; with no text ("only moon") the moon is centered and stars
+    // fill the whole screen.
+    uint8_t info = appConfig.moonInfo & 0x07;
+    int items[3];
+    int nItems = 0;
+    if (info & 0x01) items[nItems++] = 0; // phase name
+    if (info & 0x02) items[nItems++] = 1; // lunar age
+    if (info & 0x04) items[nItems++] = 2; // illumination %
+    const bool onlyMoon = (nItems == 0);
+    const uint8_t starXMin = onlyMoon ? 0 : 9;
+    const float moonCx = onlyMoon ? 15.5f : 3.5f;
+
+    // ── 1. Blue twinkling-star background (drawn first, behind everything) ──
+    static MoonStar stars[kMoonStarCount];
+    static bool starsInit = false;
+    if (!starsInit)
+    {
+        for (int i = 0; i < kMoonStarCount; i++)
+        {
+            stars[i].sx = random8(starXMin, 32);
+            stars[i].sy = random8(0, 8);
+            stars[i].phase = random8();
+            stars[i].speed = random8(2, 6);
+            stars[i].peak = random8(70, 170);
+        }
+        starsInit = true;
+    }
+    for (int i = 0; i < kMoonStarCount; i++)
+    {
+        // Each star fades in→out on its own cycle; when it finishes (wraps to
+        // dark) it respawns at a new random spot, so the field is genuinely
+        // random and constantly shifting (and reaches the moon's near edge).
+        uint8_t prev = stars[i].phase;
+        stars[i].phase += stars[i].speed;
+        if (stars[i].phase < prev) // wrapped → just went dark → relocate
+        {
+            stars[i].sx = random8(starXMin, 32);
+            stars[i].sy = random8(0, 8);
+            stars[i].speed = random8(2, 6);
+            stars[i].peak = random8(80, 185);
+        }
+        // Triangle brightness: 0 → peak → 0 across the cycle (dark at the ends).
+        uint8_t tri = stars[i].phase < 128 ? static_cast<uint8_t>(stars[i].phase << 1)
+                                           : static_cast<uint8_t>((255 - stars[i].phase) << 1);
+        uint16_t b = (static_cast<uint16_t>(tri) * stars[i].peak) >> 8; // scale to peak
+        uint32_t col = (static_cast<uint32_t>(b >> 2) << 8) | b;        // cool blue
+        DisplayManager.drawPixel(stars[i].sx + x, stars[i].sy + y, col);
+    }
+
+    // ── 2. Rotating info text (right of the moon; clipped to a 1px gap) ──
+    if (!onlyMoon)
+    {
+        const int16_t areaX0 = 9;           // 1px gap after the 8px moon
+        const int16_t areaW = 32 - areaX0;  // 23px text area
+        uint16_t spd = appConfig.scrollSpeed > 0 ? appConfig.scrollSpeed : 100;
+
+        // Sequencer: show each enabled item in turn, restarting at slot 0
+        // (phase name) on entry. A scrolling item stays until it has marqueed
+        // once in full, so long names (e.g. "Cuarto creciente") are readable.
+        static int curSlot = 0;
+        static uint32_t slotStartMs = 0;
+        static uint32_t seenEnter = 0;
+        if (seenEnter != appEnterMs)
+        {
+            seenEnter = appEnterMs;
+            curSlot = 0;
+            slotStartMs = now;
+        }
+        if (curSlot >= nItems)
+            curSlot = 0;
+
+        String s;
+        switch (items[curSlot])
+        {
+        case 0:
+            s = moonPhaseName(moon.phaseIndex);
+            break;
+        case 1:
+        {
+            int age = static_cast<int>(lround(moon.ageDays));
+            s = String(age) + (age == 1 ? " DIA" : " DIAS");
+            break;
+        }
+        default:
+            s = String(moon.illumination) + "%";
+            break;
+        }
+
+        applyNativeAppColor(0, "Moon"); // per-item / global text color (honors night policy)
+
+        uint16_t tw = getTextWidth(s.c_str(), 0);
+        bool scrolling = tw > static_cast<uint16_t>(areaW);
+        uint32_t elapsed = now - slotStartMs;
+
+        if (!scrolling)
+        {
+            int16_t tx = areaX0 + (areaW - static_cast<int16_t>(tw)) / 2;
+            DisplayManager.setCursor(tx + x, 6 + y);
+            DisplayManager.matrixPrint(s.c_str());
+        }
+        else
+        {
+            // Marquee: enter from the right and scroll left at the Apps-tab
+            // speed (appConfig.scrollSpeed = ms per pixel).
+            int off = static_cast<int>(elapsed / spd);
+            int16_t drawX = areaX0 + areaW - static_cast<int16_t>(off);
+            DisplayManager.setCursor(drawX + x, 6 + y);
+            DisplayManager.matrixPrint(s.c_str());
+        }
+
+        // Advance: short items after a fixed dwell; scrolling items only after
+        // a full pass (+ a short tail) so the whole string has been shown.
+        uint32_t slotDur = scrolling ? (static_cast<uint32_t>(tw + areaW) * spd + 700) : kMoonInfoPeriod;
+        if (elapsed >= slotDur)
+        {
+            curSlot = (curSlot + 1) % nItems;
+            slotStartMs = now;
+        }
+
+        // Clip the text: black out the moon column + 1px gap (cols 0..8) so the
+        // scrolling text never merges with the moon or leaves stray LEDs to its left.
+        DisplayManager.drawFilledRect(0 + x, 0 + y, 9, 8, 0x000000);
+    }
+
+    // ── 3. The moon — physically-shaded grayscale sphere (drawn on top) ──
+    // Slightly vertical ellipse (Ry > Rx); centered when there is no info text.
+    const float cx = moonCx, cy = 3.5f;
+    const float Rx = 3.55f, Ry = 3.8f; // near-round with a faint vertical hint
+    const float Rmean = (Rx + Ry) * 0.5f;
+    const float theta = static_cast<float>(moon.fraction) * 6.2831853f;
+    const float sinT = sinf(theta), cosT = cosf(theta);
+    const float hemi = (appConfig.moonHemisphere == 1) ? -1.0f : 1.0f; // S flips lit limb
+    const float kEarth = 0.06f; // earthshine floor on the dark side
+
+    // Iterate the columns around the disk center (cols 0..7 when left-anchored,
+    // ~12..19 when centered) so the moon draws wherever cx places it.
+    const int pxLo = static_cast<int>(cx) - 4;
+    const int pxHi = static_cast<int>(cx) + 4;
+    const int mariaShift = static_cast<int>(cx - 3.5f); // map abs col → 0..7 local frame for maria
+    for (int py = 0; py < 8; py++)
+    {
+        for (int px = pxLo; px <= pxHi; px++)
+        {
+            if (px < 0 || px > 31)
+                continue;
+            float ddx = px - cx;
+            float ddy = py - cy;
+            // Normalized elliptical coords (1.0 = edge); nx/ny double as the
+            // unit-sphere coords so the shading maps onto the ellipse.
+            float nx = ddx / Rx;
+            float ny = ddy / Ry;
+            float e = sqrtf(nx * nx + ny * ny);
+            float coverage = (1.0f - e) * Rmean + 0.5f; // ~1px anti-aliased edge
+            if (coverage <= 0.0f)
+                continue;
+            if (coverage > 1.0f)
+                coverage = 1.0f;
+
+            float zz = 1.0f - nx * nx - ny * ny;
+            float z = (zz > 0.0f) ? sqrtf(zz) : 0.0f;
+
+            // Lit intensity = surface-normal · sun direction (physically-based
+            // sphere shading → soft terminator + limb darkening for free).
+            float lit = (nx * hemi) * sinT - z * cosT;
+            if (lit < 0.0f)
+                lit = 0.0f;
+
+            float bright = kEarth + lit * (1.0f - kEarth);
+
+            // Maria: darken patches that are reasonably lit.
+            if (lit > 0.12f)
+            {
+                for (uint8_t mi = 0; mi < kMariaCount; mi++)
+                {
+                    if (kMaria[mi][0] == px - mariaShift && kMaria[mi][1] == py)
+                    {
+                        bright *= 0.60f;
+                        break;
+                    }
+                }
+            }
+
+            bright *= coverage; // soften the rim
+            int g = static_cast<int>(bright * 235.0f);
+            if (g < 0) g = 0;
+            if (g > 255) g = 255;
+            // Cool grayscale (moonlight): neutral with a faint blue lift.
+            int bl = g + (g >> 3);
+            if (bl > 255) bl = 255;
+            uint32_t col = (static_cast<uint32_t>(g) << 16) | (static_cast<uint32_t>(g) << 8) | static_cast<uint32_t>(bl);
+            DisplayManager.drawPixel(px + x, py + y, col);
+        }
+    }
 }

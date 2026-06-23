@@ -52,6 +52,8 @@ export interface Settings {
   NCOL: number;
   BEFF: number;
   NBTRANS: boolean;
+  MINFO: number;
+  MHEMI: number;
   TIMEDUR: number;
   DATEDUR: number;
   TEMPDUR: number;

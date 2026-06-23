@@ -132,6 +132,28 @@ The WiFi indicator (top-left corner) blinks red while downloads are failing.
 :::
 
 ---
+## Moon
+
+The Moon app shows the current **lunar phase** as a grayscale drawn moon (realistic shading, soft terminator and a faint *earthshine* on the dark side), over a field of twinkling blue stars.
+
+Next to the moon it rotates up to three configurable readouts:
+
+- **Phase name** (shown in Spanish, e.g. "Cuarto creciente", "Llena")
+- **Lunar age** in days
+- **Illumination percentage**
+
+Configure it from **Apps → Moon** (expand the rotation item):
+
+| Option | Description |
+|--------|-------------|
+| **Hemisphere** | Northern or Southern — flips the moon's lit limb. |
+| **Show phase name / age / %** | Toggle each readout of the rotating text. |
+
+Disable all three readouts to show **only the moon**, centered on the display with the blue stars spanning the full width.
+
+**Duration** and **text color** are set per item in the rotation, like the other apps. The phase is computed astronomically (UTC-based), so no internet connection is required.
+
+---
 # Custom Apps
 
 Besides the native apps, SVITRIX is designed to integrate seamlessly with your smart home ecosystem, additional applications can be created using MQTT or HTTP requests.
