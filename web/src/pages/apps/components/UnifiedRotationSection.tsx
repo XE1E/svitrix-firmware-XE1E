@@ -145,7 +145,7 @@ function DurationStepper({ value, onCommit, defaultDuration }: { value: number; 
 
 export function UnifiedRotationSection() {
   const t = useT();
-  const { settings, updateSettings, weatherConfig, updateWeatherConfig, saveWeatherConfig } = useSettings();
+  const { settings, updateSettings, instantSave, weatherConfig, updateWeatherConfig, saveWeatherConfig } = useSettings();
   const [config, setConfig] = useState<RotationConfig | null>(null);
   const [effects, setEffects] = useState<EffectInfo[]>([]);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -416,7 +416,7 @@ export function UnifiedRotationSection() {
                               <label>{t.apps.moonHemisphere}:</label>
                               <select
                                 value={settings.MHEMI ?? 0}
-                                onChange={(e) => updateSettings({ MHEMI: parseInt((e.target as HTMLSelectElement).value) || 0 })}
+                                onChange={(e) => instantSave({ MHEMI: parseInt((e.target as HTMLSelectElement).value) || 0 })}
                               >
                                 <option value={0}>{t.apps.moonNorth}</option>
                                 <option value={1}>{t.apps.moonSouth}</option>
@@ -426,21 +426,21 @@ export function UnifiedRotationSection() {
                               <Toggle
                                 label={t.apps.moonShowName}
                                 checked={((settings.MINFO ?? 0) & 1) !== 0}
-                                onChange={(v) => updateSettings({ MINFO: v ? (settings.MINFO ?? 0) | 1 : (settings.MINFO ?? 0) & ~1 })}
+                                onChange={(v) => instantSave({ MINFO: v ? (settings.MINFO ?? 0) | 1 : (settings.MINFO ?? 0) & ~1 })}
                               />
                             </div>
                             <div class={styles.rotationField}>
                               <Toggle
                                 label={t.apps.moonShowAge}
                                 checked={((settings.MINFO ?? 0) & 2) !== 0}
-                                onChange={(v) => updateSettings({ MINFO: v ? (settings.MINFO ?? 0) | 2 : (settings.MINFO ?? 0) & ~2 })}
+                                onChange={(v) => instantSave({ MINFO: v ? (settings.MINFO ?? 0) | 2 : (settings.MINFO ?? 0) & ~2 })}
                               />
                             </div>
                             <div class={styles.rotationField}>
                               <Toggle
                                 label={t.apps.moonShowIllum}
                                 checked={((settings.MINFO ?? 0) & 4) !== 0}
-                                onChange={(v) => updateSettings({ MINFO: v ? (settings.MINFO ?? 0) | 4 : (settings.MINFO ?? 0) & ~4 })}
+                                onChange={(v) => instantSave({ MINFO: v ? (settings.MINFO ?? 0) | 4 : (settings.MINFO ?? 0) & ~4 })}
                               />
                             </div>
                           </>
