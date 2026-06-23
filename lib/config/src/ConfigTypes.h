@@ -138,6 +138,8 @@ struct AppConfig {
     uint8_t nightBrightness;
     uint32_t nightColor;      // default: red (0xFF0000)
     bool nightBlockTransition; // disable auto-transition in night mode
+    uint8_t moonInfo;          // Moon app: rotating-text bitmask (b0=name, b1=age, b2=illum%); 0 = moon only
+    uint8_t moonHemisphere;    // Moon app: 0 = northern, 1 = southern (flips the lit limb)
     String appOrder;          // persisted JSON array of app names (unified app loop order)
 };
 

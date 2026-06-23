@@ -177,7 +177,7 @@ void test_time_config_defaults()
 
 void test_app_config_defaults()
 {
-    AppConfig cfg = {true, true, true, true, true, true, false, false, 1, 400, 7000, 100, 7, 7, 7, 7, 7, IconLayout::Left, false, false, 1260, 360, 5, 0xFF0000, true, ""};
+    AppConfig cfg = {true, true, true, true, true, true, false, false, 1, 400, 7000, 100, 7, 7, 7, 7, 7, IconLayout::Left, false, false, 1260, 360, 5, 0xFF0000, true, 0x07, 0, ""};
     TEST_ASSERT_TRUE(cfg.showTime);
     TEST_ASSERT_TRUE(cfg.showDate);
     TEST_ASSERT_TRUE(cfg.showBat);
@@ -190,6 +190,8 @@ void test_app_config_defaults()
     TEST_ASSERT_EQUAL(7000, cfg.timePerApp);
     TEST_ASSERT_EQUAL(100, cfg.scrollSpeed);
     TEST_ASSERT_FALSE(cfg.blockNavigation);
+    TEST_ASSERT_EQUAL_UINT8(0x07, cfg.moonInfo);
+    TEST_ASSERT_EQUAL_UINT8(0, cfg.moonHemisphere);
 }
 
 // --- AudioConfig ---

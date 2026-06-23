@@ -14,7 +14,10 @@ const NATIVE_APPS_ORIGINAL = [
 const NATIVE_APPS_WEATHER = [
   "OutdoorTemp", "OutdoorHum", "Pressure", "AirQuality", "UV",
 ];
-const ALL_NATIVE_APPS = [...NATIVE_APPS_ORIGINAL, ...NATIVE_APPS_WEATHER];
+const NATIVE_APPS_EXTRA = [
+  "Moon",
+];
+const ALL_NATIVE_APPS = [...NATIVE_APPS_ORIGINAL, ...NATIVE_APPS_WEATHER, ...NATIVE_APPS_EXTRA];
 
 // Default icon numbers for native apps (from firmware icons.h / NativeApps.cpp)
 const DEFAULT_ICONS: Record<string, string> = {
@@ -28,6 +31,7 @@ const DEFAULT_ICONS: Record<string, string> = {
   Pressure: "66893",   // GIF
   AirQuality: "73559", // GIF
   UV: "64310",         // GIF
+  Moon: "-",           // drawn programmatically (no icon file)
 };
 
 function generateId(): string {
@@ -185,6 +189,7 @@ export function UnifiedRotationSection() {
       case "Pressure": return a.pressure;
       case "AirQuality": return a.airQuality;
       case "UV": return a.uvIndex;
+      case "Moon": return a.moon;
       default: return name;
     }
   }
