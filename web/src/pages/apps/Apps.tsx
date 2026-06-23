@@ -1,5 +1,5 @@
 import { SettingsProvider, useSettings } from "../../context/SettingsContext";
-import { AppTransitionsSection, MoonSection } from "../settings/sections";
+import { AppTransitionsSection } from "../settings/sections";
 import { UnifiedRotationSection } from "./components/UnifiedRotationSection";
 import { useT } from "../../i18n";
 import styles from "../settings/Settings.module.css";
@@ -14,7 +14,6 @@ function AppsContent() {
   return (
     <div class={styles.page}>
       <UnifiedRotationSection />
-      <MoonSection />
       <AppTransitionsSection />
     </div>
   );

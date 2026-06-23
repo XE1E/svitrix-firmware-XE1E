@@ -730,6 +730,19 @@ void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
     // configured background effect.
     DisplayManager.drawFilledRect(0 + x, 0 + y, 32, 8, 0x000000);
 
+    // Layout: with info text the moon is anchored left and stars fill the area
+    // to its right; with no text ("only moon") the moon is centered and stars
+    // fill the whole screen.
+    uint8_t info = appConfig.moonInfo & 0x07;
+    int items[3];
+    int nItems = 0;
+    if (info & 0x01) items[nItems++] = 0; // phase name
+    if (info & 0x02) items[nItems++] = 1; // lunar age
+    if (info & 0x04) items[nItems++] = 2; // illumination %
+    const bool onlyMoon = (nItems == 0);
+    const uint8_t starXMin = onlyMoon ? 0 : 9;
+    const float moonCx = onlyMoon ? 15.5f : 3.5f;
+
     // ── 1. Blue twinkling-star background (drawn first, behind everything) ──
     static MoonStar stars[kMoonStarCount];
     static bool starsInit = false;
@@ -737,7 +750,7 @@ void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
     {
         for (int i = 0; i < kMoonStarCount; i++)
         {
-            stars[i].sx = random8(9, 32); // start right after the moon + 1px gap
+            stars[i].sx = random8(starXMin, 32);
             stars[i].sy = random8(0, 8);
             stars[i].phase = random8();
             stars[i].speed = random8(2, 6);
@@ -754,7 +767,7 @@ void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
         stars[i].phase += stars[i].speed;
         if (stars[i].phase < prev) // wrapped → just went dark → relocate
         {
-            stars[i].sx = random8(9, 32);
+            stars[i].sx = random8(starXMin, 32);
             stars[i].sy = random8(0, 8);
             stars[i].speed = random8(2, 6);
             stars[i].peak = random8(80, 185);
@@ -767,15 +780,8 @@ void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
         DisplayManager.drawPixel(stars[i].sx + x, stars[i].sy + y, col);
     }
 
-    // ── 2. Rotating info text (right of the moon; clipped to a 2px gap) ──
-    uint8_t info = appConfig.moonInfo & 0x07;
-    int items[3];
-    int nItems = 0;
-    if (info & 0x01) items[nItems++] = 0; // phase name
-    if (info & 0x02) items[nItems++] = 1; // lunar age
-    if (info & 0x04) items[nItems++] = 2; // illumination %
-
-    if (nItems > 0)
+    // ── 2. Rotating info text (right of the moon; clipped to a 1px gap) ──
+    if (!onlyMoon)
     {
         const int16_t areaX0 = 9;           // 1px gap after the 8px moon
         const int16_t areaW = 32 - areaX0;  // 23px text area
@@ -843,15 +849,15 @@ void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
             curSlot = (curSlot + 1) % nItems;
             slotStartMs = now;
         }
+
+        // Clip the text: black out the moon column + 1px gap (cols 0..8) so the
+        // scrolling text never merges with the moon or leaves stray LEDs to its left.
+        DisplayManager.drawFilledRect(0 + x, 0 + y, 9, 8, 0x000000);
     }
 
-    // Clip the text: black out the moon column + 1px gap (cols 0..8) so the
-    // scrolling text never merges with the moon or leaves stray LEDs to its left.
-    DisplayManager.drawFilledRect(0 + x, 0 + y, 9, 8, 0x000000);
-
     // ── 3. The moon — physically-shaded grayscale sphere (drawn on top) ──
-    // Slightly vertical ellipse (Ry > Rx) for a softer, more organic look.
-    const float cx = 3.5f, cy = 3.5f; // disk centered in the left 8×8
+    // Slightly vertical ellipse (Ry > Rx); centered when there is no info text.
+    const float cx = moonCx, cy = 3.5f;
     const float Rx = 3.55f, Ry = 3.8f; // near-round with a faint vertical hint
     const float Rmean = (Rx + Ry) * 0.5f;
     const float theta = static_cast<float>(moon.fraction) * 6.2831853f;
@@ -859,10 +865,17 @@ void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
     const float hemi = (appConfig.moonHemisphere == 1) ? -1.0f : 1.0f; // S flips lit limb
     const float kEarth = 0.06f; // earthshine floor on the dark side
 
+    // Iterate the columns around the disk center (cols 0..7 when left-anchored,
+    // ~12..19 when centered) so the moon draws wherever cx places it.
+    const int pxLo = static_cast<int>(cx) - 4;
+    const int pxHi = static_cast<int>(cx) + 4;
+    const int mariaShift = static_cast<int>(cx - 3.5f); // map abs col → 0..7 local frame for maria
     for (int py = 0; py < 8; py++)
     {
-        for (int px = 0; px < 8; px++)
+        for (int px = pxLo; px <= pxHi; px++)
         {
+            if (px < 0 || px > 31)
+                continue;
             float ddx = px - cx;
             float ddy = py - cy;
             // Normalized elliptical coords (1.0 = edge); nx/ny double as the
@@ -892,7 +905,7 @@ void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
             {
                 for (uint8_t mi = 0; mi < kMariaCount; mi++)
                 {
-                    if (kMaria[mi][0] == px && kMaria[mi][1] == py)
+                    if (kMaria[mi][0] == px - mariaShift && kMaria[mi][1] == py)
                     {
                         bright *= 0.60f;
                         break;
