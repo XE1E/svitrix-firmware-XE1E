@@ -33,16 +33,9 @@ Referencia de hardware del reloj Ulanzi TC001, la base sobre la que corre SVITRI
 | SHT3x (SHT31) | `0x44` | Sensor de temperatura + humedad |
 | DS1307 | `0x68` | Reloj en tiempo real (RTC) |
 
-### Sensores de Temperatura Soportados
+### Sensor de Temperatura
 
-SVITRIX auto-detecta los siguientes sensores al iniciar (en este orden):
-
-1. BME280 (temp + humedad + presión)
-2. BMP280 (temp + presión)
-3. HTU21DF (temp + humedad)
-4. SHT31 (temp + humedad) — incluido en Ulanzi TC001
-
-El Ulanzi TC001 viene con un sensor SHT3x. Las lecturas de temperatura pueden estar elevadas debido al calor interno de la matriz LED, ESP32 y batería dentro de la carcasa sellada. Usa `temp_offset` en `dev.json` para compensar.
+El Ulanzi TC001 viene con un sensor **SHT3x** (dirección I2C `0x44`) que mide temperatura y humedad. Las lecturas de temperatura pueden estar elevadas debido al calor interno de la matriz LED, ESP32 y batería dentro de la carcasa sellada. Para compensar, ajusta el offset desde la interfaz web (**Apps → Temperatura → Compensación**) o con `temp_offset` en `dev.json`.
 
 ### Reloj en Tiempo Real (DS1307)
 
@@ -87,7 +80,6 @@ Crea un `dev.json` en tu administrador de archivos con el siguiente contenido:
 | Valor | Configuración |
 |-------|---------------|
 | 0 | Matriz única 32x8, cableado zigzag (por defecto) |
-| 1 | Cuatro paneles 8x8 en mosaico (4x1), progresivo |
 | 2 | Matriz única 32x8, columna mayor, zigzag |
 
 ## Hojas de Datos

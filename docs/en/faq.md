@@ -61,7 +61,9 @@ If you accidentally modified this file, delete it via the [file manager](./webin
 
 A: The sensor on Ulanzi TC001 is located inside the sealed case. Internal heat from the LED matrix (depending on brightness) and the battery raises the reading above the actual room temperature.
 
-You can compensate by setting offsets in `dev.json` via the [file manager](./webinterface):
+The easiest way to compensate is from the **web interface**: on the **Apps** tab, expand the **Temperature** app and adjust the **Offset** field (offset in degrees). The change applies instantly, no reboot needed.
+
+If you also want to compensate **humidity** (or prefer file-based configuration), you can set offsets in `dev.json` via the [file manager](./webinterface):
 
 ```json
 {
@@ -70,37 +72,9 @@ You can compensate by setting offsets in `dev.json` via the [file manager](./web
 }
 ```
 
-Reboot the device after saving. Adjust the values to match your environment — the exact offset depends on brightness settings and battery usage.
+Reboot the device after saving the `dev.json`. Adjust the values to match your environment — the exact offset depends on brightness settings and battery usage.
 
 See all available developer settings in the [Hidden Features](./dev) section.
-
-## Custom Builds
-
-#### Q: I want to build my own SVITRIX. Which firmware should I use?
-
-A: Use the [SVITRIX flasher](./flasher) — the firmware is compatible with both Ulanzi TC001 and custom builds using any ESP32-WROOM board (including ESP32 D1 Mini).
-
-Make sure to follow the correct pinout from the [Hardware Guide](./hardware).
-
-#### Q: My self-built device shows garbled characters on the matrix
-
-A: You need to change the matrix layout type. The default is `0`, which may not match your wiring.
-
-Create a `dev.json` file via the [file manager](./webinterface) and try values `1` or `2`:
-
-```json
-{
-  "matrix": "1"
-}
-```
-
-| Value | Layout |
-|-------|--------|
-| 0 | Single 32x8, row-major, zigzag |
-| 1 | Four tiled 8x8 panels, row-major, progressive |
-| 2 | Single 32x8, column-major, zigzag |
-
-Reboot the device after saving.
 
 ## OTA Updates
 

@@ -29,7 +29,7 @@
 
 ---
 
-SVITRIX-XE1E is a smart home companion designed for HomeAssistant, IOBroker, NodeRed, and other automation systems. It works out of the box with pre-installed apps for time, date, temperature, humidity, battery, and **weather** (outdoor temperature, humidity, pressure, and air quality via WeatherAPI.com). For advanced users, the powerful MQTT and HTTP API allows creating custom apps, sending notifications, and controlling every aspect of the display.
+SVITRIX-XE1E is a smart home companion designed for HomeAssistant, IOBroker, NodeRed, and other automation systems. It works out of the box with pre-installed apps for time, date, temperature, humidity, battery, **moon** (lunar phase), and **weather** (outdoor temperature, humidity, pressure, and air quality via WeatherAPI.com). For advanced users, the powerful MQTT and HTTP API allows creating custom apps, sending notifications, and controlling every aspect of the display.
 
 SVITRIX-XE1E is a fork of [SVITRIX](https://github.com/svitrix/svitrix-firmware), which in turn is a community-driven fork of the original [AWTRIX 3](https://github.com/Blueforcer/awtrix3) project.
 
@@ -41,7 +41,8 @@ SVITRIX-XE1E is a fork of [SVITRIX](https://github.com/svitrix/svitrix-firmware)
 - **Time** — multiple display modes including big-digit clock, binary clock, calendar box, weekday bar
 - **Date** — formatted date with weekday indicator
 - **Temperature & Humidity** — indoor readings from I2C sensors (SHT3x, BME280, etc.)
-- **Battery** — charge percentage with animated icon
+- **Battery** — charge percentage with a dynamic vertical icon (fills by level and changes color: green, yellow, orange, red)
+- **Moon (NEW)** — lunar phase drawn in grayscale over a blue starfield background; configurable rotating text (phase name, age, % illumination) and northern/southern hemisphere
 - **Weather Apps (NEW)** — outdoor temperature, humidity, pressure, and air quality via [WeatherAPI.com](https://weatherapi.com)
   - Configurable location (city name, coordinates, auto-detect by IP, or station ID)
   - Weather condition icons (sunny, cloudy, rainy)
@@ -52,11 +53,13 @@ SVITRIX-XE1E is a fork of [SVITRIX](https://github.com/svitrix/svitrix-firmware)
 - **MQTT & HTTP API** — full control over apps, notifications, settings, and display
 - **Custom Apps** — create dynamic pages from your smart home without recompiling
 - **HomeAssistant discovery** — automatic integration with HA
+- **Reset reason (NEW)** — reports why the device rebooted (watchdog, panic, brownout, OTA, power-on…) in the `reset_reason` field of `/api/stats` and MQTT, to diagnose unexpected reboots from Home Assistant
 - **Multi-network WiFi** — configure up to 3 WiFi networks with automatic fallback
+- **Connection status LEDs** — corner pixels that diagnose WiFi (red) and MQTT/HA (yellow) status at a glance: blinking based on reconnection or AP mode
 - **Artnet (DMX)** — use SVITRIX-XE1E as an Artnet receiver
 
 ### Display & Effects
-- **19 visual effects** — Fireworks, Matrix, Plasma, Snake, and more as app backgrounds
+- **20 visual effects** — Fireworks, Matrix, Plasma, Snake, and more as app backgrounds
 - **Weather overlays** — snow, rain, storm, thunder, frost effects
 - **Slide transitions** — smooth app transitions with multiple styles
 - **Animated & static icons** — download from LaMetric gallery or upload your own
@@ -68,8 +71,14 @@ SVITRIX-XE1E is a fork of [SVITRIX](https://github.com/svitrix/svitrix-firmware)
 - **Auto-brightness** — configurable min/max brightness with LDR sensor
 
 ### Notifications & Sound
+- **Alarms & reminders** — programmable alarm clock and reminders (up to 10), managed from the buttons, web interface, and MQTT/HA; work without WiFi thanks to the RTC
 - **Notifications** — one-time messages with icons, sounds, and effects
 - **RTTTL melodies** — play monophonic sounds via the built-in buzzer
+- **Melody manager (NEW)** — manage RTTTL melodies from the web interface
+  - Built-in RTTTL editor with local in-browser preview
+  - Upload melody files (.txt/.rtttl) with preview
+  - Play on device or preview locally before saving
+  - Gallery of saved melodies with playback and editing
 
 ### Configuration & Management
 - **Modern web interface** — WiFi setup, MQTT config, weather settings, file manager, icon downloader, OTA updates, live view
@@ -131,9 +140,9 @@ curl http://<ip>/api/weather/data
 
 Full API reference: [API Reference](https://xe1e.github.io/svitrix-firmware-XE1E/en/api)
 
-## DIY Hardware
+## Hardware (Ulanzi TC001)
 
-The Ulanzi TC001 uses an **ESP32-WROOM-32D** (8 MB flash, CH340 USB-Serial) with a 32x8 WS2812B-Mini matrix (256 LEDs).
+SVITRIX-XE1E is designed specifically for the off-the-shelf Ulanzi TC001, which uses an **ESP32-WROOM-32D** (8 MB flash, CH340 USB-Serial) with a 32x8 WS2812B-Mini matrix (256 LEDs). No assembly or hardware modifications required.
 
 | GPIO | Function | Notes |
 |------|----------|-------|
@@ -156,7 +165,7 @@ Yes! Built-in apps (time, date, temperature, humidity, battery) work out of the 
 No. SVITRIX-XE1E is optimized for 32x8 (256 LEDs).
 
 **The temperature reading seems too high.**
-The sensor is inside the case. Set an offset in `dev.json` via the file manager:
+The sensor is inside the case. Set the offset from the web interface under **Apps → Temperature → Offset** (applies instantly). To also compensate humidity, set offsets in `dev.json` via the file manager:
 
 ```json
 {"temp_offset": -5, "hum_offset": -1}

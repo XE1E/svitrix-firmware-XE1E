@@ -33,16 +33,9 @@ Hardware reference for the Ulanzi TC001 clock, the platform SVITRIX runs on.
 | SHT3x (SHT31) | `0x44` | Temperature + humidity sensor |
 | DS1307 | `0x68` | Real-time clock (RTC) |
 
-### Supported Temperature Sensors
+### Temperature Sensor
 
-SVITRIX auto-detects the following sensors at startup (in this order):
-
-1. BME280 (temp + humidity + pressure)
-2. BMP280 (temp + pressure)
-3. HTU21DF (temp + humidity)
-4. SHT31 (temp + humidity) — built into Ulanzi TC001
-
-The Ulanzi TC001 ships with an SHT3x sensor. Temperature readings may be elevated due to internal heat from the LED matrix, ESP32, and battery inside the sealed case. Use `temp_offset` in `dev.json` to compensate.
+The Ulanzi TC001 ships with an **SHT3x** sensor (I2C address `0x44`) measuring temperature and humidity. Temperature readings may be elevated due to internal heat from the LED matrix, ESP32, and battery inside the sealed case. To compensate, adjust the offset from the web interface (**Apps → Temperature → Offset**) or with `temp_offset` in `dev.json`.
 
 ### Real-Time Clock (DS1307)
 
@@ -87,7 +80,6 @@ Create a `dev.json` in your file manager with the following content:
 | Value | Configuration |
 |-------|--------------|
 | 0 | Single 32x8 matrix, zigzag wiring (default) |
-| 1 | Four tiled 8x8 panels (4x1), progressive |
 | 2 | Single 32x8 matrix, column-major, zigzag |
 
 ## Datasheets

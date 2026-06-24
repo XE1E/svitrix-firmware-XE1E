@@ -84,7 +84,7 @@ La app de Fecha muestra la fecha actual por supuesto. Hay varios formatos de fec
 La App de Temperatura muestra la lectura actual del sensor de temperatura integrado.
 Sin embargo, debido a la ubicación del sensor dentro de la carcasa, la medición puede no ser completamente precisa.
 Factores como la placa de alimentación, la matriz LED, el brillo, el color y el número de píxeles encendidos pueden afectar la lectura de temperatura.
-Para una medición más precisa, puedes utilizar el [dev.json](./dev) para calibrar la temperatura con la clave `temp_offset`.
+Para una medición más precisa, puedes calibrar la temperatura con el campo **Compensación** (offset) de esta misma app en la interfaz web, o con la clave `temp_offset` del [dev.json](./dev).
 
 ---
 ## Humedad

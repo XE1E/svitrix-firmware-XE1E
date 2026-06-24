@@ -29,7 +29,7 @@
 
 ---
 
-SVITRIX-XE1E es un compañero para hogar inteligente diseñado para HomeAssistant, IOBroker, NodeRed y otros sistemas de automatización. Funciona directamente con apps preinstaladas de hora, fecha, temperatura, humedad, batería y **clima** (temperatura exterior, humedad, presión y calidad del aire vía WeatherAPI.com). Para usuarios avanzados, la potente API MQTT y HTTP permite crear apps personalizadas, enviar notificaciones y controlar cada aspecto de la pantalla.
+SVITRIX-XE1E es un compañero para hogar inteligente diseñado para HomeAssistant, IOBroker, NodeRed y otros sistemas de automatización. Funciona directamente con apps preinstaladas de hora, fecha, temperatura, humedad, batería, **luna** (fase lunar) y **clima** (temperatura exterior, humedad, presión y calidad del aire vía WeatherAPI.com). Para usuarios avanzados, la potente API MQTT y HTTP permite crear apps personalizadas, enviar notificaciones y controlar cada aspecto de la pantalla.
 
 SVITRIX-XE1E es un fork de [SVITRIX](https://github.com/svitrix/svitrix-firmware), que a su vez es un fork comunitario del proyecto original [AWTRIX 3](https://github.com/Blueforcer/awtrix3).
 
@@ -59,7 +59,7 @@ SVITRIX-XE1E es un fork de [SVITRIX](https://github.com/svitrix/svitrix-firmware
 - **Artnet (DMX)** — usa SVITRIX-XE1E como receptor Artnet
 
 ### Pantalla y Efectos
-- **19 efectos visuales** — Fuegos artificiales, Matrix, Plasma, Snake y más como fondos de apps
+- **20 efectos visuales** — Fuegos artificiales, Matrix, Plasma, Snake y más como fondos de apps
 - **Overlays de clima** — efectos de nieve, lluvia, tormenta, truenos, escarcha
 - **Transiciones deslizantes** — transiciones suaves entre apps con múltiples estilos
 - **Iconos animados y estáticos** — descarga desde la galería LaMetric o sube los tuyos
@@ -71,6 +71,7 @@ SVITRIX-XE1E es un fork de [SVITRIX](https://github.com/svitrix/svitrix-firmware
 - **Brillo automático** — brillo mín/máx configurable con sensor LDR
 
 ### Notificaciones y Sonido
+- **Alarmas y recordatorios** — despertador y recordatorios programables (hasta 10), gestionables desde los botones, la interfaz web y MQTT/HA; funcionan sin WiFi gracias al RTC
 - **Notificaciones** — mensajes únicos con iconos, sonidos y efectos
 - **Melodías RTTTL** — reproduce sonidos monofónicos vía el buzzer incorporado
 - **Gestor de melodías (NUEVO)** — administra melodías RTTTL desde la interfaz web
@@ -139,9 +140,9 @@ curl http://<ip>/api/weather/data
 
 Referencia completa de API: [Referencia de API](https://xe1e.github.io/svitrix-firmware-XE1E/api)
 
-## Hardware DIY
+## Hardware (Ulanzi TC001)
 
-El Ulanzi TC001 usa un **ESP32-WROOM-32D** (8 MB flash, USB-Serial CH340) con una matriz de 32x8 WS2812B-Mini (256 LEDs).
+SVITRIX-XE1E está diseñado específicamente para el Ulanzi TC001 de fábrica, que usa un **ESP32-WROOM-32D** (8 MB flash, USB-Serial CH340) con una matriz de 32x8 WS2812B-Mini (256 LEDs). No requiere ensamblaje ni modificaciones de hardware.
 
 | GPIO | Función | Notas |
 |------|---------|-------|
@@ -164,7 +165,7 @@ Sensores I2C soportados: BME280, BMP280, HTU21DF, SHT31 (auto-detectados al inic
 No. SVITRIX-XE1E está optimizado para 32x8 (256 LEDs).
 
 **La lectura de temperatura parece muy alta.**
-El sensor está dentro de la carcasa. Configura un offset en `dev.json` vía el gestor de archivos:
+El sensor está dentro de la carcasa. Ajusta el offset desde la interfaz web en **Apps → Temperatura → Compensación** (se aplica al instante). Para compensar también la humedad, define offsets en `dev.json` vía el gestor de archivos:
 
 ```json
 {"temp_offset": -5, "hum_offset": -1}

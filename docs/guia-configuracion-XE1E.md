@@ -376,6 +376,19 @@ El firmware incluye estas apps preinstaladas:
 | **Humidity** | Sensor interno, con color configurable |
 | **Battery** | Nivel de batería, con color configurable |
 
+### App de Luna (Fase Lunar)
+
+La app **Luna** dibuja la fase lunar actual en escala de grises sobre un fondo de estrellas azules. No usa archivo de icono (se dibuja por software). Al expandir sus ajustes (▼) en la pestaña **Apps** encontrarás:
+
+| Opción | Descripción |
+|--------|-------------|
+| **Hemisferio** | Norte o Sur — orienta la iluminación de la fase según tu ubicación |
+| **Mostrar nombre** | Texto rotativo con el nombre de la fase (Luna Nueva, Cuarto Creciente, etc.) |
+| **Mostrar edad** | Días transcurridos desde la luna nueva |
+| **Mostrar iluminación** | Porcentaje de iluminación del disco lunar |
+
+> **Nota:** La app Luna no se agrega automáticamente a la rotación. Añádela manualmente con **+ Agregar → Apps → Luna**.
+
 ### Indicador de Alarmas
 
 El dispositivo muestra un LED indicador en la esquina inferior derecha cuando hay alarmas activas. Este indicador se puede activar/desactivar desde **Settings > Apps > Alarms Indicator**.
@@ -409,6 +422,7 @@ La interfaz tiene una **lista unificada de rotación** que controla **todas** la
 **Tipos de elementos:**
 - **Apps nativas** — Hora, Fecha, Temperatura, Humedad, Batería
 - **Apps del clima** — Temp. Exterior, Humedad Exterior, Presión, Calidad del Aire, UV
+- **App de Luna** — fase lunar con texto rotativo y hemisferio configurable
 - **Apps personalizadas** — creadas vía MQTT, HTTP o Data Fetcher (badge `[custom]`)
 - **Efectos** — efectos visuales independientes sin texto (badge `[effect]`)
 
@@ -913,7 +927,8 @@ https://xe1e.github.io/svitrix-firmware-XE1E/
 | Campo | Valor |
 |-------|-------|
 | **Repositorio** | https://github.com/XE1E/svitrix-firmware-XE1E |
-| **Flasher** | https://xe1e.github.io/svitrix-firmware-XE1E/ |
+| **Documentación** | https://xe1e.github.io/svitrix-firmware-XE1E/ |
+| **Flasher** | https://xe1e.github.io/svitrix-firmware-XE1E/flasher |
 | **Basado en** | svitrix/svitrix-firmware |
 | **Autor fork** | XE1E |
 
