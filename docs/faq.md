@@ -61,7 +61,9 @@ Si modificaste accidentalmente este archivo, elimínalo vía el [administrador d
 
 R: El sensor en el Ulanzi TC001 está ubicado dentro de la carcasa sellada. El calor interno de la matriz LED (dependiendo del brillo) y la batería eleva la lectura por encima de la temperatura real de la habitación.
 
-Puedes compensar configurando offsets en `dev.json` vía el [administrador de archivos](./webinterface):
+La forma más sencilla de compensarlo es desde la **interfaz web**: en la pestaña **Apps**, despliega la app **Temperatura** y ajusta el campo **Compensación** (offset en grados). El cambio se aplica al instante, sin reiniciar.
+
+Si además quieres compensar la **humedad** (o prefieres configurarlo por archivo), puedes definir offsets en `dev.json` vía el [administrador de archivos](./webinterface):
 
 ```json
 {
@@ -70,37 +72,9 @@ Puedes compensar configurando offsets en `dev.json` vía el [administrador de ar
 }
 ```
 
-Reinicia el dispositivo después de guardar. Ajusta los valores para que coincidan con tu ambiente — el offset exacto depende de la configuración de brillo y uso de batería.
+Reinicia el dispositivo después de guardar el `dev.json`. Ajusta los valores para que coincidan con tu ambiente — el offset exacto depende de la configuración de brillo y uso de batería.
 
 Consulta todas las configuraciones de desarrollador disponibles en la sección [Funciones Ocultas](./dev).
-
-## Builds Personalizados
-
-#### P: Quiero construir mi propio SVITRIX. ¿Qué firmware debo usar?
-
-R: Usa el [flasher de SVITRIX](./flasher) — el firmware es compatible tanto con Ulanzi TC001 como con builds personalizados usando cualquier placa ESP32-WROOM (incluyendo ESP32 D1 Mini).
-
-Asegúrate de seguir el pinout correcto de la [Guía de Hardware](./hardware).
-
-#### P: Mi dispositivo auto-construido muestra caracteres ilegibles en la matriz
-
-R: Necesitas cambiar el tipo de configuración de matriz. El valor por defecto es `0`, que puede no coincidir con tu cableado.
-
-Crea un archivo `dev.json` vía el [administrador de archivos](./webinterface) e intenta con los valores `1` o `2`:
-
-```json
-{
-  "matrix": "1"
-}
-```
-
-| Valor | Configuración |
-|-------|---------------|
-| 0 | 32x8 único, fila mayor, zigzag |
-| 1 | Cuatro paneles 8x8 en mosaico, fila mayor, progresivo |
-| 2 | 32x8 único, columna mayor, zigzag |
-
-Reinicia el dispositivo después de guardar.
 
 ## Actualizaciones OTA
 

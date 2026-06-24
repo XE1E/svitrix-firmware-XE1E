@@ -84,7 +84,7 @@ The Dateapp shows the current date of course. There are several dateformats 'DFO
 The Temperature App displays the current reading from the integrated temperature sensor.
 However, due to the sensor's placement inside the housing, the measurement may not be entirely accurate.
 Factors such as the power board, LED matrix, brightness, color, and the number of lit pixels can affect the temperature reading.
-For more precise messurement, you can utilize the [dev.json](./dev) to calibrate the temperature with the `temp_offset` key.
+For a more precise reading, you can calibrate the temperature with the **Offset** field of this app in the web interface, or with the `temp_offset` key in [dev.json](./dev).
 
 ---
 ## Humidity
@@ -94,7 +94,7 @@ For more precise messurement, you can utilize the [dev.json](./dev) to calibrate
 The humidity App displays the current reading from the integrated humidity sensor.
 However, due to the sensor's placement inside the housing, the measurement may not be entirely accurate.
 Factors such as the power board, LED matrix, brightness, color, and the number of lit pixels can affect the humidity reading.
-For more precise messurement, you can utilize the [dev.json](./dev) to calibrate the temperature with the `hum_offset` key.
+For a more precise reading, you can use [dev.json](./dev) to calibrate the humidity with the `hum_offset` key.
 
 ---
 ## Battery
