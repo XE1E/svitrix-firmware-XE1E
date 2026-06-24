@@ -93,7 +93,6 @@ Do not lose your auth credentials — otherwise you will need to factory reset t
 - **Brightness** — manual brightness level, shown as a percentage (0–100 %)
 - **Background Effect** — a visual effect drawn behind the apps (None by default)
 - **Gamma** — gamma correction (0.5–3.0)
-- **Uppercase** — force all text to uppercase
 - **Text Color** — default text color
 - **Background Effect** — visual effect behind apps
 - **Color Correction** — a global tint multiplied over the whole screen (applied by FastLED on refresh). **White** is the neutral value (no change); it can only **dim** color channels, never add them. Use it to fix a color cast on the panel. The **Reset** button returns to white.

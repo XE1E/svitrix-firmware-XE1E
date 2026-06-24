@@ -50,7 +50,11 @@ export function DisplaySection() {
           value={Math.round((s.BRI ?? 0) * 100 / 255)}
           onChange={(v) => autoSave({ BRI: Math.round(v * 255 / 100) })} />
         <Slider label={t.display.gamma} min={0.5} max={3} step={0.1} value={s.GAMMA} onChange={(v) => autoSave({ GAMMA: v })} />
-        <Toggle label={t.display.uppercase} checked={s.UPPERCASE} onChange={(v) => instantSave({ UPPERCASE: v })} />
+        {/* The UPPERCASE toggle is intentionally hidden: SvitrixFont has no real
+            lowercase glyphs — every a-z entry aliases the same bitmap as its A-Z
+            counterpart, so toggling it has no visible effect. The UPPERCASE field
+            still exists in the API/config for compatibility. Re-add a control only
+            if a font with distinct lowercase glyphs is introduced. */}
         <ColorField label={t.display.textColor} value={s.TCOL} onChange={(v) => autoSave({ TCOL: v })} />
         <Select
           label={t.display.backgroundEffect}

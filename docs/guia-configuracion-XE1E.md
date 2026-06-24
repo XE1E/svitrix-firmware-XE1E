@@ -706,7 +706,6 @@ Configuración inicial del dispositivo después del flasheo o reset de valores.
 | **LDR Factor** | `1.0` |
 | **Mirror (espejo)** | Desactivado |
 | **Rotate 180°** | Desactivado |
-| **Mayúsculas** | Activado |
 | **Color de texto** | Blanco (`#FFFFFF`) |
 | **Efecto de fondo** | Ninguno |
 | **Corrección de color** | Blanco (`#FFFFFF`, sin tinte) |
