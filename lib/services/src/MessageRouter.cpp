@@ -60,7 +60,6 @@ bool isJsonPayload(const String& payload)
 std::vector<String> getSubscriptionTopics()
 {
     return {
-        "/brightness",
         "/notify/dismiss",
         "/notify",
         "/custom/#",
@@ -75,8 +74,6 @@ std::vector<String> getSubscriptionTopics()
         "/indicator1",
         "/indicator2",
         "/indicator3",
-        "/timeformat",
-        "/dateformat",
         "/reboot",
         "/moodlight",
         "/sound",
