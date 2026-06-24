@@ -39,6 +39,7 @@
 #include "policies/NightModePolicy.h"
 #include "Apps/Apps.h"
 #include "ResetReason.h"
+#include <ArduinoJson.h>
 #include <cassert>
 
 TaskHandle_t taskHandle = nullptr;
@@ -101,6 +102,20 @@ void setup()
                                            { DisplayManager.setBrightness(b); });
     PeripheryManager.setOnFactoryReset([]()
                                        { ServerManager.erase(); });
+    // Low-battery alert: show a red battery glyph (drawn directly, no icon file);
+    // the critical level adds an intermittent "beep beep beep" that only sounds when
+    // audio is enabled (playRTTTLString gates on audioConfig.soundActive).
+    PeripheryManager.setOnLowBattery([](bool critical)
+                                     {
+        StaticJsonDocument<384> doc;
+        doc["draw"] = "[[\"dr\",[8,1,17,6,\"#C80000\"]],[\"df\",[25,3,2,2,\"#C80000\"]],[\"df\",[10,3,3,3,\"#C80000\"]]]";
+        doc["duration"] = 3;   // show briefly, then resume the rotation
+        doc["stack"] = false;  // replace (not pile up) on the 60s critical repeats
+        if (critical)
+            doc["rtttl"] = "lowbat:d=4,o=5,b=120:16e6,16p,16e6,16p,16e6";
+        String out;
+        serializeJson(doc, out);
+        DisplayManager.getNotifier().generateNotification(1, out.c_str()); });
     PeripheryManager.setIsMenuActive([]()
                                      { return MenuManager.inMenu; });
     DisplayManager.setNotifier(&MQTTManager);

@@ -1,6 +1,6 @@
 # Services Library — AI Reference
 
-18 pure-logic utility libraries extracted from managers for testability. All stateless (except TextUtils), no hardware dependencies, 100% test coverage.
+19 pure-logic utility libraries extracted from managers for testability. All stateless (except TextUtils), no hardware dependencies, 100% test coverage.
 
 ## Service Map
 
@@ -13,6 +13,7 @@
 | **UnicodeFont** | Glyph lookup, UTF-8 decode, bitmap rendering | Yes | `findGlyph()`, `utf8NextCodepoint()`, `renderGlyph()`, `getUnicodeTextWidth()` |
 | **TimeEffects** | Sine fade, square blink (millis passed as param) | Yes | `fadeColorAt()`, `textEffectAt()` |
 | **SensorCalc** | Battery %, brightness, LDR inversion, calibration | Yes | `calculateBatteryPercent()`, `calculateBrightness()`, `applySensorOffset()` |
+| **BatteryAlert** | Low-battery warning policy (LOW/CRITICAL, hysteresis, 60s repeat, charging suppression) | Yes | `evaluate(percent, charging, nowMs, state)` |
 | **MoonPhase** | Lunar phase from UTC: age, illumination %, 0–7 phase index, waxing flag + Spanish names | Yes | `computeMoonPhase()`, `moonPhaseName()` |
 | **StatsBuilder** | Device telemetry → JSON string (no ArduinoJson) | Yes | `buildStatsJson(StatsData&)` |
 | **AppRegistry** | Native app names, app list serialization | Yes | `getNativeAppNames()`, `isNativeApp()`, `serializeAppList()` |
@@ -30,6 +31,8 @@
 ```
 MathUtils ← GammaUtils
           ← SensorCalc
+
+BatteryAlert (standalone, pure policy — millis passed in)
 
 UnicodeFont ← TextUtils
 
@@ -55,7 +58,7 @@ No inter-service circular dependencies. Most services are fully standalone.
 |----------|--------------|
 | DisplayManager | ColorUtils, TimeEffects, GammaUtils, TextUtils, StatsBuilder, OverlayMapping |
 | DisplayRenderer | TextUtils, UnicodeFont, ColorUtils |
-| PeripheryManager | SensorCalc |
+| PeripheryManager | SensorCalc, BatteryAlert |
 | MQTTManager | MessageRouter, HADiscovery, AppRegistry, StatsBuilder, PlaceholderUtils |
 | Apps | ColorUtils, TimeEffects, TextUtils |
 | DisplayManager, Apps, Overlays | LayoutEngine |
@@ -75,6 +78,7 @@ Every service has dedicated tests in `test/test_native/`:
 | UnicodeFont | `test_unicode_font/`, `test_glyph_render/`, `test_utf8/` |
 | TimeEffects | `test_time_effects/`, `test_effects/` |
 | SensorCalc | `test_sensor_calc/` |
+| BatteryAlert | `test_battery_alert/` |
 | StatsBuilder | `test_stats_builder/` |
 | AppRegistry | `test_app_registry/` |
 | AppOrderUtils | `test_apporder/` |

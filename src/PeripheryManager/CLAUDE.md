@@ -74,6 +74,7 @@ EasyButton callbacks
 | `setOnPowerToggle(fn)` | Double-press power toggle |
 | `setOnBrightnessChange(fn)` | Auto-brightness updates |
 | `setOnFactoryReset(fn)` | Reset button long press |
+| `setOnLowBattery(fn)` | Low-battery alert (`fn(bool critical)`); ULANZI only. Policy in `BatteryAlert` service; charging inferred from raw trend. Wired in `main.cpp` to push a red-battery notification (+ beep when critical) |
 | `setIsMenuActive(fn)` | Suppress reports during menu |
 
 ## Tick Loop

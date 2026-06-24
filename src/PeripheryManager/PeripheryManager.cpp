@@ -387,6 +387,20 @@ void PeripheryManager_::tick()
             batteryConfig.raw = meanFilterBatt.AddValue(medianFilterBatt.AddValue(ADCVALUE));
             batteryConfig.percent = calculateBatteryPercent(batteryConfig.raw, batteryConfig.minRaw, batteryConfig.maxRaw);
             sensorConfig.sensorsStable = true;
+
+#ifdef ULANZI
+            // Low-battery alert. There's no USB-detect pin, so infer charging from
+            // the (filtered, monotonic-on-discharge) raw trend: a rising value means
+            // the charger is in. The pure BatteryAlert policy then decides whether to
+            // warn and how urgently; main.cpp wires onLowBattery_ to the notification.
+            bool charging = (prevBatRawForCharge_ != 0) &&
+                            (batteryConfig.raw > prevBatRawForCharge_ + 2);
+            prevBatRawForCharge_ = batteryConfig.raw;
+            BatteryAlert::Action batAct = BatteryAlert::evaluate(
+                batteryConfig.percent, charging, currentMillis_BatTempHum, batteryAlertState_);
+            if (batAct != BatteryAlert::ALERT_NONE && onLowBattery_)
+                onLowBattery_(batAct == BatteryAlert::ALERT_CRITICAL);
+#endif
         }
         if (sensorConfig.sensorReading)
         {
@@ -503,6 +517,11 @@ void PeripheryManager_::setOnBrightnessChange(void (*cb)(int))
 void PeripheryManager_::setOnFactoryReset(void (*cb)())
 {
     onFactoryReset_ = cb;
+}
+
+void PeripheryManager_::setOnLowBattery(void (*cb)(bool))
+{
+    onLowBattery_ = cb;
 }
 
 void PeripheryManager_::setIsMenuActive(bool (*cb)())
