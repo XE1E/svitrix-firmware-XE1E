@@ -560,6 +560,18 @@ void loadSettings()
     playlistConfig.items = Settings.getString("PL_ITEMS", "");
     // Unified rotation config
     rotationConfig.items = Settings.getString("ROT_ITEMS", "");
+    // LED color correction / temperature (global FastLED tint). Default white =
+    // neutral (no tint). Loaded before DisplayManager.setup() applies it; a
+    // dev.json "color_correction"/"color_temperature" array still overrides below.
+    {
+        uint32_t cc = Settings.getUInt("CCORR", 0xFFFFFF);
+        uint32_t ct = Settings.getUInt("CTEMP", 0xFFFFFF);
+        DisplayManager.setColorCorrection(CRGB((cc >> 16) & 0xFF, (cc >> 8) & 0xFF, cc & 0xFF));
+        DisplayManager.setColorTemperature(CRGB((ct >> 16) & 0xFF, (ct >> 8) & 0xFF, ct & 0xFF));
+    }
+    // Gamma slider. Default 0 means "unset" — DisplayManager.setup() then falls
+    // back to its neutral value (without it, gamma reset to neutral every boot).
+    DisplayManager.setDisplayGamma(Settings.getFloat("GAMMA", 0.0f));
     Settings.end();
     // Migrate from legacy formats if needed
     migrateToRotationConfig();
@@ -670,6 +682,14 @@ void saveSettings()
     Settings.putString("PL_ITEMS", playlistConfig.items);
     // Unified rotation config
     Settings.putString("ROT_ITEMS", rotationConfig.items);
+    // LED color correction / temperature
+    {
+        CRGB cc = DisplayManager.getColorCorrection();
+        CRGB ct = DisplayManager.getColorTemperature();
+        Settings.putUInt("CCORR", ((uint32_t)cc.r << 16) | ((uint32_t)cc.g << 8) | cc.b);
+        Settings.putUInt("CTEMP", ((uint32_t)ct.r << 16) | ((uint32_t)ct.g << 8) | ct.b);
+    }
+    Settings.putFloat("GAMMA", DisplayManager.getDisplayGamma());
     Settings.end();
 }
 
