@@ -701,12 +701,34 @@ Configuración inicial del dispositivo después del flasheo o reset de valores.
 | **Brillo automático** | Activado |
 | **Brillo mínimo** | `2` |
 | **Brillo máximo** | `160` |
+| **Gamma** | `1.9` (neutro) |
 | **LDR Gamma** | `3.0` |
 | **LDR Factor** | `1.0` |
 | **Mirror (espejo)** | Desactivado |
 | **Rotate 180°** | Desactivado |
 | **Mayúsculas** | Activado |
+| **Color de texto** | Blanco (`#FFFFFF`) |
 | **Efecto de fondo** | Ninguno |
+| **Corrección de color** | Blanco (`#FFFFFF`, sin tinte) |
+| **Temperatura de color** | Blanco (`#FFFFFF`, sin tinte) |
+
+#### Ajuste de color (Gamma, Corrección y Temperatura)
+
+Tres controles afinan cómo se ve el color en la matriz. Los tres se guardan
+y **se conservan tras reiniciar**:
+
+- **Gamma** — curva de contraste (0.5–3.0). `1.9` es neutro; subirlo oscurece
+  los tonos medios (más contraste), bajarlo los aplana.
+- **Corrección de color** — tinte global multiplicado sobre **toda** la
+  pantalla. Sirve para corregir un tono dominante del panel. **Blanco = sin
+  cambio**; solo puede **atenuar** canales de color, nunca añadirlos. El botón
+  **Restablecer** vuelve a blanco.
+- **Temperatura de color** — el mismo tipo de tinte global, para entibiar o
+  enfriar la imagen. Tiene atajos **Cálido / Neutro / Frío**; *Neutro* (blanco)
+  equivale a desactivarlo.
+
+> **Tip:** Como son tintes multiplicativos, elige colores **saturados** para
+> notar el efecto; los tonos casi blancos apenas cambian nada.
 
 ### 15.3 Tab Apps
 
