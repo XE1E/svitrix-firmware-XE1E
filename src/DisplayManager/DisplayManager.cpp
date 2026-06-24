@@ -350,6 +350,22 @@ void DisplayManager_::setColorTemperature(CRGB t)
 {
     colorTemperature = t;
 }
+CRGB DisplayManager_::getColorCorrection() const
+{
+    return colorCorrection;
+}
+CRGB DisplayManager_::getColorTemperature() const
+{
+    return colorTemperature;
+}
+void DisplayManager_::setDisplayGamma(float g)
+{
+    displayGamma = g;
+}
+float DisplayManager_::getDisplayGamma() const
+{
+    return displayGamma;
+}
 void DisplayManager_::setCurrentApp(const String& name)
 {
     currentApp = name;
@@ -442,7 +458,10 @@ void DisplayManager_::setup()
     FastLED.addLeds<NEOPIXEL, MATRIX_PIN>(leds, MATRIX_WIDTH * MATRIX_HEIGHT);
     setMatrixLayout(displayConfig.matrixLayout);
     matrix->setRotation(displayConfig.rotateScreen ? 1 : 0);
-    displayGamma = kDisplayGammaNeutral;
+    // Default to neutral only if loadSettings() (which runs before setup) didn't
+    // restore a persisted value — otherwise the saved Gamma slider would be lost.
+    if (displayGamma <= 0.1f)
+        displayGamma = kDisplayGammaNeutral;
     if (colorCorrection)
     {
         FastLED.setCorrection(colorCorrection);

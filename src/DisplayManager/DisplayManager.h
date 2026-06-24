@@ -141,6 +141,10 @@ class DisplayManager_ : public IButtonHandler, public IMatrixHost, public IDispl
     void subscribeViaMqtt(const char *topic);
     void setColorCorrection(CRGB c);
     void setColorTemperature(CRGB t);
+    CRGB getColorCorrection() const;
+    CRGB getColorTemperature() const;
+    void setDisplayGamma(float g);
+    float getDisplayGamma() const;
     void setCurrentApp(const String& name);
     const String& getCurrentApp() const;
 

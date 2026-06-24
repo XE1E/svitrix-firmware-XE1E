@@ -29,16 +29,13 @@ bool parseCRGBFromJson(JsonObject doc, const char *key, CRGB& target)
 {
     if (!doc.containsKey(key))
         return false;
-    auto colorValue = doc[key];
-    if (colorValue.is<String>())
-    {
-        uint32_t rgb = strtoul(colorValue.as<String>().c_str(), NULL, 16);
-        target.setRGB((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
-    }
-    else if (colorValue.is<JsonArray>() && colorValue.size() == 3)
-    {
-        target.setRGB(static_cast<uint8_t>(colorValue[0].as<int>()), static_cast<uint8_t>(colorValue[1].as<int>()), static_cast<uint8_t>(colorValue[2].as<int>()));
-    }
+    // Reuse the shared color parser so "#RRGGBB" hex strings (what the web UI
+    // sends), [r,g,b] arrays, and raw ints all decode consistently. A bare
+    // strtoul() choked on the leading '#' and silently returned 0 (black),
+    // which the caller's `if (color)` guard then dropped — leaving color
+    // correction / temperature permanently disabled from the web UI.
+    uint32_t rgb = getColorFromJsonVariant(doc[key], 0);
+    target.setRGB((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
     return true;
 }
 
