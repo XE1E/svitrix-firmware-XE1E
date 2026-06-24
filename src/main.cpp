@@ -108,11 +108,11 @@ void setup()
     PeripheryManager.setOnLowBattery([](bool critical)
                                      {
         StaticJsonDocument<384> doc;
-        doc["draw"] = "[[\"dr\",[8,1,17,6,\"#C80000\"]],[\"df\",[25,3,2,2,\"#C80000\"]],[\"df\",[10,3,3,3,\"#C80000\"]]]";
+        doc["draw"] = "[{\"dr\":[8,1,17,6,\"#C80000\"]},{\"df\":[25,3,2,2,\"#C80000\"]},{\"df\":[10,3,3,3,\"#C80000\"]}]";
         doc["duration"] = 3;   // show briefly, then resume the rotation
         doc["stack"] = false;  // replace (not pile up) on the 60s critical repeats
         if (critical)
-            doc["rtttl"] = "lowbat:d=4,o=5,b=120:16e6,16p,16e6,16p,16e6";
+            doc["rtttl"] = "lowbat:d=4,o=5,b=120:16e6,16p,16e6,16p,16e6,2p,16e6,16p,16e6,16p,16e6";
         String out;
         serializeJson(doc, out);
         DisplayManager.getNotifier().generateNotification(1, out.c_str()); });
