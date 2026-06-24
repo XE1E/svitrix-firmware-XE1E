@@ -26,7 +26,9 @@
  * Convert a filtered battery ADC reading to a percentage [0..100].
  *
  * Uses Arduino map() for linear interpolation, then clamps to [0..100].
- * Firmware defaults: minBattery=475 (empty), maxBattery=665 (full).
+ * Firmware defaults: minBattery=580 (empty), maxBattery=665 (full). minBattery
+ * is the on-device brownout point (~ADC 576 under LED load), not the Li-ion's
+ * true empty — below it the TC001 powers off.
  *
  * @param filteredAdc  Smoothed ADC value from the battery voltage divider.
  * @param minBattery   ADC value corresponding to 0% (empty battery).

@@ -678,7 +678,10 @@ MqttConfig mqttConfig = {"", 1883, "", "", ""};
 NetworkConfig networkConfig = {false, "192.168.178.10", "192.168.178.1", "255.255.255.0", "8.8.8.8", "1.1.1.1"};
 HaConfig haConfig = {false, "homeassistant"};
 SensorConfig sensorConfig = {0, 0, 0, 0, TEMP_SENSOR_TYPE_NONE, true, false, -9, 0};
-BatteryConfig batteryConfig = {0, 0, 475, 665};
+// minRaw=580: the TC001 browns out (under LED load) around ADC ~576 — well above
+// a Li-ion's true empty — so 580 puts 0% just before shutoff (measured on device,
+// was 475 which left the bottom third of the scale unreachable). maxRaw=665 = full.
+BatteryConfig batteryConfig = {0, 0, 580, 665};
 AuthConfig authConfig = {"", "svitrix"};
 
 DisplayConfig displayConfig = {0, 42, false, false, false, true, -1};

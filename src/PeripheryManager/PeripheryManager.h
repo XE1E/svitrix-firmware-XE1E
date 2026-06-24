@@ -4,6 +4,7 @@
 #include <vector>
 #include "IPeripheryProvider.h"
 #include "ISound.h"
+#include "BatteryAlert.h"
 
 class IButtonHandler;
 class IButtonReporter;
@@ -34,7 +35,12 @@ class PeripheryManager_ : public IPeripheryProvider, public ISound
     void (*onPowerToggle_)(bool) = nullptr;
     void (*onBrightnessChange_)(int) = nullptr;
     void (*onFactoryReset_)() = nullptr;
+    void (*onLowBattery_)(bool critical) = nullptr;
     bool (*isMenuActive_)() = nullptr;
+
+    // Low-battery alert state (charging detection + warning policy).
+    BatteryAlert::State batteryAlertState_;
+    uint16_t prevBatRawForCharge_ = 0;
 
   public:
     EasyButton *buttonL;
@@ -61,6 +67,7 @@ class PeripheryManager_ : public IPeripheryProvider, public ISound
     void setOnPowerToggle(void (*cb)(bool));
     void setOnBrightnessChange(void (*cb)(int));
     void setOnFactoryReset(void (*cb)());
+    void setOnLowBattery(void (*cb)(bool critical));
     void setIsMenuActive(bool (*cb)());
 
     // Button dispatch (called by button callbacks)
