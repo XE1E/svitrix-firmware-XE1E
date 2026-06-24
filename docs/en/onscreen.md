@@ -49,6 +49,18 @@ Time values (`TRA`, `APP`) are shown without an "s" suffix; the prefix and
 magnitude already imply seconds.
 :::
 
+## Physical button combinations
+
+Beyond the menu, the buttons have these shortcuts outside it:
+
+| Action | Result |
+| --- | --- |
+| Double-press the middle button | Turns the matrix on / off. |
+| Reset button (hidden, GPIO13) held for **5 s** | Factory reset. |
+| Middle button held **in AP mode** | Cycles the matrix layout (0 → 1 → 2) and restarts. Useful if the screen shows garbled characters during initial setup. |
+
+While an alarm is ringing: **Left/Right** snooze it and **the middle button** dismisses it.
+
 ## Status indicators (corner LEDs)
 
 The clock shows two status pixels in the left corners of the matrix for an

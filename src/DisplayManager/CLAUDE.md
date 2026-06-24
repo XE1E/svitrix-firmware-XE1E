@@ -153,11 +153,13 @@ Implements `IDisplayRenderer`. All methods are stateless, draw to shared globals
 - `drawLineChart(x, y, data, size, withIcon, color)` — connected line segments
 
 ### JSON Draw Instructions
-`processDrawInstructions(xOffset, yOffset, json)` — parses array of commands:
+`processDrawInstructions(xOffset, yOffset, json)` — parses an array of command
+**objects** (each `{"cmd":[params]}`, NOT `["cmd",[params]]` — the array form
+parses to nothing and draws blank):
 ```json
-[["dp",[x,y,color]], ["dl",[x0,y0,x1,y1,color]], ["dr",[x,y,w,h,color]],
- ["df",[x,y,w,h,color]], ["dc",[x,y,r,color]], ["dfc",[x,y,r,color]],
- ["dt",[x,y,"text",color]], ["db",[x,y,w,h,[rgb...]]]]
+[{"dp":[x,y,color]}, {"dl":[x0,y0,x1,y1,color]}, {"dr":[x,y,w,h,color]},
+ {"df":[x,y,w,h,color]}, {"dc":[x,y,r,color]}, {"dfc":[x,y,r,color]},
+ {"dt":[x,y,"text",color]}, {"db":[x,y,w,h,[rgb...]]}]
 ```
 
 ## NotificationManager_ — Notification Queue

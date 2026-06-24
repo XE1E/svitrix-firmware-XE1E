@@ -552,7 +552,7 @@ You can adjust each property in the JSON object according to your preferences. I
 | Key           | Type                      | Description                                                                                         | Value Range                                        | Default |
 | ------------- | ------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ------- |
 | `ATIME`       | number                    | Duration an app is displayed in seconds.                                                            | Positive integer                                   | 7       |
-| `TEFF`        | number                    | Choose between app transition effects.                                                              | 0–10                                               | 1       |
+| `TEFF`        | number                    | Choose between app transition effects (see the full list at `/api/transitions`).                    | 0–13                                               | 1       |
 | `TSPEED`      | number                    | Time taken for the transition to the next app in milliseconds.                                      | Positive integer                                   | 500     |
 | `TCOL`        | string/array of ints      | Global text color.                                                                                  | RGB array or hex color                             | N/A     |
 | `TMODE`       | integer                   | Changes the time app style.                                                                         | 0–6                                                | 1       |
@@ -595,6 +595,7 @@ You can adjust each property in the JSON object according to your preferences. I
 | `VOL`         | integer                   | Allows to set the volume of the buzzer.                                                              | 0–30                                               | 25      |
 | `OVERLAY`     | string                    | Sets a global effect overlay (cannot be used with app specific overlays).                            | Varies (see below)                                 | N/A     |
 | `BEFF`        | integer                   | Background effect index — plays behind every app and notification. Use `-1` to disable.              | `-1` or a valid effect index (see `/api/effects`)  | -1      |
+| `GAMMA`       | number                    | Display gamma correction. `1.9` = neutral; higher = more contrast / darker mid-tones; lower = flatter.| Positive float                                    | 1.9     |
 
 **Color Values**: Can either be an RGB array (e.g., `[255,0,0]`) or a valid 6-digit hexadecimal color value (e.g., `"#FF0000"` for red).
 
@@ -675,3 +676,22 @@ If you need to restart the Svitrix:
 | MQTT Topic      | HTTP URL                        | Payload/Body  | HTTP Method |
 |-----------------|---------------------------------|---------------|-------------|
 | `N/A`           | `http://[IP]/api/resetSettings` | -             | POST        |
+
+#### WiFi Configuration
+
+Query or change the WiFi networks (up to 3) via API. `eraseWifi` clears only the WiFi credentials and restarts (narrower than `erase`).
+
+| HTTP URL                       | Payload/Body                                                       | HTTP Method |
+|--------------------------------|-------------------------------------------------------------------|-------------|
+| `http://[IP]/api/wifi`         | -                                                                 | GET         |
+| `http://[IP]/api/wifi`         | `{"networks":[{"ssid":"MyNetwork","password":"..."}]}`            | POST        |
+| `http://[IP]/api/eraseWifi`    | -                                                                 | POST        |
+
+#### Settings Backup & Restore
+
+Export all settings as JSON or restore them from a backup. See also [Backup & Restore](./backup).
+
+| HTTP URL                            | Payload/Body              | HTTP Method |
+|-------------------------------------|---------------------------|-------------|
+| `http://[IP]/api/settings/export`   | -                         | GET         |
+| `http://[IP]/api/settings/import`   | JSON (previous backup)    | POST        |
