@@ -521,6 +521,15 @@ export function UnifiedRotationSection() {
                         {label(name)}
                       </button>
                     ))}
+                    {NATIVE_APPS_EXTRA.map((name) => (
+                      <button
+                        key={name}
+                        class={styles.itemOption}
+                        onClick={() => addItem("app", name)}
+                      >
+                        {label(name)}
+                      </button>
+                    ))}
                   </>
                 ) : (
                   effects.map((effect, index) => (
