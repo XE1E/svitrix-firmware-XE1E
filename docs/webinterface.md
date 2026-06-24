@@ -108,7 +108,8 @@ Durante el tiempo programado, la pantalla reduce su brillo a la configuración e
 - **Mayúsculas** — fuerza todo el texto a mayúsculas
 - **Color de Texto** — color de texto por defecto para todas las apps
 - **Efecto de Fondo** — selecciona un efecto visual que se dibuja detrás de las apps (Ninguno por defecto)
-- **Corrección de Color / Temperatura de Color** — ajuste avanzado de color LED
+- **Corrección de Color** — tinte global que se multiplica sobre toda la pantalla (lo aplica FastLED al refrescar). El **blanco** es el valor neutro (sin cambio); solo puede **atenuar** canales de color, nunca añadirlos. Úsalo para corregir un tono dominante del panel. El botón **Restablecer** vuelve a blanco.
+- **Temperatura de Color** — mismo tipo de tinte global, pensado para entibiar o enfriar la imagen. Incluye atajos **Cálido / Neutro / Frío**; **Neutro** (blanco) equivale a desactivarlo. Elige colores saturados para notar el efecto.
 
 ### Apps
 

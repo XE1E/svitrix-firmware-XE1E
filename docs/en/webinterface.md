@@ -96,7 +96,8 @@ Do not lose your auth credentials — otherwise you will need to factory reset t
 - **Uppercase** — force all text to uppercase
 - **Text Color** — default text color
 - **Background Effect** — visual effect behind apps
-- **Color Correction / Temperature** — advanced LED tuning
+- **Color Correction** — a global tint multiplied over the whole screen (applied by FastLED on refresh). **White** is the neutral value (no change); it can only **dim** color channels, never add them. Use it to fix a color cast on the panel. The **Reset** button returns to white.
+- **Color Temperature** — the same kind of global tint, meant to warm up or cool down the image. Includes **Warm / Neutral / Cool** shortcuts; **Neutral** (white) effectively disables it. Pick saturated colors to see the effect.
 
 **Night Mode** — Schedule low-brightness mode for nighttime:
 - **Enable** — toggle on/off

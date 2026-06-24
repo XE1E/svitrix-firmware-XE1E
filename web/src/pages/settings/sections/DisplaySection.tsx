@@ -1,5 +1,5 @@
 import { useSettings } from "../../../context/SettingsContext";
-import { Toggle, Slider, ColorField, Select, Card, FormRow } from "../../../components/ui";
+import { Toggle, Slider, ColorField, Select, Card, FormRow, Button } from "../../../components/ui";
 import { useT } from "../../../i18n";
 import styles from "./sections.module.css";
 
@@ -8,6 +8,13 @@ export function DisplaySection() {
   const t = useT();
   if (!settings) return null;
   const s = settings;
+
+  // Color correction / temperature are a global multiplicative tint applied by
+  // FastLED at show() time: neutral is WHITE (#FFFFFF = x1.0, no change), and
+  // they can only dim color channels, never add. The firmware stores the
+  // default as #000000 (black) and guards it out, but black in the picker reads
+  // as "off" — show it as white so the neutral value is obvious and pickable.
+  const neutralize = (v?: string) => (!v || v.toLowerCase() === "#000000" ? "#ffffff" : v);
 
   const humanize = (name: string, fallback: string) => {
     const raw = (name ?? "").trim();
@@ -60,15 +67,24 @@ export function DisplaySection() {
         <FormRow>
           <div class="form-group">
             <label>{t.display.colorCorrection}</label>
-            <input type="color" value={s.CCORRECTION}
-              onInput={(e) => autoSave({ CCORRECTION: (e.target as HTMLInputElement).value })} />
+            <div class={styles.btnGroup}>
+              <input type="color" value={neutralize(s.CCORRECTION)}
+                onInput={(e) => autoSave({ CCORRECTION: (e.target as HTMLInputElement).value })} />
+              <Button onClick={() => instantSave({ CCORRECTION: "#ffffff" })}>{t.display.reset}</Button>
+            </div>
           </div>
           <div class="form-group">
             <label>{t.display.colorTemperature}</label>
-            <input type="color" value={s.CTEMP}
-              onInput={(e) => autoSave({ CTEMP: (e.target as HTMLInputElement).value })} />
+            <div class={styles.btnGroup}>
+              <input type="color" value={neutralize(s.CTEMP)}
+                onInput={(e) => autoSave({ CTEMP: (e.target as HTMLInputElement).value })} />
+              <Button onClick={() => instantSave({ CTEMP: "#ffc58f" })}>{t.display.tempWarm}</Button>
+              <Button onClick={() => instantSave({ CTEMP: "#ffffff" })}>{t.display.tempNeutral}</Button>
+              <Button onClick={() => instantSave({ CTEMP: "#c9e2ff" })}>{t.display.tempCool}</Button>
+            </div>
           </div>
         </FormRow>
+        <p class={styles.hint}>{t.display.colorTintHint}</p>
       </div>
     </Card>
   );
