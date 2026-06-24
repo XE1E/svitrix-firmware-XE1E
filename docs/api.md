@@ -552,7 +552,7 @@ Puedes ajustar cada propiedad en el objeto JSON según tus preferencias. Incluir
 | Clave         | Tipo                      | Descripción                                                                                        | Rango de Valores                                   | Por defecto |
 | ------------- | ------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ----------- |
 | `ATIME`       | number                    | Duración que una app se muestra en segundos.                                                       | Entero positivo                                    | 7       |
-| `TEFF`        | number                    | Elige entre efectos de transición de app.                                                          | 0–10                                               | 1       |
+| `TEFF`        | number                    | Elige entre efectos de transición de app (ver lista completa en `/api/transitions`).               | 0–13                                               | 1       |
 | `TSPEED`      | number                    | Tiempo tomado para la transición a la siguiente app en milisegundos.                               | Entero positivo                                    | 500     |
 | `TCOL`        | string/array de ints      | Color de texto global.                                                                             | Arreglo RGB o color hex                            | N/A     |
 | `TMODE`       | integer                   | Cambia el estilo de la app de hora.                                                                | 0–6                                                | 1       |
@@ -595,6 +595,7 @@ Puedes ajustar cada propiedad en el objeto JSON según tus preferencias. Incluir
 | `VOL`         | integer                   | Permite establecer el volumen del buzzer.                                                          | 0–30                                               | 25      |
 | `OVERLAY`     | string                    | Establece una superposición de efecto global (no puede usarse con superposiciones específicas de app).| Varía (ver abajo)                                | N/A     |
 | `BEFF`        | integer                   | Índice de efecto de fondo — se reproduce detrás de cada app y notificación. Usa `-1` para deshabilitar.| `-1` o un índice de efecto válido (ver `/api/effects`)  | -1      |
+| `GAMMA`       | number                    | Corrección gamma de la pantalla. `1.9` = neutro; más alto = más contraste/medios más oscuros; más bajo = más plano.| Flotante positivo                          | 1.9     |
 
 **Valores de Color**: Pueden ser un arreglo RGB (ej., `[255,0,0]`) o un valor de color hexadecimal válido de 6 dígitos (ej., `"#FF0000"` para rojo).
 
@@ -675,3 +676,22 @@ Si necesitas reiniciar el Svitrix:
 | Topic MQTT     | URL HTTP                        | Payload/Body | Método HTTP |
 |----------------|---------------------------------|--------------|-------------|
 | `N/A`          | `http://[IP]/api/resetSettings` | -            | POST        |
+
+#### Configuración WiFi
+
+Consulta o cambia las redes WiFi (hasta 3) por API. `eraseWifi` borra solo las credenciales WiFi y reinicia (más acotado que `erase`).
+
+| URL HTTP                       | Payload/Body                                                        | Método HTTP |
+|--------------------------------|--------------------------------------------------------------------|-------------|
+| `http://[IP]/api/wifi`         | -                                                                  | GET         |
+| `http://[IP]/api/wifi`         | `{"networks":[{"ssid":"MiRed","password":"..."}]}`                 | POST        |
+| `http://[IP]/api/eraseWifi`    | -                                                                  | POST        |
+
+#### Respaldo y Restauración de Configuración
+
+Exporta toda la configuración como JSON o restáurala desde un respaldo. Ver también [Respaldo y Restauración](./backup).
+
+| URL HTTP                            | Payload/Body              | Método HTTP |
+|-------------------------------------|---------------------------|-------------|
+| `http://[IP]/api/settings/export`   | -                         | GET         |
+| `http://[IP]/api/settings/import`   | JSON (respaldo previo)    | POST        |

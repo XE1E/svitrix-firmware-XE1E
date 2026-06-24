@@ -47,6 +47,18 @@ Agrupa los cuatro ajustes de rotación de apps. Dentro del submenú:
 Los valores de tiempo (`TRA`, `APP`) se muestran sin la letra "s"; el prefijo y la magnitud ya indican que son segundos.
 :::
 
+## Combinaciones de botones físicos
+
+Además del menú, los botones tienen estos atajos fuera de él:
+
+| Acción | Resultado |
+| --- | --- |
+| Doble pulsación del botón del medio | Enciende / apaga la matriz. |
+| Botón de reset (oculto, GPIO13) mantenido **5 s** | Reset de fábrica. |
+| Botón del medio mantenido **en modo AP** | Cicla el tipo de matriz (0 → 1 → 2) y reinicia. Útil si la pantalla muestra caracteres ilegibles durante la configuración inicial. |
+
+Durante una alarma sonando: **Izquierda/Derecha** posponen (snooze) y **el botón del medio** la descarta.
+
 ## Indicadores de estado (LEDs de esquina)
 
 El reloj muestra dos píxeles de estado en las esquinas izquierdas de la matriz
