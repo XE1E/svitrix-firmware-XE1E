@@ -105,7 +105,6 @@ Durante el tiempo programado, la pantalla reduce su brillo a la configuración e
 - **Brillo Automático** — ajusta automáticamente el brillo basado en luz ambiental. Al activarlo se muestran dos sub-controles que definen el rango: **Brillo Mínimo** (1–50) y **Brillo Máximo** (0–255)
 - **Brillo** — nivel de brillo manual, expresado como porcentaje (0–100 %)
 - **Gamma** — curva de corrección gamma (0.5–3.0)
-- **Mayúsculas** — fuerza todo el texto a mayúsculas
 - **Color de Texto** — color de texto por defecto para todas las apps
 - **Efecto de Fondo** — selecciona un efecto visual que se dibuja detrás de las apps (Ninguno por defecto)
 - **Corrección de Color** — tinte global que se multiplica sobre toda la pantalla (lo aplica FastLED al refrescar). El **blanco** es el valor neutro (sin cambio); solo puede **atenuar** canales de color, nunca añadirlos. Úsalo para corregir un tono dominante del panel. El botón **Restablecer** vuelve a blanco.
