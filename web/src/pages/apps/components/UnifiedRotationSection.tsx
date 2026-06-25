@@ -155,9 +155,28 @@ export function UnifiedRotationSection() {
   const [modalTab, setModalTab] = useState<"app" | "effect">("app");
 
   useEffect(() => {
-    getRotation().then((data) => {
-      // If empty, initialize with default native apps
-      if (!data.items || data.items.length === 0) {
+    let cancelled = false;
+
+    // Load the rotation config. The firmware always populates defaults at boot
+    // (migrateToRotationConfig), so an empty list almost always means we polled
+    // while the device was still starting up — not that the config is really
+    // empty. Retry a few times before falling back, and NEVER auto-save
+    // defaults: doing so would overwrite a valid config (incl. per-item colors)
+    // that simply hadn't loaded yet.
+    async function loadRotation(attempt = 0) {
+      try {
+        const data = await getRotation();
+        if (cancelled) return;
+        if (data.items && data.items.length > 0) {
+          setConfig(data);
+          return;
+        }
+        if (attempt < 3) {
+          setTimeout(() => { if (!cancelled) loadRotation(attempt + 1); }, 800);
+          return;
+        }
+        // Still empty after retries: show defaults locally for editing only.
+        // Persistence happens on the first explicit user edit (commitItems).
         const defaultItems: RotationItem[] = NATIVE_APPS_ORIGINAL.map(name => ({
           id: generateId(),
           type: "app",
@@ -168,12 +187,15 @@ export function UnifiedRotationSection() {
           icon: "",
         }));
         setConfig({ items: defaultItems });
-        saveRotation({ items: defaultItems }).catch(() => {});
-      } else {
-        setConfig(data);
+      } catch {
+        // Network error: leave config as-is (null = loading); a later reload
+        // picks up the real data. Never fabricate or save anything here.
       }
-    }).catch(() => {});
+    }
+
+    loadRotation();
     getEffects().then(setEffects).catch(() => {});
+    return () => { cancelled = true; };
   }, []);
 
   function label(name: string): string {
