@@ -7,6 +7,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/) and
 Releases prior to v0.4.0-beta.13 are documented in the
 [GitHub Releases](https://github.com/XE1E/svitrix-firmware-XE1E/releases).
 
+## [v0.4.0-beta.14] — 2026-06-25
+
+### Bug Fixes
+
+- **web:** the Apps tab no longer overwrites the rotation config with defaults
+  when `GET /api/rotation` returns an empty list (which typically happened when
+  the SPA polled while the device was still booting). It used to fabricate the
+  5 default native apps with `color:0` and auto-save them, silently wiping the
+  saved rotation order and per-item colors. The UI now retries on empty, never
+  auto-saves defaults, and only falls back to local-only defaults that persist
+  on the first explicit edit (#63)
+
 ## [v0.4.0-beta.13] — 2026-06-24
 
 ### Bug Fixes
