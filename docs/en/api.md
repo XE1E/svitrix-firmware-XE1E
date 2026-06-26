@@ -21,12 +21,21 @@
     + [Switch Apps](#switch-apps)
     + [Switch to Specific App](#switch-to-specific-app)
   * [Data Fetcher](#data-fetcher)
+  * [Rotation (Apps + Effects)](#rotation-apps-effects)
+  * [Alarms & Reminders](#alarms-reminders)
+  * [Weather](#weather)
   * [Change Settings](#change-settings)
     + [JSON Properties](#json-properties-1)
   * [Update](#update)
       - [Reboot Svitrix](#reboot-svitrix)
       - [Erase Svitrix](#erase-svitrix)
       - [Clear Settings](#clear-settings)
+      - [WiFi Configuration](#wifi-configuration)
+      - [Settings Backup & Restore](#settings-backup--restore)
+  * [System & Files](#system--files)
+      - [Firmware Version](#firmware-version)
+      - [Apply Network/Broker Configuration](#apply-networkbroker-configuration)
+      - [File Manager (LittleFS)](#file-manager-littlefs)
 
 
 ## Overview
@@ -695,3 +704,35 @@ Export all settings as JSON or restore them from a backup. See also [Backup & Re
 |-------------------------------------|---------------------------|-------------|
 | `http://[IP]/api/settings/export`   | -                         | GET         |
 | `http://[IP]/api/settings/import`   | JSON (previous backup)    | POST        |
+
+## System & Files
+
+System endpoints and direct access to the LittleFS filesystem (icons, melodies, custom apps, backups).
+
+#### Firmware Version
+
+| HTTP URL               | Payload/Body | HTTP Method |
+|------------------------|--------------|-------------|
+| `http://[IP]/version`  | -            | GET         |
+
+#### Apply Network/Broker Configuration
+
+Applies `/DoNotTouch.json` (static IP, MQTT broker, Home Assistant, NTP, auth) to the running system without a reboot. Used by the SPA after editing advanced configuration.
+
+| HTTP URL           | Payload/Body | HTTP Method |
+|--------------------|--------------|-------------|
+| `http://[IP]/save` | form-data    | POST        |
+
+#### File Manager (LittleFS)
+
+List, download, upload and delete files in storage (`/ICONS/`, `/MELODIES/`, `/CUSTOMAPPS/`, `/PALETTES/`). This is what the SPA Files page uses.
+
+| HTTP URL                            | Payload/Body              | HTTP Method | Description                                   |
+|-------------------------------------|---------------------------|-------------|-----------------------------------------------|
+| `http://[IP]/list?dir=/ICONS`       | -                         | GET         | List a directory (JSON: name, type, size)     |
+| `http://[IP]/<path>`                | -                         | GET         | Download a file (e.g. `/ICONS/962.jpg`)       |
+| `http://[IP]/edit?filename=/<path>` | multipart (field `data`)  | POST        | Upload or create a file                       |
+| `http://[IP]/edit`                  | `path=/<path>`            | PUT         | Create a directory                            |
+| `http://[IP]/edit`                  | `path=/<path>`            | DELETE      | Delete a file                                 |
+
+> **Note:** file responses may be gzip-compressed (`Content-Encoding: gzip`); use a client that decompresses automatically.
