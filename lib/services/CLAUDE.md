@@ -1,6 +1,6 @@
 # Services Library — AI Reference
 
-19 pure-logic utility libraries extracted from managers for testability. All stateless (except TextUtils), no hardware dependencies, 100% test coverage.
+20 pure-logic utility libraries extracted from managers for testability. All stateless (except TextUtils), no hardware dependencies, 100% test coverage.
 
 ## Service Map
 
@@ -15,6 +15,7 @@
 | **SensorCalc** | Battery %, brightness, LDR inversion, calibration | Yes | `calculateBatteryPercent()`, `calculateBrightness()`, `applySensorOffset()` |
 | **BatteryAlert** | Low-battery warning policy (LOW/CRITICAL, hysteresis, 60s repeat, charging suppression) | Yes | `evaluate(percent, charging, nowMs, state)` |
 | **MoonPhase** | Lunar phase from UTC: age, illumination %, 0–7 phase index, waxing flag + Spanish names | Yes | `computeMoonPhase()`, `moonPhaseName()` |
+| **AirQualityLevels** | Pollutant concentration (µg/m³) → 1–6 level (EAQI bands), short label + level color | Yes | `level()`, `label()`, `levelColor()` |
 | **StatsBuilder** | Device telemetry → JSON string (no ArduinoJson) | Yes | `buildStatsJson(StatsData&)` |
 | **AppRegistry** | Native app names, app list serialization | Yes | `getNativeAppNames()`, `isNativeApp()`, `serializeAppList()` |
 | **AppOrderUtils** | Merge persisted app order with available apps (unified app loop) | Yes | `orderApps(savedOrder, desired)` |
@@ -60,7 +61,7 @@ No inter-service circular dependencies. Most services are fully standalone.
 | DisplayRenderer | TextUtils, UnicodeFont, ColorUtils |
 | PeripheryManager | SensorCalc, BatteryAlert |
 | MQTTManager | MessageRouter, HADiscovery, AppRegistry, StatsBuilder, PlaceholderUtils |
-| Apps | ColorUtils, TimeEffects, TextUtils |
+| Apps | ColorUtils, TimeEffects, TextUtils, AirQualityLevels |
 | DisplayManager, Apps, Overlays | LayoutEngine |
 | DataFetcher | FormatStringValidator |
 | main.cpp | TextUtils (`setTextFont(SvitrixFont)` — must be called at startup) |
@@ -89,6 +90,7 @@ Every service has dedicated tests in `test/test_native/`:
 | PlaceholderUtils | `test_placeholder_utils/` |
 | LayoutEngine | `test_layout_engine/` |
 | FormatStringValidator | `test_format_validator/` |
+| AirQualityLevels | `test_air_quality/` |
 
 Run all: `pio test -e native_test`
 

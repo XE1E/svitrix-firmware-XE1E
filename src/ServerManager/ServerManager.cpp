@@ -290,6 +290,7 @@ void addHandler()
                     doc["uvColor"] = weatherConfig.uvColor;
                     doc["aqiAutoColor"] = weatherConfig.aqiAutoColor;
                     doc["uvAutoColor"] = weatherConfig.uvAutoColor;
+                    doc["aqiShowComponents"] = weatherConfig.aqiShowComponents;
                     doc["outdoorTempDuration"] = weatherConfig.outdoorTempDuration;
                     doc["outdoorHumDuration"] = weatherConfig.outdoorHumDuration;
                     doc["pressureDuration"] = weatherConfig.pressureDuration;
@@ -328,6 +329,7 @@ void addHandler()
                             if (doc.containsKey("uvColor")) weatherConfig.uvColor = doc["uvColor"].as<uint32_t>();
                             if (doc.containsKey("aqiAutoColor")) weatherConfig.aqiAutoColor = doc["aqiAutoColor"].as<bool>();
                             if (doc.containsKey("uvAutoColor")) weatherConfig.uvAutoColor = doc["uvAutoColor"].as<bool>();
+                            if (doc.containsKey("aqiShowComponents")) weatherConfig.aqiShowComponents = doc["aqiShowComponents"].as<bool>();
                             if (doc.containsKey("outdoorTempDuration")) weatherConfig.outdoorTempDuration = doc["outdoorTempDuration"].as<uint8_t>();
                             if (doc.containsKey("outdoorHumDuration")) weatherConfig.outdoorHumDuration = doc["outdoorHumDuration"].as<uint8_t>();
                             if (doc.containsKey("pressureDuration")) weatherConfig.pressureDuration = doc["pressureDuration"].as<uint8_t>();

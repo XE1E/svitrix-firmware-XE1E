@@ -536,6 +536,7 @@ Configura y consulta los datos del clima exterior (requiere clave API). Las apps
 | `aqiColor` | integer | Color del AQI (entero RGB). |
 | `uvColor` | integer | Color del índice UV (entero RGB). |
 | `aqiAutoColor` | boolean | Colorear automáticamente el AQI según el nivel. |
+| `aqiShowComponents` | boolean | Tras `ICA:N`, rotar los contaminantes (PM2.5, O3, NO2…) que rebasan el nivel 4, cada uno en el color de su propio nivel. Activado por defecto. |
 | `uvAutoColor` | boolean | Colorear automáticamente el índice UV según el nivel. |
 | `outdoorTempDuration` | integer | Duración de la app de temperatura exterior (segundos). |
 | `outdoorHumDuration` | integer | Duración de la app de humedad exterior (segundos). |

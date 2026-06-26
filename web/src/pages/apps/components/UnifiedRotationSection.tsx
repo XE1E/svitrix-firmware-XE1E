@@ -421,6 +421,11 @@ export function UnifiedRotationSection() {
                               checked={weatherConfig.aqiAutoColor}
                               onChange={(v) => { updateWeatherConfig({ aqiAutoColor: v }); saveWeatherConfig(); }}
                             />
+                            <Toggle
+                              label={t.apps.aqiShowComponents}
+                              checked={weatherConfig.aqiShowComponents}
+                              onChange={(v) => { updateWeatherConfig({ aqiShowComponents: v }); saveWeatherConfig(); }}
+                            />
                           </div>
                         )}
                         {item.name === "UV" && weatherConfig && (

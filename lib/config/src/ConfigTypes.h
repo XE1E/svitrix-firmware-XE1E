@@ -201,6 +201,7 @@ struct WeatherConfig {
     uint8_t pressureDuration;
     uint8_t aqiDuration;
     uint8_t uvDuration;
+    bool aqiShowComponents;       // ICA app: rotate pollutants exceeding level 4
 };
 
 struct WeatherData {
@@ -209,6 +210,13 @@ struct WeatherData {
     float pressure;           // mb/hPa
     int aqi;                  // US EPA index (1-6)
     float uv;                 // UV index (0-11+)
+    // Air-quality component concentrations in µg/m³ (from WeatherAPI air_quality)
+    float pm2_5;
+    float pm10;
+    float o3;
+    float no2;
+    float so2;
+    float co;
     String condition;         // "sunny", "cloudy", etc.
     int conditionCode;        // WeatherAPI condition code
     unsigned long lastUpdate; // millis() of last update

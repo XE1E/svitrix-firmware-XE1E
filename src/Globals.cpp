@@ -555,6 +555,7 @@ void loadSettings()
     weatherConfig.uvDuration = Settings.getUChar("WAPI_UVDUR", 7);
     weatherConfig.aqiAutoColor = Settings.getBool("WAPI_AQAUTO", true);
     weatherConfig.uvAutoColor = Settings.getBool("WAPI_UVAUTO", true);
+    weatherConfig.aqiShowComponents = Settings.getBool("WAPI_AQCOMP", true);
     // Playlist config (legacy, kept for migration)
     playlistConfig.enabled = Settings.getBool("PL_EN", false);
     playlistConfig.items = Settings.getString("PL_ITEMS", "");
@@ -677,6 +678,7 @@ void saveSettings()
     Settings.putUChar("WAPI_UVDUR", weatherConfig.uvDuration);
     Settings.putBool("WAPI_AQAUTO", weatherConfig.aqiAutoColor);
     Settings.putBool("WAPI_UVAUTO", weatherConfig.uvAutoColor);
+    Settings.putBool("WAPI_AQCOMP", weatherConfig.aqiShowComponents);
     // Playlist config (legacy)
     Settings.putBool("PL_EN", playlistConfig.enabled);
     Settings.putString("PL_ITEMS", playlistConfig.items);
@@ -712,7 +714,7 @@ AppConfig appConfig = {true, true, true, true, true, true, false, false, 1, 400,
 AudioConfig audioConfig = {false, 30, ""};
 SystemConfig systemConfig = {true, 15, 80, "", false, 10000, false, false, "", "", false, false, "", ""};
 WeatherConfig weatherConfig = {"", WEATHER_LOC_CITY, "", 0.0, 0.0, "", 30, true, false, false, false, false, false, 0, 0, 0, 0, 7, 7, 7, 7};
-WeatherData weatherData = {0, 0, 0, 0, 0, "", 0, 0, false};
+WeatherData weatherData = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "", 0, 0, false};
 PlaylistConfig playlistConfig = {false, ""};
 RotationConfig rotationConfig = {""};
 
@@ -820,6 +822,7 @@ String exportSettings()
     doc["WAPI_UVCOL"] = weatherConfig.uvColor;
     doc["WAPI_UVDUR"] = weatherConfig.uvDuration;
     doc["WAPI_AQAUTO"] = weatherConfig.aqiAutoColor;
+    doc["WAPI_AQCOMP"] = weatherConfig.aqiShowComponents;
     doc["WAPI_UVAUTO"] = weatherConfig.uvAutoColor;
 
     // Playlist (legacy)
@@ -1026,6 +1029,8 @@ bool importSettings(const char *json)
         weatherConfig.uvDuration = doc["WAPI_UVDUR"];
     if (doc.containsKey("WAPI_AQAUTO"))
         weatherConfig.aqiAutoColor = doc["WAPI_AQAUTO"];
+    if (doc.containsKey("WAPI_AQCOMP"))
+        weatherConfig.aqiShowComponents = doc["WAPI_AQCOMP"];
     if (doc.containsKey("WAPI_UVAUTO"))
         weatherConfig.uvAutoColor = doc["WAPI_UVAUTO"];
 

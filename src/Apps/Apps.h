@@ -58,6 +58,12 @@ void PressureApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t
 
 void AirQualityApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer);
 
+/// Extra display time (ms) the ICA app needs to show its full rotation in one
+/// visit: one per-item slice per pollutant currently flagged (level >= 4). 0
+/// when only the index shows. The rotation system adds this to the AirQuality
+/// item duration.
+long airQualityExtraDurationMs();
+
 void UVApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer);
 
 void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer);
