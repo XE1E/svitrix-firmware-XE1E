@@ -21,12 +21,21 @@
     + [Cambiar Apps](#cambiar-apps)
     + [Cambiar a App Específica](#cambiar-a-app-específica)
   * [Data Fetcher](#data-fetcher)
+  * [Rotación (Apps + Efectos)](#rotación-apps-efectos)
+  * [Despertador y Recordatorios](#despertador-y-recordatorios)
+  * [Clima](#clima)
   * [Cambiar Configuración](#cambiar-configuración)
     + [Propiedades JSON](#propiedades-json-1)
   * [Actualizar](#actualizar)
       - [Reiniciar Svitrix](#reiniciar-svitrix)
       - [Borrar Svitrix](#borrar-svitrix)
       - [Limpiar Configuración](#limpiar-configuración)
+      - [Configuración WiFi](#configuración-wifi)
+      - [Respaldo y Restauración de Configuración](#respaldo-y-restauración-de-configuración)
+  * [Sistema y Archivos](#sistema-y-archivos)
+      - [Versión del Firmware](#versión-del-firmware)
+      - [Aplicar Configuración de Red/Broker](#aplicar-configuración-de-redbroker)
+      - [Gestor de Archivos (LittleFS)](#gestor-de-archivos-littlefs)
 
 
 ## Resumen
@@ -695,3 +704,35 @@ Exporta toda la configuración como JSON o restáurala desde un respaldo. Ver ta
 |-------------------------------------|---------------------------|-------------|
 | `http://[IP]/api/settings/export`   | -                         | GET         |
 | `http://[IP]/api/settings/import`   | JSON (respaldo previo)    | POST        |
+
+## Sistema y Archivos
+
+Endpoints de sistema y acceso directo al sistema de archivos LittleFS (iconos, melodías, apps personalizadas, respaldos).
+
+#### Versión del Firmware
+
+| URL HTTP               | Payload/Body | Método HTTP |
+|------------------------|--------------|-------------|
+| `http://[IP]/version`  | -            | GET         |
+
+#### Aplicar Configuración de Red/Broker
+
+Aplica el archivo `/DoNotTouch.json` (IP estática, broker MQTT, Home Assistant, NTP, auth) al sistema en caliente, sin reiniciar. Lo usa el SPA tras editar la configuración avanzada.
+
+| URL HTTP           | Payload/Body | Método HTTP |
+|--------------------|--------------|-------------|
+| `http://[IP]/save` | form-data    | POST        |
+
+#### Gestor de Archivos (LittleFS)
+
+Lista, descarga, sube y elimina archivos del almacenamiento (`/ICONS/`, `/MELODIES/`, `/CUSTOMAPPS/`, `/PALETTES/`). Es lo que usa la página de Archivos del SPA.
+
+| URL HTTP                            | Payload/Body              | Método HTTP | Descripción                                      |
+|-------------------------------------|---------------------------|-------------|--------------------------------------------------|
+| `http://[IP]/list?dir=/ICONS`       | -                         | GET         | Lista un directorio (JSON: nombre, tipo, tamaño) |
+| `http://[IP]/<ruta>`                | -                         | GET         | Descarga un archivo (ej. `/ICONS/962.jpg`)       |
+| `http://[IP]/edit?filename=/<ruta>` | multipart (campo `data`)  | POST        | Sube o crea un archivo                           |
+| `http://[IP]/edit`                  | `path=/<ruta>`            | PUT         | Crea un directorio                               |
+| `http://[IP]/edit`                  | `path=/<ruta>`            | DELETE      | Elimina un archivo                               |
+
+> **Nota:** las respuestas de archivos pueden venir comprimidas con gzip (`Content-Encoding: gzip`); usa un cliente que descomprima automáticamente.

@@ -34,7 +34,11 @@ HTTP REST API server, WiFi connectivity, mDNS discovery, UDP device discovery, a
 | `IPower` | Sleep/wake |
 | `IUpdater` | OTA firmware update |
 
-## HTTP Endpoints (~35)
+## HTTP Endpoints (~50, registered in `addHandler()`)
+
+> Public-facing reference (3 languages): [docs/api.md](../../docs/api.md). The
+> `/list` + `/edit` file-manager and WiFi-portal routes come from the webserver
+> wrapper — see [lib/webserver/CLAUDE.md](../../lib/webserver/CLAUDE.md).
 
 ### Device Control
 | Method | Path | Description |
@@ -42,7 +46,8 @@ HTTP REST API server, WiFi connectivity, mDNS discovery, UDP device discovery, a
 | `POST` | `/api/power` | Set display power state |
 | `POST` | `/api/sleep` | Deep sleep (JSON: seconds) |
 | `ANY` | `/api/reboot` | Restart ESP32 |
-| `ANY` | `/api/erase` | Factory reset: wipe WiFi + LittleFS + settings |
+| `ANY` | `/api/erase` | Factory reset: wipe LittleFS + settings (keeps WiFi) |
+| `ANY` | `/api/eraseWifi` | Wipe only WiFi credentials + reboot |
 | `ANY` | `/api/resetSettings` | Reset settings to defaults |
 | `POST` | `/api/doupdate` | Check + apply OTA firmware update |
 
@@ -58,16 +63,14 @@ HTTP REST API server, WiFi connectivity, mDNS discovery, UDP device discovery, a
 | `POST` | `/api/custom?name=X` | Create/update/delete custom app |
 | `POST` | `/api/moodlight` | Set moodlight mode |
 | `GET` | `/api/rotation` | Get unified rotation config (apps + effects + per-item overrides) |
-| `POST` | `/api/rotation` | Save unified rotation config |
+| `POST` | `/api/rotation` | Save unified rotation config (replaces deprecated `/api/reorder` + `/api/playlist`) |
 
 ### Notifications & Indicators
 | Method | Path | Description |
 |--------|------|-------------|
 | `POST` | `/api/notify` | Push notification |
 | `ANY` | `/api/notify/dismiss` | Dismiss current notification |
-| `POST` | `/api/indicator1` | Set indicator 1 |
-| `POST` | `/api/indicator2` | Set indicator 2 |
-| `POST` | `/api/indicator3` | Set indicator 3 |
+| `POST` | `/api/indicator1\|2\|3` | Set indicator 1/2/3 |
 
 ### Audio
 | Method | Path | Description |
@@ -81,10 +84,34 @@ HTTP REST API server, WiFi connectivity, mDNS discovery, UDP device discovery, a
 |--------|------|-------------|
 | `GET` | `/api/settings` | Get all settings as JSON |
 | `POST` | `/api/settings` | Update settings (partial JSON) |
+| `GET` | `/api/settings/export` | Export full settings backup as JSON |
+| `POST` | `/api/settings/import` | Restore settings from a backup JSON |
 | `GET` | `/api/stats` | Device stats |
 | `GET` | `/api/screen` | LED buffer as JSON (256 pixels) |
 | `GET` | `/api/effects` | List available visual effects |
 | `GET` | `/api/transitions` | List available transition effects |
+
+### Weather
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/weather` | Get weather app config |
+| `POST` | `/api/weather` | Update weather config (API key, location, display) |
+| `GET` | `/api/weather/data` | Current weather data (temp, humidity, pressure, aqi, uv, condition) |
+| `POST` | `/api/weather/fetch` | Force a weather fetch now |
+
+### Alarms & Reminders
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/alarms` | List alarms/reminders + ringing state |
+| `POST` | `/api/alarms` | Add an alarm, or `{action:snooze\|dismiss}` |
+| `PUT` | `/api/alarms` | Update an alarm by id |
+| `DELETE` | `/api/alarms?id=X` | Delete an alarm |
+
+### WiFi
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/wifi` | List configured networks (up to 3) |
+| `POST` | `/api/wifi` | Set networks (`{networks:[{ssid,password}]}`) |
 
 ### DataFetcher
 | Method | Path | Description |
@@ -94,11 +121,16 @@ HTTP REST API server, WiFi connectivity, mDNS discovery, UDP device discovery, a
 | `DELETE` | `/api/datafetcher?name=X` | Remove data source |
 | `POST` | `/api/datafetcher/fetch?name=X` | Force-fetch a data source |
 
-### System
+### System & Files
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/version` | Firmware version string |
 | `POST` | `/save` | Apply `/DoNotTouch.json` config to running system |
+| `GET` | `/list?dir=/ICONS` | List a LittleFS directory (JSON) — *webserver wrapper* |
+| `GET` | `/<path>` | Download a LittleFS file (e.g. `/ICONS/962.jpg`; may be gzip-encoded) |
+| `POST` | `/edit?filename=/<path>` | Upload/create a file (multipart `data`) — *webserver wrapper* |
+| `PUT` | `/edit` | Create a directory (`path=/<path>`) — *webserver wrapper* |
+| `DELETE` | `/edit` | Delete a file (`path=/<path>`) — *webserver wrapper* |
 
 ## Config Initialization
 
