@@ -204,6 +204,10 @@ struct MockDisplayNavigation : public IDisplayNavigation
     void setCustomAppColors(uint32_t color) override { setCustomAppColorsCalls++; lastCustomAppColor = color; }
     int8_t rotationAppState(const char *) override { return -1; }
     void setRotationAppEnabled(const char *, bool) override {}
+    uint16_t getEffectiveAppDurationSec(const char *) override { return 0; }
+    void setAppDuration(const char *, uint16_t) override {}
+    bool isAppVisible(const char *) override { return false; }
+    void setAppVisible(const char *, bool) override {}
 };
 
 // ---------------------------------------------------------------------------

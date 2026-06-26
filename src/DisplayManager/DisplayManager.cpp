@@ -69,10 +69,17 @@ bool rotationEffectOnly = false;
 const RotationItemRuntime *currentRotationItem = nullptr;
 const RotationItemRuntime *prevRotationItem = nullptr;
 
-// Lightweight name->enabled lookup for ALL rotation APP items (incl. disabled),
-// rebuilt by parseRotationConfig(). The on-device menu (rotationAppState) needs
-// disabled state too, which rotationItems (enabled-only) doesn't carry.
-static std::vector<std::pair<String, bool>> rotationAllApps;
+// Lightweight lookup for ALL rotation APP items (incl. disabled), rebuilt by
+// parseRotationConfig(). The on-device menu (rotationAppState) and HA controls
+// need disabled state + per-item duration too, which rotationItems
+// (enabled-only) doesn't carry.
+struct RotationAppInfo
+{
+    String name;
+    bool enabled;
+    uint16_t duration; // seconds; 0 = use default
+};
+static std::vector<RotationAppInfo> rotationAllApps;
 
 // Forward declaration for getDurationForApp (defined below)
 static long getDurationForApp(const String& appName);
@@ -113,9 +120,11 @@ void parseRotationConfig()
     {
         bool enabled = item["enabled"] | true;
         const char *typeStr = item["type"] | "app";
-        // Record every APP item (enabled or not) for the menu's on/off lookup.
+        // Record every APP item (enabled or not) for the menu's on/off lookup
+        // and HA's per-app duration/visibility controls.
         if (strcmp(typeStr, "effect") != 0)
-            rotationAllApps.push_back({item["name"].as<String>(), enabled});
+            rotationAllApps.push_back({item["name"].as<String>(), enabled,
+                                       static_cast<uint16_t>(item["duration"] | 0)});
 
         if (!enabled)
             continue; // Skip disabled items (rotationItems = enabled only)
@@ -159,8 +168,8 @@ void parseRotationConfig()
 int8_t DisplayManager_::rotationAppState(const char *name)
 {
     for (const auto& a : rotationAllApps)
-        if (a.first == name)
-            return a.second ? 1 : 0;
+        if (a.name == name)
+            return a.enabled ? 1 : 0;
     return -1;
 }
 
@@ -288,6 +297,181 @@ static long getDurationForApp(const String& appName)
     if (appName == "UV")
         return weatherConfig.uvDuration * 1000L;
     return appConfig.timePerApp;
+}
+
+/// Mirror a per-app visibility/duration change into the legacy config flags so
+/// `/api/settings` and the rotation-empty fallback stay consistent with the
+/// rotation (which is the real source of truth). Unknown names are ignored.
+static void syncLegacyShowFlag(const char *name, bool visible)
+{
+    if (strcmp(name, "Time") == 0)
+        appConfig.showTime = visible;
+    else if (strcmp(name, "Date") == 0)
+        appConfig.showDate = visible;
+    else if (strcmp(name, "Temperature") == 0)
+        appConfig.showTemp = visible;
+    else if (strcmp(name, "Humidity") == 0)
+        appConfig.showHum = visible;
+    else if (strcmp(name, "Battery") == 0)
+        appConfig.showBat = visible;
+    else if (strcmp(name, "OutdoorTemp") == 0)
+        weatherConfig.showOutdoorTemp = visible;
+    else if (strcmp(name, "OutdoorHum") == 0)
+        weatherConfig.showOutdoorHumidity = visible;
+    else if (strcmp(name, "Pressure") == 0)
+        weatherConfig.showPressure = visible;
+    else if (strcmp(name, "AirQuality") == 0)
+        weatherConfig.showAirQuality = visible;
+    else if (strcmp(name, "UV") == 0)
+        weatherConfig.showUV = visible;
+}
+
+static void syncLegacyDuration(const char *name, uint16_t seconds)
+{
+    if (strcmp(name, "Time") == 0)
+        appConfig.timeDuration = seconds;
+    else if (strcmp(name, "Date") == 0)
+        appConfig.dateDuration = seconds;
+    else if (strcmp(name, "Temperature") == 0)
+        appConfig.tempDuration = seconds;
+    else if (strcmp(name, "Humidity") == 0)
+        appConfig.humDuration = seconds;
+    else if (strcmp(name, "Battery") == 0)
+        appConfig.batDuration = seconds;
+    else if (strcmp(name, "OutdoorTemp") == 0)
+        weatherConfig.outdoorTempDuration = static_cast<uint8_t>(seconds);
+    else if (strcmp(name, "OutdoorHum") == 0)
+        weatherConfig.outdoorHumDuration = static_cast<uint8_t>(seconds);
+    else if (strcmp(name, "Pressure") == 0)
+        weatherConfig.pressureDuration = static_cast<uint8_t>(seconds);
+    else if (strcmp(name, "AirQuality") == 0)
+        weatherConfig.aqiDuration = static_cast<uint8_t>(seconds);
+    else if (strcmp(name, "UV") == 0)
+        weatherConfig.uvDuration = static_cast<uint8_t>(seconds);
+}
+
+/// Real per-app duration (seconds) as the rotation currently runs it. Scans ALL
+/// rotation items for this app (incl. disabled, so HA shows what's configured):
+/// an enabled instance's explicit duration (> 0) wins, else the first explicit
+/// duration found, else the legacy per-app default. Used by HA so its number
+/// entities mirror what the device actually does instead of a stale default.
+uint16_t DisplayManager_::getEffectiveAppDurationSec(const char *name)
+{
+    uint16_t anyDur = 0;
+    bool foundAny = false;
+    for (const auto& a : rotationAllApps)
+    {
+        if (a.name != name)
+            continue;
+        if (a.enabled && a.duration > 0)
+            return a.duration; // best: an enabled instance with an explicit value
+        if (a.duration > 0 && !foundAny)
+        {
+            anyDur = a.duration;
+            foundAny = true;
+        }
+    }
+    if (foundAny)
+        return anyDur; // disabled but configured
+    return static_cast<uint16_t>(getDurationForApp(String(name)) / 1000L);
+}
+
+/// Set a native app's display duration (seconds) from HA. Applies to ALL
+/// instances of that app in the rotation (the HA control is a per-app-type
+/// knob — fine-grained per-item config lives in the web), and mirrors the
+/// legacy per-app default. Persists + reparses. Never creates/clears the array.
+void DisplayManager_::setAppDuration(const char *name, uint16_t seconds)
+{
+    syncLegacyDuration(name, seconds);
+
+    if (!rotationConfig.items.isEmpty())
+    {
+        DynamicJsonDocument doc(4096);
+        if (deserializeJson(doc, rotationConfig.items) == DeserializationError::Ok && doc.is<JsonArray>())
+        {
+            bool changed = false;
+            for (JsonObject item : doc.as<JsonArray>())
+            {
+                const char *typeStr = item["type"] | "app";
+                if (strcmp(typeStr, "effect") == 0)
+                    continue;
+                if (strcmp(item["name"] | "", name) != 0)
+                    continue;
+                item["duration"] = seconds; // every instance → same value
+                changed = true;
+            }
+            if (changed)
+            {
+                String out;
+                serializeJson(doc, out);
+                rotationConfig.items = out;
+            }
+        }
+    }
+
+    saveSettings();
+    parseRotationConfig(); // refresh runtime rotationItems with the new durations
+}
+
+/// True if this app type has at least one enabled instance in the rotation.
+/// Backs HA's per-app visibility switch (the rotation is the source of truth).
+bool DisplayManager_::isAppVisible(const char *name)
+{
+    for (const auto& a : rotationAllApps)
+        if (a.name == name && a.enabled)
+            return true;
+    return false;
+}
+
+/// Show/hide an app type from HA. Enables/disables ALL instances of that app in
+/// the rotation (adds one if enabling and none exist), mirrors the legacy flag,
+/// then persists and rebuilds the live app loop. Per-app-type control — granular
+/// per-instance editing stays in the web rotation editor.
+void DisplayManager_::setAppVisible(const char *name, bool visible)
+{
+    syncLegacyShowFlag(name, visible);
+
+    DynamicJsonDocument doc(4096);
+    bool ok = deserializeJson(doc, rotationConfig.items) == DeserializationError::Ok && doc.is<JsonArray>();
+    if (!ok)
+        doc.to<JsonArray>();
+    JsonArray arr = doc.as<JsonArray>();
+
+    bool found = false;
+    for (JsonObject item : arr)
+    {
+        const char *typeStr = item["type"] | "app";
+        if (strcmp(typeStr, "effect") == 0)
+            continue;
+        if (strcmp(item["name"] | "", name) != 0)
+            continue;
+        item["enabled"] = visible; // every instance
+        found = true;
+    }
+    if (!found && visible)
+    {
+        JsonObject ni = arr.createNestedObject();
+        ni["id"] = String("m") + String(millis(), HEX);
+        ni["type"] = "app";
+        ni["name"] = name;
+        ni["enabled"] = true;
+        ni["duration"] = 0;
+        ni["color"] = 0;
+        ni["icon"] = "";
+        found = true;
+    }
+    // Disabling an app that isn't in the list: nothing to persist beyond the
+    // legacy mirror — avoid rewriting an empty "[]" over a blank config.
+    if (found)
+    {
+        String out;
+        serializeJson(doc, out);
+        rotationConfig.items = out;
+    }
+
+    saveSettings();
+    parseRotationConfig();
+    loadNativeApps(); // rebuild the live app loop to reflect the change
 }
 
 DisplayManager_& DisplayManager_::getInstance()

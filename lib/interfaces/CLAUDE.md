@@ -8,7 +8,7 @@
 |-----------|---------|-----------------|-----------|
 | **IDisplayRenderer** | 11 | DisplayRenderer_ | UpdateManager, MenuManager, ServerManager |
 | **IDisplayControl** | 10 | DisplayManager_ | MenuManager, ServerManager, MQTTManager |
-| **IDisplayNavigation** | 12 | DisplayManager_ | MenuManager, ServerManager, MQTTManager, DataFetcher |
+| **IDisplayNavigation** | 16 | DisplayManager_ | MenuManager, ServerManager, MQTTManager, DataFetcher |
 | **IDisplayNotifier** | 9 | NotificationManager_ | ServerManager, MQTTManager |
 | **IDisplayPolicy** | 4 | NightModePolicy | DisplayManager |
 | **IMatrixHost** | 6 | DisplayManager_ | MatrixDisplayUi |
@@ -77,6 +77,12 @@ String getAppsAsJson(), getAppsWithIcon();
 bool parseCustomPage(const String&, const char*, bool);
 String getEffectNames(), getTransitionNames();
 void loadNativeApps(), setCustomAppColors(uint32_t);
+int8_t rotationAppState(const char*);                       // 1=on, 0=off, -1=absent
+void setRotationAppEnabled(const char*, bool);
+uint16_t getEffectiveAppDurationSec(const char*);           // real per-app duration (s) used by rotation
+void setAppDuration(const char*, uint16_t);                 // set per-app duration (s); all rotation instances + legacy
+bool isAppVisible(const char*);                             // any enabled rotation instance of this app?
+void setAppVisible(const char*, bool);                      // show/hide app (all instances + legacy mirror + persist)
 ```
 
 ### IDisplayNotifier (9 methods)

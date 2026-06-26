@@ -291,28 +291,18 @@ void onSoundVolumeCommand(HANumeric number, HANumber *sender)
 /// @param sender The HASwitch entity that changed.
 void onAppVisibilitySwitchCommand(bool state, HASwitch *sender)
 {
+    // Toggle the app in the rotation (the real source of truth). setAppVisible
+    // mirrors the legacy flag, persists, and rebuilds the live loop.
     if (sender == showTimeSwitch)
-    {
-        appConfig.showTime = state;
-    }
+        dmNav_->setAppVisible("Time", state);
     else if (sender == showDateSwitch)
-    {
-        appConfig.showDate = state;
-    }
+        dmNav_->setAppVisible("Date", state);
     else if (sender == showTempSwitch)
-    {
-        appConfig.showTemp = state;
-    }
+        dmNav_->setAppVisible("Temperature", state);
     else if (sender == showHumSwitch)
-    {
-        appConfig.showHum = state;
-    }
+        dmNav_->setAppVisible("Humidity", state);
     else if (sender == showBatSwitch)
-    {
-        appConfig.showBat = state;
-    }
-    dmNav_->loadNativeApps();
-    saveSettings();
+        dmNav_->setAppVisible("Battery", state);
     sender->setState(state);
 }
 
@@ -335,45 +325,48 @@ void onDisplayTimingCommand(HANumeric number, HANumber *sender)
     {
         appConfig.scrollSpeed = static_cast<uint8_t>(number.toUInt8());
     }
+    // Per-app durations route through setAppDuration so the change lands on
+    // both the legacy default AND any explicit rotation-item override (and is
+    // persisted), keeping HA in sync with what the rotation actually runs.
     else if (sender == timeDurationNum)
     {
-        appConfig.timeDuration = number.toUInt16();
+        dmNav_->setAppDuration("Time", number.toUInt16());
     }
     else if (sender == dateDurationNum)
     {
-        appConfig.dateDuration = number.toUInt16();
+        dmNav_->setAppDuration("Date", number.toUInt16());
     }
     else if (sender == tempDurationNum)
     {
-        appConfig.tempDuration = number.toUInt16();
+        dmNav_->setAppDuration("Temperature", number.toUInt16());
     }
     else if (sender == humDurationNum)
     {
-        appConfig.humDuration = number.toUInt16();
+        dmNav_->setAppDuration("Humidity", number.toUInt16());
     }
     else if (sender == batDurationNum)
     {
-        appConfig.batDuration = number.toUInt16();
+        dmNav_->setAppDuration("Battery", number.toUInt16());
     }
     else if (sender == outTempDurationNum)
     {
-        weatherConfig.outdoorTempDuration = static_cast<uint8_t>(number.toUInt8());
+        dmNav_->setAppDuration("OutdoorTemp", number.toUInt8());
     }
     else if (sender == outHumDurationNum)
     {
-        weatherConfig.outdoorHumDuration = static_cast<uint8_t>(number.toUInt8());
+        dmNav_->setAppDuration("OutdoorHum", number.toUInt8());
     }
     else if (sender == pressureDurationNum)
     {
-        weatherConfig.pressureDuration = static_cast<uint8_t>(number.toUInt8());
+        dmNav_->setAppDuration("Pressure", number.toUInt8());
     }
     else if (sender == aqiDurationNum)
     {
-        weatherConfig.aqiDuration = static_cast<uint8_t>(number.toUInt8());
+        dmNav_->setAppDuration("AirQuality", number.toUInt8());
     }
     else if (sender == uvDurationNum)
     {
-        weatherConfig.uvDuration = static_cast<uint8_t>(number.toUInt8());
+        dmNav_->setAppDuration("UV", number.toUInt8());
     }
     saveSettings();
     sender->setState(number);
@@ -387,27 +380,16 @@ void onDisplayTimingCommand(HANumeric number, HANumber *sender)
 /// @param sender The HASwitch entity that changed.
 void onWeatherVisibilitySwitchCommand(bool state, HASwitch *sender)
 {
+    // Rotation-backed toggle (see onAppVisibilitySwitchCommand).
     if (sender == showOutTempSwitch)
-    {
-        weatherConfig.showOutdoorTemp = state;
-    }
+        dmNav_->setAppVisible("OutdoorTemp", state);
     else if (sender == showOutHumSwitch)
-    {
-        weatherConfig.showOutdoorHumidity = state;
-    }
+        dmNav_->setAppVisible("OutdoorHum", state);
     else if (sender == showPressureSwitch)
-    {
-        weatherConfig.showPressure = state;
-    }
+        dmNav_->setAppVisible("Pressure", state);
     else if (sender == showAqiSwitch)
-    {
-        weatherConfig.showAirQuality = state;
-    }
+        dmNav_->setAppVisible("AirQuality", state);
     else if (sender == showUvSwitch)
-    {
-        weatherConfig.showUV = state;
-    }
-    dmNav_->loadNativeApps();
-    saveSettings();
+        dmNav_->setAppVisible("UV", state);
     sender->setState(state);
 }

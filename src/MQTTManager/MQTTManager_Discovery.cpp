@@ -525,35 +525,35 @@ void MQTTManager_::setup()
         showTimeSwitch->setIcon(appVisDescs[0].icon);
         showTimeSwitch->setName(appVisDescs[0].name);
         showTimeSwitch->onCommand(onAppVisibilitySwitchCommand);
-        showTimeSwitch->setState(appConfig.showTime, true);
+        showTimeSwitch->setState(dmNav_->isAppVisible("Time"), true);
 
         buildEntityId(appVisDescs[1].idTemplate, macStr, showDateID, sizeof(showDateID));
         showDateSwitch = new HASwitch(showDateID);
         showDateSwitch->setIcon(appVisDescs[1].icon);
         showDateSwitch->setName(appVisDescs[1].name);
         showDateSwitch->onCommand(onAppVisibilitySwitchCommand);
-        showDateSwitch->setState(appConfig.showDate, true);
+        showDateSwitch->setState(dmNav_->isAppVisible("Date"), true);
 
         buildEntityId(appVisDescs[2].idTemplate, macStr, showTempID, sizeof(showTempID));
         showTempSwitch = new HASwitch(showTempID);
         showTempSwitch->setIcon(appVisDescs[2].icon);
         showTempSwitch->setName(appVisDescs[2].name);
         showTempSwitch->onCommand(onAppVisibilitySwitchCommand);
-        showTempSwitch->setState(appConfig.showTemp, true);
+        showTempSwitch->setState(dmNav_->isAppVisible("Temperature"), true);
 
         buildEntityId(appVisDescs[3].idTemplate, macStr, showHumID, sizeof(showHumID));
         showHumSwitch = new HASwitch(showHumID);
         showHumSwitch->setIcon(appVisDescs[3].icon);
         showHumSwitch->setName(appVisDescs[3].name);
         showHumSwitch->onCommand(onAppVisibilitySwitchCommand);
-        showHumSwitch->setState(appConfig.showHum, true);
+        showHumSwitch->setState(dmNav_->isAppVisible("Humidity"), true);
 
         buildEntityId(appVisDescs[4].idTemplate, macStr, showBatID, sizeof(showBatID));
         showBatSwitch = new HASwitch(showBatID);
         showBatSwitch->setIcon(appVisDescs[4].icon);
         showBatSwitch->setName(appVisDescs[4].name);
         showBatSwitch->onCommand(onAppVisibilitySwitchCommand);
-        showBatSwitch->setState(appConfig.showBat, true);
+        showBatSwitch->setState(dmNav_->isAppVisible("Battery"), true);
 
         // Display timing numbers
         size_t timingCount;
@@ -569,6 +569,7 @@ void MQTTManager_::setup()
         timePerAppNum->setMax(60);
         timePerAppNum->setStep(1);
         timePerAppNum->onCommand(onDisplayTimingCommand);
+        timePerAppNum->setMode(HANumber::ModeBox);                                // show value (slider hides it)
         timePerAppNum->setState(static_cast<float>(appConfig.timePerApp / 1000)); // ms → s
 
         // Scroll speed (20-200 ms)
@@ -581,6 +582,7 @@ void MQTTManager_::setup()
         scrollSpeedNum->setMax(200);
         scrollSpeedNum->setStep(5);
         scrollSpeedNum->onCommand(onDisplayTimingCommand);
+        scrollSpeedNum->setMode(HANumber::ModeBox);
         scrollSpeedNum->setState(static_cast<float>(appConfig.scrollSpeed));
 
         // Clock duration (1-300 seconds)
@@ -593,7 +595,8 @@ void MQTTManager_::setup()
         timeDurationNum->setMax(300);
         timeDurationNum->setStep(1);
         timeDurationNum->onCommand(onDisplayTimingCommand);
-        timeDurationNum->setState(static_cast<float>(appConfig.timeDuration));
+        timeDurationNum->setMode(HANumber::ModeBox);
+        timeDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("Time")));
 
         // Date duration (1-300 seconds)
         buildEntityId(timingDescs[3].idTemplate, macStr, dateDurID, sizeof(dateDurID));
@@ -605,7 +608,8 @@ void MQTTManager_::setup()
         dateDurationNum->setMax(300);
         dateDurationNum->setStep(1);
         dateDurationNum->onCommand(onDisplayTimingCommand);
-        dateDurationNum->setState(static_cast<float>(appConfig.dateDuration));
+        dateDurationNum->setMode(HANumber::ModeBox);
+        dateDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("Date")));
 
         // Temperature duration (1-300 seconds)
         buildEntityId(timingDescs[4].idTemplate, macStr, tempDurID, sizeof(tempDurID));
@@ -617,7 +621,8 @@ void MQTTManager_::setup()
         tempDurationNum->setMax(300);
         tempDurationNum->setStep(1);
         tempDurationNum->onCommand(onDisplayTimingCommand);
-        tempDurationNum->setState(static_cast<float>(appConfig.tempDuration));
+        tempDurationNum->setMode(HANumber::ModeBox);
+        tempDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("Temperature")));
 
         // Humidity duration (1-300 seconds)
         buildEntityId(timingDescs[5].idTemplate, macStr, humDurID, sizeof(humDurID));
@@ -629,7 +634,8 @@ void MQTTManager_::setup()
         humDurationNum->setMax(300);
         humDurationNum->setStep(1);
         humDurationNum->onCommand(onDisplayTimingCommand);
-        humDurationNum->setState(static_cast<float>(appConfig.humDuration));
+        humDurationNum->setMode(HANumber::ModeBox);
+        humDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("Humidity")));
 
         // Battery duration (1-300 seconds)
         buildEntityId(timingDescs[6].idTemplate, macStr, batDurID, sizeof(batDurID));
@@ -641,7 +647,8 @@ void MQTTManager_::setup()
         batDurationNum->setMax(300);
         batDurationNum->setStep(1);
         batDurationNum->onCommand(onDisplayTimingCommand);
-        batDurationNum->setState(static_cast<float>(appConfig.batDuration));
+        batDurationNum->setMode(HANumber::ModeBox);
+        batDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("Battery")));
 
         // Outdoor temp duration (1-300 seconds)
         buildEntityId(timingDescs[7].idTemplate, macStr, outTempDurID, sizeof(outTempDurID));
@@ -653,7 +660,8 @@ void MQTTManager_::setup()
         outTempDurationNum->setMax(300);
         outTempDurationNum->setStep(1);
         outTempDurationNum->onCommand(onDisplayTimingCommand);
-        outTempDurationNum->setState(static_cast<float>(weatherConfig.outdoorTempDuration));
+        outTempDurationNum->setMode(HANumber::ModeBox);
+        outTempDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("OutdoorTemp")));
 
         // Outdoor humidity duration (1-300 seconds)
         buildEntityId(timingDescs[8].idTemplate, macStr, outHumDurID, sizeof(outHumDurID));
@@ -665,7 +673,8 @@ void MQTTManager_::setup()
         outHumDurationNum->setMax(300);
         outHumDurationNum->setStep(1);
         outHumDurationNum->onCommand(onDisplayTimingCommand);
-        outHumDurationNum->setState(static_cast<float>(weatherConfig.outdoorHumDuration));
+        outHumDurationNum->setMode(HANumber::ModeBox);
+        outHumDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("OutdoorHum")));
 
         // Pressure duration (1-300 seconds)
         buildEntityId(timingDescs[9].idTemplate, macStr, pressDurID, sizeof(pressDurID));
@@ -677,7 +686,8 @@ void MQTTManager_::setup()
         pressureDurationNum->setMax(300);
         pressureDurationNum->setStep(1);
         pressureDurationNum->onCommand(onDisplayTimingCommand);
-        pressureDurationNum->setState(static_cast<float>(weatherConfig.pressureDuration));
+        pressureDurationNum->setMode(HANumber::ModeBox);
+        pressureDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("Pressure")));
 
         // Air quality duration (1-300 seconds)
         buildEntityId(timingDescs[10].idTemplate, macStr, aqiDurID, sizeof(aqiDurID));
@@ -689,7 +699,8 @@ void MQTTManager_::setup()
         aqiDurationNum->setMax(300);
         aqiDurationNum->setStep(1);
         aqiDurationNum->onCommand(onDisplayTimingCommand);
-        aqiDurationNum->setState(static_cast<float>(weatherConfig.aqiDuration));
+        aqiDurationNum->setMode(HANumber::ModeBox);
+        aqiDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("AirQuality")));
 
         // UV index duration (1-300 seconds)
         buildEntityId(timingDescs[11].idTemplate, macStr, uvDurID, sizeof(uvDurID));
@@ -701,7 +712,8 @@ void MQTTManager_::setup()
         uvDurationNum->setMax(300);
         uvDurationNum->setStep(1);
         uvDurationNum->onCommand(onDisplayTimingCommand);
-        uvDurationNum->setState(static_cast<float>(weatherConfig.uvDuration));
+        uvDurationNum->setMode(HANumber::ModeBox);
+        uvDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("UV")));
 
         // Weather app visibility switches
         size_t weatherVisCount;
@@ -712,35 +724,35 @@ void MQTTManager_::setup()
         showOutTempSwitch->setIcon(weatherVisDescs[0].icon);
         showOutTempSwitch->setName(weatherVisDescs[0].name);
         showOutTempSwitch->onCommand(onWeatherVisibilitySwitchCommand);
-        showOutTempSwitch->setState(weatherConfig.showOutdoorTemp, true);
+        showOutTempSwitch->setState(dmNav_->isAppVisible("OutdoorTemp"), true);
 
         buildEntityId(weatherVisDescs[1].idTemplate, macStr, showOutHumID, sizeof(showOutHumID));
         showOutHumSwitch = new HASwitch(showOutHumID);
         showOutHumSwitch->setIcon(weatherVisDescs[1].icon);
         showOutHumSwitch->setName(weatherVisDescs[1].name);
         showOutHumSwitch->onCommand(onWeatherVisibilitySwitchCommand);
-        showOutHumSwitch->setState(weatherConfig.showOutdoorHumidity, true);
+        showOutHumSwitch->setState(dmNav_->isAppVisible("OutdoorHum"), true);
 
         buildEntityId(weatherVisDescs[2].idTemplate, macStr, showPressID, sizeof(showPressID));
         showPressureSwitch = new HASwitch(showPressID);
         showPressureSwitch->setIcon(weatherVisDescs[2].icon);
         showPressureSwitch->setName(weatherVisDescs[2].name);
         showPressureSwitch->onCommand(onWeatherVisibilitySwitchCommand);
-        showPressureSwitch->setState(weatherConfig.showPressure, true);
+        showPressureSwitch->setState(dmNav_->isAppVisible("Pressure"), true);
 
         buildEntityId(weatherVisDescs[3].idTemplate, macStr, showAqiID, sizeof(showAqiID));
         showAqiSwitch = new HASwitch(showAqiID);
         showAqiSwitch->setIcon(weatherVisDescs[3].icon);
         showAqiSwitch->setName(weatherVisDescs[3].name);
         showAqiSwitch->onCommand(onWeatherVisibilitySwitchCommand);
-        showAqiSwitch->setState(weatherConfig.showAirQuality, true);
+        showAqiSwitch->setState(dmNav_->isAppVisible("AirQuality"), true);
 
         buildEntityId(weatherVisDescs[4].idTemplate, macStr, showUvID, sizeof(showUvID));
         showUvSwitch = new HASwitch(showUvID);
         showUvSwitch->setIcon(weatherVisDescs[4].icon);
         showUvSwitch->setName(weatherVisDescs[4].name);
         showUvSwitch->onCommand(onWeatherVisibilitySwitchCommand);
-        showUvSwitch->setState(weatherConfig.showUV, true);
+        showUvSwitch->setState(dmNav_->isAppVisible("UV"), true);
 
         // Alarm entities (autonomous mode)
         size_t alarmCount;

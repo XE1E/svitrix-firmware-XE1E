@@ -114,6 +114,27 @@ struct RotationItemRuntime {
 - **Duration:** `tick()` uses `currentRotationItem->duration` if > 0
 - **Color:** `applyNativeAppColor(color, appName)` checks `currentRotationItem->color` and verifies name match before applying
 
+**HA sync (`IDisplayNavigation`) — rotation is the source of truth.** The legacy
+`appConfig.show*` / `appConfig.*Duration` / `weatherConfig.*` fields are NOT what
+the loop runs (see `loadNativeApps` — it builds the Apps vector purely from
+`rotationItems` when rotation is non-empty; legacy flags are only the
+rotation-empty fallback). So HA's per-app entities go through rotation-aware
+helpers, and the HA control is a **per-app-type** knob (affects ALL instances of
+that app — granular per-instance editing stays in the web). `rotationAllApps`
+caches `{name, enabled, duration}` for every app item (incl. disabled) to back
+these without re-parsing JSON:
+- `getEffectiveAppDurationSec(name)` — enabled instance's explicit duration (> 0)
+  wins, else first explicit, else legacy default (`getDurationForApp`).
+- `setAppDuration(name, seconds)` — sets **every** rotation instance of that app
+  to `seconds`, mirrors the legacy default, `saveSettings()` + `parseRotationConfig()`.
+- `isAppVisible(name)` — true if any enabled instance exists.
+- `setAppVisible(name, visible)` — enables/disables **all** instances (adds one if
+  enabling and none exist), mirrors the legacy `show*` flag, persists, and
+  `loadNativeApps()` to apply live.
+
+Used by MQTT discovery (initial state), `sendStats` (periodic sync), and the
+`onDisplayTimingCommand` / `on*VisibilitySwitchCommand` callbacks.
+
 **Persistence:** `rotationConfig` stored in NVS key `ROT_ITEMS`; survives reboots.
 
 **HA Integration:** When a standalone effect is displayed, HA receives `Effect: EffectName` via `setCurrentApp()`.

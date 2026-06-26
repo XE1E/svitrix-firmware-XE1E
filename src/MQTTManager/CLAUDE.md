@@ -102,9 +102,9 @@ Routing via `MessageRouter::routeTopic()` → `MqttCommandType` enum → switch 
 | `onNightColorCommand` | nightColor | Set night color + mark policy dirty + save |
 | `onSoundSwitchCommand` | soundEnabled | Toggle sound on/off + save |
 | `onSoundVolumeCommand` | soundVolume | Set volume + apply to periphery + save |
-| `onAppVisibilitySwitchCommand` | showTime/Date/Temp/Hum/Bat | Toggle app visibility + reload native apps + save |
-| `onDisplayTimingCommand` | timePerApp/scrollSpeed/timeDuration/dateDuration | Set timing value + save |
-| `onWeatherVisibilitySwitchCommand` | showOutdoorTemp/OutdoorHum/Pressure/AirQuality/UV | Toggle weather app visibility + reload native apps + save |
+| `onAppVisibilitySwitchCommand` | showTime/Date/Temp/Hum/Bat | `IDisplayNavigation::setAppVisible()` — toggles ALL rotation instances + legacy mirror + reload + save (rotation is source of truth, not `appConfig.show*`) |
+| `onDisplayTimingCommand` | timePerApp/scrollSpeed + per-app durations (time/date/temp/hum/bat + weather) | Per-app durations route through `IDisplayNavigation::setAppDuration()` (updates legacy default + explicit rotation-item overrides); timePerApp/scrollSpeed set config directly. All save. |
+| `onWeatherVisibilitySwitchCommand` | showOutdoorTemp/OutdoorHum/Pressure/AirQuality/UV | `setAppVisible()` (rotation-backed, see above) |
 
 All callbacks call `saveSettings()` after modifying config structs.
 
