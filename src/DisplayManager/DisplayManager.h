@@ -118,6 +118,10 @@ class DisplayManager_ : public IButtonHandler, public IMatrixHost, public IDispl
     void setCustomAppColors(uint32_t color) override;
     int8_t rotationAppState(const char *name) override;
     void setRotationAppEnabled(const char *name, bool enabled) override;
+    uint16_t getEffectiveAppDurationSec(const char *name) override;   ///< Real per-app duration (s) used by rotation
+    void setAppDuration(const char *name, uint16_t seconds) override; ///< Set per-app duration (s) from HA (all instances)
+    bool isAppVisible(const char *name) override;                     ///< Any enabled rotation instance of this app?
+    void setAppVisible(const char *name, bool visible) override;      ///< Show/hide app from HA (all instances + persist)
 
     // ── Settings & stats (DisplayManager_Settings.cpp) ─────────────
     String getSettings() override;

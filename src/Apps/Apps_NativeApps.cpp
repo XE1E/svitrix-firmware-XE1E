@@ -746,10 +746,6 @@ struct MoonStar
     uint8_t peak;   // max blue brightness
 };
 
-// Lunar maria (dark patches) on the 8×8 disk, for a touch of realism.
-constexpr uint8_t kMariaCount = 4;
-constexpr uint8_t kMaria[kMariaCount][2] = {{3, 2}, {2, 4}, {4, 3}, {5, 5}};
-
 // Rotating-text cadence (ms per info item).
 constexpr uint32_t kMoonInfoPeriod = 3200;
 } // namespace
@@ -908,76 +904,31 @@ void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
         DisplayManager.drawFilledRect(0 + x, 0 + y, 9, 8, 0x000000);
     }
 
-    // ── 3. The moon — physically-shaded grayscale sphere (drawn on top) ──
-    // Slightly vertical ellipse (Ry > Rx); centered when there is no info text.
-    const float cx = moonCx, cy = 3.5f;
-    const float Rx = 3.55f, Ry = 3.8f; // near-round with a faint vertical hint
-    const float Rmean = (Rx + Ry) * 0.5f;
-    const float theta = static_cast<float>(moon.fraction) * 6.2831853f;
-    const float sinT = sinf(theta), cosT = cosf(theta);
-    const float hemi = (appConfig.moonHemisphere == 1) ? -1.0f : 1.0f; // S flips lit limb
-    const float kEarth = 0.06f;                                        // earthshine floor on the dark side
-
-    // Iterate the columns around the disk center (cols 0..7 when left-anchored,
-    // ~12..19 when centered) so the moon draws wherever cx places it.
-    const int pxLo = static_cast<int>(cx) - 4;
-    const int pxHi = static_cast<int>(cx) + 4;
-    const int mariaShift = static_cast<int>(cx - 3.5f); // map abs col → 0..7 local frame for maria
+    // ── 3. The moon — phase bitmap (LaMetric 8x8 set, drawn on top) ──
+    // Pick the icon by discrete phase. Pixel value 0 = transparent so the star
+    // field shows around the round disk. Southern hemisphere mirrors the limb
+    // horizontally (no separate asset). moonCx places the 8px disk: left-anchored
+    // (cols 0..7) with info text, centered (cols 12..19) when only the moon shows.
+    const uint16_t *icon = kMoonPhaseIcons[moon.phaseIndex & 0x07];
+    const int moonX = static_cast<int>(moonCx - 3.5f);
+    const bool mirror = (appConfig.moonHemisphere == 1);
     for (int py = 0; py < 8; py++)
     {
-        for (int px = pxLo; px <= pxHi; px++)
+        for (int bx = 0; bx < 8; bx++)
         {
-            if (px < 0 || px > 31)
+            uint16_t c = icon[py * 8 + (mirror ? (7 - bx) : bx)];
+            if (c == 0)
+                continue; // transparent background
+            int ax = moonX + bx;
+            if (ax < 0 || ax > 31)
                 continue;
-            float ddx = px - cx;
-            float ddy = py - cy;
-            // Normalized elliptical coords (1.0 = edge); nx/ny double as the
-            // unit-sphere coords so the shading maps onto the ellipse.
-            float nx = ddx / Rx;
-            float ny = ddy / Ry;
-            float e = sqrtf(nx * nx + ny * ny);
-            float coverage = (1.0f - e) * Rmean + 0.5f; // ~1px anti-aliased edge
-            if (coverage <= 0.0f)
-                continue;
-            if (coverage > 1.0f)
-                coverage = 1.0f;
-
-            float zz = 1.0f - nx * nx - ny * ny;
-            float z = (zz > 0.0f) ? sqrtf(zz) : 0.0f;
-
-            // Lit intensity = surface-normal · sun direction (physically-based
-            // sphere shading → soft terminator + limb darkening for free).
-            float lit = (nx * hemi) * sinT - z * cosT;
-            if (lit < 0.0f)
-                lit = 0.0f;
-
-            float bright = kEarth + lit * (1.0f - kEarth);
-
-            // Maria: darken patches that are reasonably lit.
-            if (lit > 0.12f)
-            {
-                for (uint8_t mi = 0; mi < kMariaCount; mi++)
-                {
-                    if (kMaria[mi][0] == px - mariaShift && kMaria[mi][1] == py)
-                    {
-                        bright *= 0.60f;
-                        break;
-                    }
-                }
-            }
-
-            bright *= coverage; // soften the rim
-            int g = static_cast<int>(bright * 235.0f);
-            if (g < 0)
-                g = 0;
-            if (g > 255)
-                g = 255;
-            // Cool grayscale (moonlight): neutral with a faint blue lift.
-            int bl = g + (g >> 3);
-            if (bl > 255)
-                bl = 255;
-            uint32_t col = (static_cast<uint32_t>(g) << 16) | (static_cast<uint32_t>(g) << 8) | static_cast<uint32_t>(bl);
-            DisplayManager.drawPixel(px + x, py + y, col);
+            // RGB565 → RGB888 (replicate high bits for full-range expansion).
+            uint8_t r = (c >> 11) & 0x1F, g6 = (c >> 5) & 0x3F, b = c & 0x1F;
+            uint8_t r8 = (r << 3) | (r >> 2);
+            uint8_t g8 = (g6 << 2) | (g6 >> 4);
+            uint8_t b8 = (b << 3) | (b >> 2);
+            uint32_t col = (static_cast<uint32_t>(r8) << 16) | (static_cast<uint32_t>(g8) << 8) | b8;
+            DisplayManager.drawPixel(ax + x, py + y, col);
         }
     }
 }

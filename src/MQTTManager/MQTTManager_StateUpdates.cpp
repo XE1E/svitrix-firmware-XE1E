@@ -106,36 +106,39 @@ void MQTTManager_::sendStats()
         soundEnabled->setState(audioConfig.soundActive, false);
         soundVolume->setState(audioConfig.soundVolume);
 
-        // App visibility state sync
-        showTimeSwitch->setState(appConfig.showTime, false);
-        showDateSwitch->setState(appConfig.showDate, false);
-        showTempSwitch->setState(appConfig.showTemp, false);
-        showHumSwitch->setState(appConfig.showHum, false);
-        showBatSwitch->setState(appConfig.showBat, false);
+        // App visibility state sync — reflects the rotation (source of truth),
+        // not the legacy show flags, so HA matches what the clock actually shows.
+        showTimeSwitch->setState(dmNav_->isAppVisible("Time"), false);
+        showDateSwitch->setState(dmNav_->isAppVisible("Date"), false);
+        showTempSwitch->setState(dmNav_->isAppVisible("Temperature"), false);
+        showHumSwitch->setState(dmNav_->isAppVisible("Humidity"), false);
+        showBatSwitch->setState(dmNav_->isAppVisible("Battery"), false);
 
         // Background effect sync
         bgEffect->setState(displayConfig.backgroundEffect, false);
 
-        // Display timing sync
+        // Display timing sync — per-app durations reflect the effective value
+        // used by the rotation (per-item override if set, else legacy default),
+        // so HA mirrors what the device actually runs.
         timePerAppNum->setState(static_cast<float>(appConfig.timePerApp / 1000)); // ms → s
         scrollSpeedNum->setState(static_cast<float>(appConfig.scrollSpeed));
-        timeDurationNum->setState(static_cast<float>(appConfig.timeDuration));
-        dateDurationNum->setState(static_cast<float>(appConfig.dateDuration));
-        tempDurationNum->setState(static_cast<float>(appConfig.tempDuration));
-        humDurationNum->setState(static_cast<float>(appConfig.humDuration));
-        batDurationNum->setState(static_cast<float>(appConfig.batDuration));
-        outTempDurationNum->setState(static_cast<float>(weatherConfig.outdoorTempDuration));
-        outHumDurationNum->setState(static_cast<float>(weatherConfig.outdoorHumDuration));
-        pressureDurationNum->setState(static_cast<float>(weatherConfig.pressureDuration));
-        aqiDurationNum->setState(static_cast<float>(weatherConfig.aqiDuration));
-        uvDurationNum->setState(static_cast<float>(weatherConfig.uvDuration));
+        timeDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("Time")));
+        dateDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("Date")));
+        tempDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("Temperature")));
+        humDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("Humidity")));
+        batDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("Battery")));
+        outTempDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("OutdoorTemp")));
+        outHumDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("OutdoorHum")));
+        pressureDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("Pressure")));
+        aqiDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("AirQuality")));
+        uvDurationNum->setState(static_cast<float>(dmNav_->getEffectiveAppDurationSec("UV")));
 
-        // Weather app visibility sync
-        showOutTempSwitch->setState(weatherConfig.showOutdoorTemp, false);
-        showOutHumSwitch->setState(weatherConfig.showOutdoorHumidity, false);
-        showPressureSwitch->setState(weatherConfig.showPressure, false);
-        showAqiSwitch->setState(weatherConfig.showAirQuality, false);
-        showUvSwitch->setState(weatherConfig.showUV, false);
+        // Weather app visibility sync — rotation-backed (see note above)
+        showOutTempSwitch->setState(dmNav_->isAppVisible("OutdoorTemp"), false);
+        showOutHumSwitch->setState(dmNav_->isAppVisible("OutdoorHum"), false);
+        showPressureSwitch->setState(dmNav_->isAppVisible("Pressure"), false);
+        showAqiSwitch->setState(dmNav_->isAppVisible("AirQuality"), false);
+        showUvSwitch->setState(dmNav_->isAppVisible("UV"), false);
 
         // Alarm state sync: ringing flag + soonest enabled alarm time
         alarmRinging->setState(AlarmManager.isRinging(), false);
