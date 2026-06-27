@@ -92,11 +92,12 @@ width. Only the info text honors per-item / night-mode color.
 `ICA:N` (1–6), auto-colored by level (green→maroon). When
 `weatherConfig.aqiShowComponents` is on, the app shows `ICA:N` for its configured
 duration, then steps through the individual pollutants that exceed level 4 —
-`PM2.5`, `PM10`, `O3`, `NO2`, `SO2`, `CO` (worst-first, max 3) — 3 s each
-(`kAqiItemMs`), each drawn in the color of *its own* level, so the color tells
-you which pollutant drives the index. The whole sequence plays in **one visit**:
-the rotation system extends the app's duration by `airQualityExtraDurationMs()`
-(one slice per flagged pollutant; 0 extra when only the index shows). Per-pollutant levels come from the
+`PM2.5`, `PM10`, `O3`, `NO2`, `SO2`, `CO` (worst-first, max 3) —
+`weatherConfig.aqiComponentSecs` seconds each (web-configurable, 2–10 s, default
+3), each drawn in the color of *its own* level, so the color tells you which
+pollutant drives the index. The whole sequence plays in **one visit**: the
+rotation system extends the app's duration by `airQualityExtraDurationMs()` (one
+slice per flagged pollutant; 0 extra when only the index shows). Per-pollutant levels come from the
 pure `AirQualityLevels` service (EAQI µg/m³ bands); component concentrations are
 parsed from WeatherAPI's `air_quality` object (already fetched via `&aqi=yes`).
 

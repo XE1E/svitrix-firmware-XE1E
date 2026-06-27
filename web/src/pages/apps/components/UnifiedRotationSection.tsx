@@ -426,6 +426,24 @@ export function UnifiedRotationSection() {
                               checked={weatherConfig.aqiShowComponents}
                               onChange={(v) => { updateWeatherConfig({ aqiShowComponents: v }); saveWeatherConfig(); }}
                             />
+                            {weatherConfig.aqiShowComponents && (
+                              <div class={styles.rotationField}>
+                                <label>{t.apps.aqiComponentSecs}:</label>
+                                <input
+                                  type="number"
+                                  class={styles.offsetInput}
+                                  value={weatherConfig.aqiComponentSecs ?? 3}
+                                  min={2}
+                                  max={10}
+                                  onChange={(e) => {
+                                    const v = parseInt((e.target as HTMLInputElement).value) || 3;
+                                    updateWeatherConfig({ aqiComponentSecs: Math.min(10, Math.max(2, v)) });
+                                    saveWeatherConfig();
+                                  }}
+                                />
+                                <span class={styles.hint}>s</span>
+                              </div>
+                            )}
                           </div>
                         )}
                         {item.name === "UV" && weatherConfig && (

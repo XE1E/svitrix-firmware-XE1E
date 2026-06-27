@@ -570,7 +570,11 @@ void PressureApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t
 
 namespace
 {
-constexpr uint32_t kAqiItemMs = 3000; // on-screen time per rotated pollutant
+// On-screen time (ms) per rotated pollutant — user-configurable (web), 2-10 s.
+inline uint32_t aqiItemMs()
+{
+    return static_cast<uint32_t>(weatherConfig.aqiComponentSecs) * 1000U;
+}
 
 struct AqiFlag
 {
@@ -612,7 +616,7 @@ uint8_t aqiCollectFlagged(AqiFlag out[3])
 long airQualityExtraDurationMs()
 {
     AqiFlag tmp[3];
-    return static_cast<long>(aqiCollectFlagged(tmp)) * static_cast<long>(kAqiItemMs);
+    return static_cast<long>(aqiCollectFlagged(tmp)) * static_cast<long>(aqiItemMs());
 }
 
 /// Weather app showing the Air Quality Index from WeatherAPI. When
@@ -672,7 +676,7 @@ void AirQualityApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16
         uint32_t elapsed = now - visitStartMs;
         if (elapsed >= static_cast<uint32_t>(baseMs))
         {
-            uint8_t step = 1 + static_cast<uint8_t>((elapsed - static_cast<uint32_t>(baseMs)) / kAqiItemMs);
+            uint8_t step = 1 + static_cast<uint8_t>((elapsed - static_cast<uint32_t>(baseMs)) / aqiItemMs());
             idx = (step < nItems) ? step : static_cast<uint8_t>(nItems - 1); // hold last till visit ends
         }
     }

@@ -537,6 +537,7 @@ Configure and query outdoor weather data (requires an API key). Weather apps app
 | `uvColor` | integer | UV index color (RGB integer). |
 | `aqiAutoColor` | boolean | Auto-color the AQI by level. |
 | `aqiShowComponents` | boolean | After `ICA:N`, rotate the pollutants (PM2.5, O3, NO2…) exceeding level 4, each in its own level color. Enabled by default. |
+| `aqiComponentSecs` | integer | Seconds each pollutant is shown in the rotation (2–10, default 3). |
 | `uvAutoColor` | boolean | Auto-color the UV index by level. |
 | `outdoorTempDuration` | integer | Outdoor temperature app duration (seconds). |
 | `outdoorHumDuration` | integer | Outdoor humidity app duration (seconds). |

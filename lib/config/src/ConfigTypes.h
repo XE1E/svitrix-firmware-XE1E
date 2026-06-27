@@ -202,6 +202,7 @@ struct WeatherConfig {
     uint8_t aqiDuration;
     uint8_t uvDuration;
     bool aqiShowComponents;       // ICA app: rotate pollutants exceeding level 4
+    uint8_t aqiComponentSecs;     // ICA app: seconds each flagged pollutant is shown (2-10)
 };
 
 struct WeatherData {
