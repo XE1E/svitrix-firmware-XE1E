@@ -89,6 +89,8 @@ Once HA Discovery is enabled in SVITRIX and restarted, entities will appear auto
 | **Air quality duration** | 1-60s | Air quality duration |
 | **UV index duration** | 1-60s | UV index duration |
 
+> **Note:** The per-app **duration numbers** and **visibility switches** (Show time/date/temp/hum/bat + weather visibility) now reflect and control the device's **actual rotation** (the unified rotation list), not stale defaults — so what HA shows matches what the clock really does, and a change applies to all instances of that app type. Fine-grained per-instance editing stays in the web rotation editor. The duration numbers are presented as a numeric **box** (value always visible) rather than a slider.
+
 ### Selects (3)
 
 | Entity | Options | Description |

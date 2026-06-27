@@ -269,6 +269,10 @@ static void advanceToRotationItem()
     long dur = item.duration > 0 ? item.duration * 1000L : 7000L; // 7s default for effects
     if (item.type == 0 && item.duration == 0)
         dur = getDurationForApp(item.name);
+    // The ICA app rotates the index + flagged pollutants in one visit; give it
+    // extra time per pollutant so the whole sequence fits (0 when only the index).
+    if (item.type == 0 && item.name == "AirQuality")
+        dur += airQualityExtraDurationMs();
     ui->setTimePerApp(dur);
 }
 

@@ -120,10 +120,18 @@ Weather apps are also **native** (built into the firmware), but require the **We
 | **Outdoor Temp** | Outdoor temperature. Configurable color; respects the Celsius/Fahrenheit scale. |
 | **Outdoor Humidity** | Outdoor relative humidity (%). Configurable color. |
 | **Pressure** | Atmospheric pressure (mb/hPa). Configurable color. |
-| **Air Quality (AQI)** | Air quality index (US EPA, 1–6). Auto color by level (green → yellow → orange → red) or a fixed color. When the auto-color toggle is on, the level color takes priority and overrides any fixed/per-item color (it still respects night mode). |
+| **Air Quality (AQI)** | Air quality index (US EPA, 1–6). Auto color by level (green → yellow → orange → red) or a fixed color. When the auto-color toggle is on, the level color takes priority and overrides any fixed/per-item color (it still respects night mode). It can also break down the out-of-range pollutants (see below). |
 | **UV Index** | Ultraviolet index (0–11+). Auto color by level or a fixed color. When the auto-color toggle is on, the level color takes priority and overrides any fixed/per-item color (it still respects night mode). |
 
 Each weather app has its own configurable **duration** and can be toggled individually. The data refresh interval is set in the Weather API section.
+
+### Pollutant breakdown (Air Quality)
+
+When the **Show components** option is on (on by default), after showing `ICA:N` the app rotates through the individual pollutants that are **out of the healthy range** on their own (EU EAQI level ≥ 4): `PM2.5`, `PM10`, `O3`, `NO2`, `SO2`, and `CO`. They are shown **worst-first**, up to a **maximum of 3**, and each is drawn in the color of **its own** level. Triggering is driven by each pollutant's own value, independent of the overall index — so a pollutant can appear in red even when the overall index is moderate (e.g. `ICA:2` but `O3` in red).
+
+The time each pollutant is shown is configurable via **Seconds per component** (2–10 s, default 3). The whole sequence (index + flagged pollutants) plays within a single app appearance; its on-screen time is extended automatically to fit.
+
+These options live under **Apps → AirQuality** (expand the item in the rotation list): **Auto color**, **Show components**, and the seconds field.
 
 ::: tip
 If a weather refresh fails (e.g. flaky internet), the last reading stays on
@@ -134,7 +142,7 @@ The WiFi indicator (top-left corner) blinks red while downloads are failing.
 ---
 ## Moon
 
-The Moon app shows the current **lunar phase** as a grayscale drawn moon (realistic shading, soft terminator and a faint *earthshine* on the dark side), over a field of twinkling blue stars.
+The Moon app shows the current **lunar phase** using one of **8 designed phase-icon bitmaps (LaMetric set), one per lunar phase** (new → full → waning), drawn over a field of twinkling blue stars. The disk corners are transparent so the stars show around it, and on the southern hemisphere the icon is mirrored.
 
 Next to the moon it rotates up to three configurable readouts:
 

@@ -89,6 +89,8 @@ Una vez habilitado HA Discovery en SVITRIX y reiniciado, las entidades aparecer�
 | **Air quality duration** | 1-60s | Duración de calidad del aire |
 | **UV index duration** | 1-60s | Duración de índice UV |
 
+> **Nota:** Los **números de duración por app** y los **interruptores de visibilidad** (Show time/date/temp/hum/bat + visibilidad del clima) ahora reflejan y controlan la **rotación real** del dispositivo (la lista de rotación unificada), no valores por defecto obsoletos — lo que muestra HA coincide con lo que hace el reloj, y un cambio se aplica a todas las instancias de ese tipo de app. La edición fina por instancia individual sigue en el editor de rotación de la web. Los números de duración se presentan como una **caja numérica** (con el valor siempre visible) en lugar de un deslizador.
+
 ### Selectores (3)
 
 | Entidad | Opciones | Descripción |
@@ -462,7 +464,7 @@ template:
         attributes:
           full_message: "{{ state_attr('calendar.mi_calendario', 'message') }}"
           start_time: "{{ state_attr('calendar.mi_calendario', 'start_time') }}"
-          
+
       - name: "Eventos Hoy Count"
         state: >
           {% if is_state('calendar.mi_calendario', 'on') %}1{% else %}0{% endif %}

@@ -78,13 +78,28 @@ grey shell + nub, interior fills bottom-up proportional to charge, coloured by
 level: green ≥75, yellow 50–74, orange 20–49, red <20) + battery percentage.
 
 ### MoonApp
-Physically-shaded grayscale moon (programmatically drawn, no icon file) over a
-dynamic blue twinkling-star background, with rotating info text (phase name /
-lunar age / illumination %). Phase data from the pure `MoonPhase` service
-(`lib/services`, UTC-based). `appConfig.moonInfo` (bitmask) selects which
-readouts rotate; `moonHemisphere` flips the lit limb. With all readouts off,
-the moon centers and the stars span the full width. Moon pixels use fixed greys
-(ignores text color); only the info text honors per-item / night-mode color.
+8x8 phase bitmap (LaMetric set, embedded in `icons.h` as `icon_moon_0..7`,
+indexed by `MoonPhase::phaseIndex`) over a dynamic blue twinkling-star
+background, with rotating info text (phase name / lunar age / illumination %).
+Phase data from the pure `MoonPhase` service (`lib/services`, UTC-based). Bitmap
+value 0 is transparent so stars show around the disk; `moonHemisphere` mirrors
+the bitmap horizontally. `appConfig.moonInfo` (bitmask) selects which readouts
+rotate. With all readouts off, the moon centers and the stars span the full
+width. Only the info text honors per-item / night-mode color.
+
+### AirQualityApp (ICA)
+8x8 AQI icon (GIF `73559`, or `icon_6622` fallback) + the US-EPA index as
+`ICA:N` (1–6), auto-colored by level (green→maroon). When
+`weatherConfig.aqiShowComponents` is on, the app shows `ICA:N` for its configured
+duration, then steps through the individual pollutants that exceed level 4 —
+`PM2.5`, `PM10`, `O3`, `NO2`, `SO2`, `CO` (worst-first, max 3) —
+`weatherConfig.aqiComponentSecs` seconds each (web-configurable, 2–10 s, default
+3), each drawn in the color of *its own* level, so the color tells you which
+pollutant drives the index. The whole sequence plays in **one visit**: the
+rotation system extends the app's duration by `airQualityExtraDurationMs()` (one
+slice per flagged pollutant; 0 extra when only the index shows). Per-pollutant levels come from the
+pure `AirQualityLevels` service (EAQI µg/m³ bands); component concentrations are
+parsed from WeatherAPI's `air_quality` object (already fetched via `&aqi=yes`).
 
 ## ShowCustomApp Rendering Pipeline
 

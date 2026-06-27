@@ -175,6 +175,8 @@ export interface WeatherConfig {
   uvColor: number;
   aqiAutoColor: boolean;
   uvAutoColor: boolean;
+  aqiShowComponents: boolean;
+  aqiComponentSecs: number;
   outdoorTempDuration: number;
   outdoorHumDuration: number;
   pressureDuration: number;

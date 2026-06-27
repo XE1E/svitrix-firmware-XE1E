@@ -42,11 +42,12 @@ SVITRIX-XE1E is a fork of [SVITRIX](https://github.com/svitrix/svitrix-firmware)
 - **Date** — formatted date with weekday indicator
 - **Temperature & Humidity** — indoor readings from I2C sensors (SHT3x, BME280, etc.)
 - **Battery** — charge percentage with a dynamic vertical icon (fills by level and changes color: green, yellow, orange, red)
-- **Moon (NEW)** — lunar phase drawn in grayscale over a blue starfield background; configurable rotating text (phase name, age, % illumination) and northern/southern hemisphere
+- **Moon (NEW)** — lunar phase using designed phase icons (LaMetric set, one per phase) over a blue starfield background; configurable rotating text (phase name, age, % illumination) and northern/southern hemisphere
 - **Weather Apps (NEW)** — outdoor temperature, humidity, pressure, and air quality via [WeatherAPI.com](https://weatherapi.com)
   - Configurable location (city name, coordinates, auto-detect by IP, or station ID)
   - Weather condition icons (sunny, cloudy, rainy)
   - Per-app color and duration settings
+  - The **Air Quality** app breaks down the out-of-range pollutants (PM2.5, O3…), each in its severity-level color
   - Animated LaMetric icons from `/ICONS/` folder
 
 ### Connectivity & Integration

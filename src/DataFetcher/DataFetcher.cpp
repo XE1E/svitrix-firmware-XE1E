@@ -704,6 +704,13 @@ void DataFetcher_::fetchWeather()
 
     JsonObject airQuality = current["air_quality"];
     weatherData.aqi = airQuality.isNull() ? 0 : airQuality["us-epa-index"].as<int>();
+    // Per-pollutant concentrations (µg/m³) — already in the response via aqi=yes.
+    weatherData.pm2_5 = airQuality.isNull() ? 0 : airQuality["pm2_5"].as<float>();
+    weatherData.pm10 = airQuality.isNull() ? 0 : airQuality["pm10"].as<float>();
+    weatherData.o3 = airQuality.isNull() ? 0 : airQuality["o3"].as<float>();
+    weatherData.no2 = airQuality.isNull() ? 0 : airQuality["no2"].as<float>();
+    weatherData.so2 = airQuality.isNull() ? 0 : airQuality["so2"].as<float>();
+    weatherData.co = airQuality.isNull() ? 0 : airQuality["co"].as<float>();
     weatherData.uv = current["uv"].as<float>();
     weatherData.lastUpdate = millis();
     weatherData.valid = true;

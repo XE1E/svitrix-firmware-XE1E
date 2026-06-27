@@ -7,10 +7,12 @@
  * binary clock colors, time format helper).
  */
 #include "Apps_internal.h"
+#include "DisplayManager_internal.h" // currentRotationItem (per-item duration base)
 #include "Functions.h"
 #include "icons.h"
 #include "LayoutEngine.h"
 #include "MoonPhase.h"
+#include "AirQualityLevels.h"
 #include "AlarmManager/AlarmManager.h"
 #include <LittleFS.h>
 #include <cmath>
@@ -566,45 +568,130 @@ void PressureApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t
 
 // ── AirQualityApp ──────────────────────────────────────────────────
 
-/// Weather app showing Air Quality Index from WeatherAPI.
+namespace
+{
+// On-screen time (ms) per rotated pollutant — user-configurable (web), 2-10 s.
+inline uint32_t aqiItemMs()
+{
+    return static_cast<uint32_t>(weatherConfig.aqiComponentSecs) * 1000U;
+}
+
+struct AqiFlag
+{
+    uint8_t pollutant;
+    uint8_t level;
+};
+
+/// Collect the pollutants to display (level >= 4), worst-first, capped at 3.
+/// Shared by the renderer and the duration helper so both agree on the count.
+uint8_t aqiCollectFlagged(AqiFlag out[3])
+{
+    if (!weatherConfig.aqiShowComponents || !weatherData.valid)
+        return 0;
+    const float conc[AirQualityLevels::COUNT] = {weatherData.pm2_5, weatherData.pm10, weatherData.o3,
+                                                 weatherData.no2, weatherData.so2, weatherData.co};
+    AqiFlag all[AirQualityLevels::COUNT];
+    uint8_t nf = 0;
+    for (uint8_t p = 0; p < AirQualityLevels::COUNT; p++)
+    {
+        uint8_t lv = AirQualityLevels::level((AirQualityLevels::Pollutant)p, conc[p]);
+        if (lv >= 4)
+            all[nf++] = {p, lv};
+    }
+    for (uint8_t i = 0; i < nf; i++) // worst-first (selection sort; nf <= 6)
+        for (uint8_t j = i + 1; j < nf; j++)
+            if (all[j].level > all[i].level)
+            {
+                AqiFlag t = all[i];
+                all[i] = all[j];
+                all[j] = t;
+            }
+    uint8_t n = nf < 3 ? nf : 3;
+    for (uint8_t i = 0; i < n; i++)
+        out[i] = all[i];
+    return n;
+}
+} // namespace
+
+long airQualityExtraDurationMs()
+{
+    AqiFlag tmp[3];
+    return static_cast<long>(aqiCollectFlagged(tmp)) * static_cast<long>(aqiItemMs());
+}
+
+/// Weather app showing the Air Quality Index from WeatherAPI. When
+/// `aqiShowComponents` is on, after "ICA:N" (shown for the configured base
+/// duration) it steps through the individual pollutants that exceed level 4
+/// (worst-first, max 3), 2 s each, in the color of each pollutant's own level —
+/// so the color tells you which pollutant drives the index and how bad it is.
+/// The rotation system extends the app's on-screen time by
+/// airQualityExtraDurationMs() so the whole sequence fits in a single visit.
 void AirQualityApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer)
 {
     if (nativeAppGuard("AirQuality"))
         return;
 
-    // Use dynamic color if autoColor enabled, otherwise use config color
-    uint32_t aqiColor = weatherConfig.aqiColor;
-    bool aqiAuto = weatherConfig.aqiAutoColor && weatherData.valid && weatherData.aqi > 0;
-    if (aqiAuto)
+    const bool aqiAuto = weatherConfig.aqiAutoColor && weatherData.valid && weatherData.aqi > 0;
+
+    // Build the list: ICA index first, then the flagged pollutants.
+    struct AqiItem
     {
-        switch (weatherData.aqi)
+        String text;
+        uint32_t color;
+        bool isIca;
+    };
+    AqiItem items[1 + 3];
+    items[0].text = (weatherData.valid && weatherData.aqi > 0) ? ("ICA:" + String(weatherData.aqi)) : String("ICA:--");
+    items[0].color = aqiAuto ? AirQualityLevels::levelColor(weatherData.aqi) : weatherConfig.aqiColor;
+    items[0].isIca = true;
+    uint8_t nItems = 1;
+
+    AqiFlag flags[3];
+    uint8_t nf = aqiCollectFlagged(flags);
+    for (uint8_t i = 0; i < nf; i++)
+    {
+        items[nItems].text = AirQualityLevels::label((AirQualityLevels::Pollutant)flags[i].pollutant);
+        items[nItems].color = AirQualityLevels::levelColor(flags[i].level);
+        items[nItems].isIca = false;
+        nItems++;
+    }
+
+    // ── One-visit sequence: ICA for its base duration, then each pollutant for
+    // kAqiItemMs. The rotation system already extended this visit by
+    // airQualityExtraDurationMs() to fit it. baseMs mirrors how the rotation
+    // derived the item's base (per-item override, else legacy aqiDuration). ──
+    static uint32_t visitStartMs = 0;
+    static uint32_t lastSeenMs = 0;
+    uint32_t now = millis();
+    if (now - lastSeenMs > 1000) // gap in calls => app (re)entered
+        visitStartMs = now;
+    lastSeenMs = now;
+
+    uint8_t idx = 0;
+    if (nItems > 1)
+    {
+        // ICA's base slice = the rotation item's visit time, matching how the
+        // host (resolveNextApp) sizes the visit: per-item duration if set, else
+        // the global timePerApp. Components then get aqiItemMs() each on top.
+        long baseMs = (currentRotationItem && currentRotationItem->duration > 0)
+                          ? static_cast<long>(currentRotationItem->duration) * 1000L
+                          : appConfig.timePerApp;
+        uint32_t elapsed = now - visitStartMs;
+        if (elapsed >= static_cast<uint32_t>(baseMs))
         {
-        case 1:
-            aqiColor = 0x00FF00;
-            break; // Good - green
-        case 2:
-            aqiColor = 0xFFFF00;
-            break; // Moderate - yellow
-        case 3:
-            aqiColor = 0xFFA500;
-            break; // Unhealthy for sensitive - orange
-        case 4:
-            aqiColor = 0xFF0000;
-            break; // Unhealthy - red
-        case 5:
-            aqiColor = 0x800080;
-            break; // Very unhealthy - purple
-        case 6:
-            aqiColor = 0x800000;
-            break; // Hazardous - maroon
+            uint8_t step = 1 + static_cast<uint8_t>((elapsed - static_cast<uint32_t>(baseMs)) / aqiItemMs());
+            idx = (step < nItems) ? step : static_cast<uint8_t>(nItems - 1); // hold last till visit ends
         }
     }
-    if (aqiAuto)
-        // Auto color wins over any per-item/global color override
-        // (still honors display policies such as night mode).
-        DisplayManager.setTextColor(DisplayManager.resolveTextColor(aqiColor));
+    const AqiItem& cur = items[idx];
+
+    // Color: a config/global override only applies to the plain ICA item when
+    // auto-color is off; the auto index color and per-pollutant level colors
+    // always win (still honoring display policies such as night mode).
+    if (cur.isIca && !aqiAuto)
+        applyNativeAppColor(cur.color, "AirQuality");
     else
-        applyNativeAppColor(aqiColor, "AirQuality");
+        DisplayManager.setTextColor(DisplayManager.resolveTextColor(cur.color));
 
     LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
 
@@ -635,22 +722,12 @@ void AirQualityApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16
         }
     }
 
-    String aqiStr;
-    if (weatherData.valid && weatherData.aqi > 0)
-    {
-        aqiStr = "ICA:" + String(weatherData.aqi);
-    }
-    else
-    {
-        aqiStr = "ICA:--";
-    }
-
-    uint16_t textWidth = getTextWidth(aqiStr.c_str(), 0);
+    uint16_t textWidth = getTextWidth(cur.text.c_str(), 0);
     LayoutMetrics tm = LayoutEngine::computeLayout(appConfig.nativeIconLayout, textWidth);
     int16_t textX = tm.textCenterX;
 
     DisplayManager.setCursor(textX + x, 6 + y);
-    DisplayManager.matrixPrint(aqiStr.c_str());
+    DisplayManager.matrixPrint(cur.text.c_str());
 }
 
 // ── UVApp ──────────────────────────────────────────────────────────

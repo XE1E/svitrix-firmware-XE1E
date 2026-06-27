@@ -378,7 +378,7 @@ El firmware incluye estas apps preinstaladas:
 
 ### App de Luna (Fase Lunar)
 
-La app **Luna** dibuja la fase lunar actual en escala de grises sobre un fondo de estrellas azules. No usa archivo de icono (se dibuja por software). Al expandir sus ajustes (▼) en la pestaña **Apps** encontrarás:
+La app **Luna** muestra la fase lunar actual con uno de 8 iconos de fase diseñados (set LaMetric), uno por fase, sobre un fondo de estrellas azules. Al expandir sus ajustes (▼) en la pestaña **Apps** encontrarás:
 
 | Opción | Descripción |
 |--------|-------------|
@@ -442,7 +442,7 @@ La interfaz tiene una **lista unificada de rotación** que controla **todas** la
 **Apps de clima adicionales:**
 | App | Opción especial |
 |-----|-----------------|
-| **Calidad del Aire** | Toggle **Auto** — color dinámico según nivel (verde → amarillo → naranja → rojo) |
+| **Calidad del Aire** | Toggle **Auto color** — color dinámico según nivel (verde → amarillo → naranja → rojo). Toggle **Mostrar componentes** — tras `ICA:N` recorre los contaminantes fuera de rango (PM2.5, PM10, O3, NO2, SO2, CO), de peor a mejor (máx. 3), cada uno con el color de su nivel. **Seg. por componente** (2–10 s, por defecto 3) fija cuánto se muestra cada uno |
 | **UV** | Toggle **Auto** — color dinámico según índice UV |
 
 > **Tip:** Cuando configuras la **API del clima** por primera vez, las apps de clima (Temp. Exterior, Humedad Exterior, Presión, Calidad del Aire, UV) se agregan automáticamente a la rotación.
