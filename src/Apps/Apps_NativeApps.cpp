@@ -670,9 +670,12 @@ void AirQualityApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16
     uint8_t idx = 0;
     if (nItems > 1)
     {
+        // ICA's base slice = the rotation item's visit time, matching how the
+        // host (resolveNextApp) sizes the visit: per-item duration if set, else
+        // the global timePerApp. Components then get aqiItemMs() each on top.
         long baseMs = (currentRotationItem && currentRotationItem->duration > 0)
                           ? static_cast<long>(currentRotationItem->duration) * 1000L
-                          : static_cast<long>(weatherConfig.aqiDuration) * 1000L;
+                          : appConfig.timePerApp;
         uint32_t elapsed = now - visitStartMs;
         if (elapsed >= static_cast<uint32_t>(baseMs))
         {

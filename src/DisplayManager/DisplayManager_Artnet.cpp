@@ -182,8 +182,13 @@ int8_t DisplayManager_::resolveNextApp(int8_t currentApp, int8_t direction)
             {
                 if (Apps[i].first == item.name)
                 {
-                    // Set duration for this rotation item
+                    // Set duration for this rotation item. The ICA app plays a
+                    // multi-step sequence (index + flagged pollutants) in one
+                    // visit, so extend its time so each step gets its full slice
+                    // instead of the last one flashing by at the boundary.
                     long dur = item.duration > 0 ? item.duration * 1000L : appConfig.timePerApp;
+                    if (item.name == "AirQuality")
+                        dur += airQualityExtraDurationMs();
                     ui->setTimePerApp(dur);
 
                     if (fromEffect)
