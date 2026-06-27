@@ -120,10 +120,18 @@ Las apps del clima también son **nativas** (integradas en el firmware), pero re
 | **Temp. Exterior** | Temperatura exterior. Color configurable; respeta la escala Celsius/Fahrenheit. |
 | **Humedad Exterior** | Humedad relativa exterior (%). Color configurable. |
 | **Presión** | Presión atmosférica (mb/hPa). Color configurable. |
-| **Calidad del Aire (AQI)** | Índice de calidad del aire (US EPA, 1–6). Color automático según el nivel (verde → amarillo → naranja → rojo) o color fijo. Con el interruptor de color automático activado, el color del nivel tiene prioridad y anula cualquier color fijo o por elemento configurado (sigue respetando el modo nocturno). |
+| **Calidad del Aire (AQI)** | Índice de calidad del aire (US EPA, 1–6). Color automático según el nivel (verde → amarillo → naranja → rojo) o color fijo. Con el interruptor de color automático activado, el color del nivel tiene prioridad y anula cualquier color fijo o por elemento configurado (sigue respetando el modo nocturno). Puede además desglosar los contaminantes fuera de rango (ver más abajo). |
 | **Índice UV** | Índice ultravioleta (0–11+). Color automático según el nivel o color fijo. Con el interruptor de color automático activado, el color del nivel tiene prioridad y anula cualquier color fijo o por elemento configurado (sigue respetando el modo nocturno). |
 
 Cada app del clima tiene su propia **duración** configurable y se activa/desactiva de forma individual. El intervalo de actualización de los datos se ajusta en la sección de API del Clima.
+
+### Desglose de contaminantes (Calidad del Aire)
+
+Cuando la opción **Mostrar componentes** está activada (activada por defecto), tras mostrar `ICA:N` la app recorre los contaminantes individuales que están **fuera del rango saludable** por sí mismos (nivel EU EAQI ≥ 4): `PM2.5`, `PM10`, `O3`, `NO2`, `SO2` y `CO`. Se muestran de **peor a mejor**, hasta un **máximo de 3**, y cada uno se dibuja con el color de **su propio** nivel. El disparo depende del valor de cada contaminante de forma independiente del índice general: así, un contaminante puede aparecer en rojo aunque el índice global sea moderado (p. ej. `ICA:2` pero `O3` en rojo).
+
+El tiempo que se muestra cada contaminante es configurable con **Seg. por componente** (2–10 s, por defecto 3). Toda la secuencia (índice + contaminantes señalados) se reproduce dentro de una sola aparición de la app; su tiempo en pantalla se extiende automáticamente para que quepa.
+
+Estas opciones viven en **Apps → AirQuality** (expande el elemento en la lista de rotación): **Auto color**, **Mostrar componentes** y el campo de segundos.
 
 ::: tip
 Si una actualización del clima falla (p. ej. internet intermitente), se mantiene
@@ -135,7 +143,7 @@ izquierda) parpadea en rojo mientras las descargas fallan.
 ---
 ## Luna
 
-La app de Luna muestra la **fase lunar** actual con una luna dibujada en escala de grises (sombreado realista, terminador suave y un tenue *earthshine* en el lado oscuro), sobre un fondo de estrellas azules titilantes.
+La app de Luna muestra la **fase lunar** actual con uno de **8 iconos de fase diseñados (set LaMetric), uno por cada fase lunar** (nueva → llena → menguante), dibujado sobre un fondo de estrellas azules titilantes. Las esquinas del disco son transparentes para que las estrellas se vean alrededor, y en el hemisferio sur el icono se refleja.
 
 Junto a la luna rotan, de forma configurable, hasta tres datos:
 
