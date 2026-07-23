@@ -827,6 +827,109 @@ struct MoonStar
 constexpr uint32_t kMoonInfoPeriod = 3200;
 } // namespace
 
+// ── WindApp ────────────────────────────────────────────────────────
+/// App de viento: dirección + velocidad (km/h). Si windShowGust, rota un
+/// segundo cuadro con la ráfaga (estilo rotativo, como la app de la Luna).
+void WindApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer)
+{
+    (void)state;
+    (void)gifPlayer;
+    if (nativeAppGuard("Wind"))
+        return;
+
+    applyNativeAppColor(weatherConfig.windColor, "Wind");
+
+    LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
+    if (m.hasIcon)
+        matrix->drawRGBBitmap(x + m.iconX, y, icon_cloudy, 8, 8);
+
+    String txt;
+    if (weatherData.valid)
+    {
+        bool showGust = weatherConfig.windShowGust && weatherData.windGust > 0;
+        int frame = showGust ? static_cast<int>((millis() / 3200) % 2) : 0;
+        if (frame == 1)
+        {
+            txt = "R" + String(static_cast<int>(round(weatherData.windGust)));
+        }
+        else
+        {
+            String dir = weatherData.windDir;
+            txt = (dir.length() ? dir + " " : "") + String(static_cast<int>(round(weatherData.windSpeed)));
+        }
+    }
+    else
+    {
+        txt = "--";
+    }
+
+    uint16_t textWidth = getTextWidth(txt.c_str(), 0);
+    LayoutMetrics tm = LayoutEngine::computeLayout(appConfig.nativeIconLayout, textWidth);
+    DisplayManager.setCursor(tm.textCenterX + x, 6 + y);
+    DisplayManager.matrixPrint(txt.c_str());
+}
+
+// ── RadiationApp ───────────────────────────────────────────────────
+/// App de radiación solar (W/m²). Dato del servidor propio (0 con WeatherAPI).
+void RadiationApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer)
+{
+    (void)state;
+    (void)gifPlayer;
+    if (nativeAppGuard("Radiation"))
+        return;
+
+    applyNativeAppColor(weatherConfig.radColor, "Radiation");
+
+    LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
+    if (m.hasIcon)
+        matrix->drawRGBBitmap(x + m.iconX, y, icon_sunny, 8, 8);
+
+    String txt = weatherData.valid
+                     ? String(static_cast<int>(round(weatherData.solarRadiation))) + "W"
+                     : "--";
+
+    uint16_t textWidth = getTextWidth(txt.c_str(), 0);
+    LayoutMetrics tm = LayoutEngine::computeLayout(appConfig.nativeIconLayout, textWidth);
+    DisplayManager.setCursor(tm.textCenterX + x, 6 + y);
+    DisplayManager.matrixPrint(txt.c_str());
+}
+
+// ── PrecipApp ──────────────────────────────────────────────────────
+/// App de precipitación: lluvia de hoy (mm). Si precipShowRate, rota un cuadro
+/// con la tasa de lluvia (mm/h).
+void PrecipApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer)
+{
+    (void)state;
+    (void)gifPlayer;
+    if (nativeAppGuard("Precip"))
+        return;
+
+    applyNativeAppColor(weatherConfig.precipColor, "Precip");
+
+    LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
+    if (m.hasIcon)
+        matrix->drawRGBBitmap(x + m.iconX, y, icon_rainy, 8, 8);
+
+    String txt;
+    if (weatherData.valid)
+    {
+        int frame = weatherConfig.precipShowRate ? static_cast<int>((millis() / 3200) % 2) : 0;
+        if (frame == 1)
+            txt = String(weatherData.rainRate, 1) + "/h";
+        else
+            txt = String(weatherData.precipToday, 1) + "mm";
+    }
+    else
+    {
+        txt = "--";
+    }
+
+    uint16_t textWidth = getTextWidth(txt.c_str(), 0);
+    LayoutMetrics tm = LayoutEngine::computeLayout(appConfig.nativeIconLayout, textWidth);
+    DisplayManager.setCursor(tm.textCenterX + x, 6 + y);
+    DisplayManager.matrixPrint(txt.c_str());
+}
+
 /// Native moon-phase app: a physically-shaded grayscale moon anchored left,
 /// a blue twinkling-star background, and rotating info text (phase name /
 /// lunar age / illumination %) on the right. Phase, age and illumination come

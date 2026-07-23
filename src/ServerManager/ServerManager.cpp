@@ -272,7 +272,7 @@ void addHandler()
                     request->send(200, "application/json", json); });
     mws.addHandler("/api/weather", HTTP_GET, [](AsyncWebServerRequest *request)
                    {
-                    StaticJsonDocument<1024> doc;
+                    StaticJsonDocument<1536> doc;
                     doc["apiKey"] = weatherConfig.apiKey;
                     doc["locationType"] = static_cast<int>(weatherConfig.locationType);
                     doc["city"] = weatherConfig.city;
@@ -301,13 +301,25 @@ void addHandler()
                     doc["pressureDuration"] = weatherConfig.pressureDuration;
                     doc["aqiDuration"] = weatherConfig.aqiDuration;
                     doc["uvDuration"] = weatherConfig.uvDuration;
+                    doc["serverUrl"] = weatherConfig.serverUrl;
+                    doc["showWind"] = weatherConfig.showWind;
+                    doc["windColor"] = weatherConfig.windColor;
+                    doc["windDuration"] = weatherConfig.windDuration;
+                    doc["windShowGust"] = weatherConfig.windShowGust;
+                    doc["showRadiation"] = weatherConfig.showRadiation;
+                    doc["radColor"] = weatherConfig.radColor;
+                    doc["radDuration"] = weatherConfig.radDuration;
+                    doc["showPrecip"] = weatherConfig.showPrecip;
+                    doc["precipColor"] = weatherConfig.precipColor;
+                    doc["precipDuration"] = weatherConfig.precipDuration;
+                    doc["precipShowRate"] = weatherConfig.precipShowRate;
                     String json;
                     serializeJson(doc, json);
                     request->send(200, "application/json", json); });
     mws.addHandlerWithBody("/api/weather", HTTP_POST, [](AsyncWebServerRequest *request)
                            {
                             String body = getBody(request);
-                            StaticJsonDocument<1024> doc;
+                            StaticJsonDocument<1536> doc;
                             DeserializationError err = deserializeJson(doc, body);
                             if (err) {
                                 request->send(400, "text/plain", "InvalidJSON");
@@ -341,12 +353,25 @@ void addHandler()
                             if (doc.containsKey("pressureDuration")) weatherConfig.pressureDuration = doc["pressureDuration"].as<uint8_t>();
                             if (doc.containsKey("aqiDuration")) weatherConfig.aqiDuration = doc["aqiDuration"].as<uint8_t>();
                             if (doc.containsKey("uvDuration")) weatherConfig.uvDuration = doc["uvDuration"].as<uint8_t>();
+                            if (doc.containsKey("serverUrl")) weatherConfig.serverUrl = doc["serverUrl"].as<String>();
+                            if (doc.containsKey("showWind")) weatherConfig.showWind = doc["showWind"].as<bool>();
+                            if (doc.containsKey("windColor")) weatherConfig.windColor = doc["windColor"].as<uint32_t>();
+                            if (doc.containsKey("windDuration")) weatherConfig.windDuration = doc["windDuration"].as<uint8_t>();
+                            if (doc.containsKey("windShowGust")) weatherConfig.windShowGust = doc["windShowGust"].as<bool>();
+                            if (doc.containsKey("showRadiation")) weatherConfig.showRadiation = doc["showRadiation"].as<bool>();
+                            if (doc.containsKey("radColor")) weatherConfig.radColor = doc["radColor"].as<uint32_t>();
+                            if (doc.containsKey("radDuration")) weatherConfig.radDuration = doc["radDuration"].as<uint8_t>();
+                            if (doc.containsKey("showPrecip")) weatherConfig.showPrecip = doc["showPrecip"].as<bool>();
+                            if (doc.containsKey("precipColor")) weatherConfig.precipColor = doc["precipColor"].as<uint32_t>();
+                            if (doc.containsKey("precipDuration")) weatherConfig.precipDuration = doc["precipDuration"].as<uint8_t>();
+                            if (doc.containsKey("precipShowRate")) weatherConfig.precipShowRate = doc["precipShowRate"].as<bool>();
                             bool appsChanged = doc.containsKey("showOutdoorTemp") || doc.containsKey("showOutdoorHumidity") ||
                                                doc.containsKey("showPressure") || doc.containsKey("showAirQuality") ||
-                                               doc.containsKey("showUV");
+                                               doc.containsKey("showUV") || doc.containsKey("showWind") ||
+                                               doc.containsKey("showRadiation") || doc.containsKey("showPrecip");
                             saveSettings();
                             if (appsChanged && smNav_) smNav_->loadNativeApps();
-                            if (!weatherConfig.apiKey.isEmpty()) DataFetcher.forceWeatherFetch();
+                            if (!weatherConfig.apiKey.isEmpty() || !weatherConfig.serverUrl.isEmpty()) DataFetcher.forceWeatherFetch();
                             request->send(200, "text/plain", "OK"); });
     mws.addHandlerWithBody("/api/custom", HTTP_POST, [](AsyncWebServerRequest *request)
                            {

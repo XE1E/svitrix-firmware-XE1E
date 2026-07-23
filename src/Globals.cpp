@@ -558,6 +558,18 @@ void loadSettings()
     weatherConfig.uvAutoColor = Settings.getBool("WAPI_UVAUTO", true);
     weatherConfig.aqiShowComponents = Settings.getBool("WAPI_AQCOMP", true);
     weatherConfig.aqiComponentSecs = Settings.getUChar("WAPI_AQCSEC", 3);
+    weatherConfig.serverUrl = Settings.getString("WAPI_URL", "");
+    weatherConfig.showWind = Settings.getBool("WAPI_WIND", false);
+    weatherConfig.windColor = Settings.getUInt("WAPI_WCOL", 0x38BDF8);
+    weatherConfig.windDuration = Settings.getUChar("WAPI_WDUR", 7);
+    weatherConfig.windShowGust = Settings.getBool("WAPI_WGST", true);
+    weatherConfig.showRadiation = Settings.getBool("WAPI_RAD", false);
+    weatherConfig.radColor = Settings.getUInt("WAPI_RCOL", 0xF59E0B);
+    weatherConfig.radDuration = Settings.getUChar("WAPI_RDUR", 7);
+    weatherConfig.showPrecip = Settings.getBool("WAPI_PRCP", false);
+    weatherConfig.precipColor = Settings.getUInt("WAPI_PCCOL", 0x60A5FA);
+    weatherConfig.precipDuration = Settings.getUChar("WAPI_PCDUR", 7);
+    weatherConfig.precipShowRate = Settings.getBool("WAPI_PRATE", false);
     // Playlist config (legacy, kept for migration)
     playlistConfig.enabled = Settings.getBool("PL_EN", false);
     playlistConfig.items = Settings.getString("PL_ITEMS", "");
@@ -682,6 +694,18 @@ void saveSettings()
     Settings.putBool("WAPI_UVAUTO", weatherConfig.uvAutoColor);
     Settings.putBool("WAPI_AQCOMP", weatherConfig.aqiShowComponents);
     Settings.putUChar("WAPI_AQCSEC", weatherConfig.aqiComponentSecs);
+    Settings.putString("WAPI_URL", weatherConfig.serverUrl);
+    Settings.putBool("WAPI_WIND", weatherConfig.showWind);
+    Settings.putUInt("WAPI_WCOL", weatherConfig.windColor);
+    Settings.putUChar("WAPI_WDUR", weatherConfig.windDuration);
+    Settings.putBool("WAPI_WGST", weatherConfig.windShowGust);
+    Settings.putBool("WAPI_RAD", weatherConfig.showRadiation);
+    Settings.putUInt("WAPI_RCOL", weatherConfig.radColor);
+    Settings.putUChar("WAPI_RDUR", weatherConfig.radDuration);
+    Settings.putBool("WAPI_PRCP", weatherConfig.showPrecip);
+    Settings.putUInt("WAPI_PCCOL", weatherConfig.precipColor);
+    Settings.putUChar("WAPI_PCDUR", weatherConfig.precipDuration);
+    Settings.putBool("WAPI_PRATE", weatherConfig.precipShowRate);
     // Playlist config (legacy)
     Settings.putBool("PL_EN", playlistConfig.enabled);
     Settings.putString("PL_ITEMS", playlistConfig.items);
@@ -828,6 +852,18 @@ String exportSettings()
     doc["WAPI_AQCOMP"] = weatherConfig.aqiShowComponents;
     doc["WAPI_AQCSEC"] = weatherConfig.aqiComponentSecs;
     doc["WAPI_UVAUTO"] = weatherConfig.uvAutoColor;
+    doc["WAPI_URL"] = weatherConfig.serverUrl;
+    doc["WAPI_WIND"] = weatherConfig.showWind;
+    doc["WAPI_WCOL"] = weatherConfig.windColor;
+    doc["WAPI_WDUR"] = weatherConfig.windDuration;
+    doc["WAPI_WGST"] = weatherConfig.windShowGust;
+    doc["WAPI_RAD"] = weatherConfig.showRadiation;
+    doc["WAPI_RCOL"] = weatherConfig.radColor;
+    doc["WAPI_RDUR"] = weatherConfig.radDuration;
+    doc["WAPI_PRCP"] = weatherConfig.showPrecip;
+    doc["WAPI_PCCOL"] = weatherConfig.precipColor;
+    doc["WAPI_PCDUR"] = weatherConfig.precipDuration;
+    doc["WAPI_PRATE"] = weatherConfig.precipShowRate;
 
     // Playlist (legacy)
     doc["PL_EN"] = playlistConfig.enabled;
@@ -1039,6 +1075,30 @@ bool importSettings(const char *json)
         weatherConfig.aqiComponentSecs = doc["WAPI_AQCSEC"];
     if (doc.containsKey("WAPI_UVAUTO"))
         weatherConfig.uvAutoColor = doc["WAPI_UVAUTO"];
+    if (doc.containsKey("WAPI_URL"))
+        weatherConfig.serverUrl = doc["WAPI_URL"].as<String>();
+    if (doc.containsKey("WAPI_WIND"))
+        weatherConfig.showWind = doc["WAPI_WIND"];
+    if (doc.containsKey("WAPI_WCOL"))
+        weatherConfig.windColor = doc["WAPI_WCOL"].as<uint32_t>();
+    if (doc.containsKey("WAPI_WDUR"))
+        weatherConfig.windDuration = doc["WAPI_WDUR"];
+    if (doc.containsKey("WAPI_WGST"))
+        weatherConfig.windShowGust = doc["WAPI_WGST"];
+    if (doc.containsKey("WAPI_RAD"))
+        weatherConfig.showRadiation = doc["WAPI_RAD"];
+    if (doc.containsKey("WAPI_RCOL"))
+        weatherConfig.radColor = doc["WAPI_RCOL"].as<uint32_t>();
+    if (doc.containsKey("WAPI_RDUR"))
+        weatherConfig.radDuration = doc["WAPI_RDUR"];
+    if (doc.containsKey("WAPI_PRCP"))
+        weatherConfig.showPrecip = doc["WAPI_PRCP"];
+    if (doc.containsKey("WAPI_PCCOL"))
+        weatherConfig.precipColor = doc["WAPI_PCCOL"].as<uint32_t>();
+    if (doc.containsKey("WAPI_PCDUR"))
+        weatherConfig.precipDuration = doc["WAPI_PCDUR"];
+    if (doc.containsKey("WAPI_PRATE"))
+        weatherConfig.precipShowRate = doc["WAPI_PRATE"];
 
     // Playlist (legacy)
     if (doc.containsKey("PL_EN"))

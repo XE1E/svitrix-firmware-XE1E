@@ -7,6 +7,23 @@ Format based on [Keep a Changelog](https://keepachangelog.com/) and
 Releases prior to v0.4.0-beta.13 are documented in the
 [GitHub Releases](https://github.com/XE1E/svitrix-firmware-XE1E/releases).
 
+## [v0.4.0-beta.16] — 2026-07-23
+
+### Features
+
+- **weather:** the clock can now fetch weather from your **own server** instead
+  of WeatherAPI.com. New *Own server (URL)* field in Settings → Weather API; when
+  set, the firmware fetches that URL, which must return the WeatherAPI
+  `current.json` shape (e.g. `https://clima.xe1e.net/api/svitrix`). It parses the
+  same fields plus optional extras (`solar_radiation`, `rain_rate_mm`). Falls back
+  to WeatherAPI.com when the field is empty.
+- **apps:** three new native weather apps (add them with *Add weather apps*):
+  - **Wind** — direction + speed (km/h); optionally rotates the gust.
+  - **Solar radiation** — W/m² (from the server's `solar_radiation`).
+  - **Precipitation** — today's rain (mm); optionally rotates the rate (mm/h).
+- Wind (`wind_kph`/`wind_degree`/`wind_dir`/`gust_kph`) and precipitation
+  (`precip_mm`) are now parsed from the standard WeatherAPI shape as well.
+
 ## [v0.4.0-beta.15] — 2026-06-26
 
 ### Features

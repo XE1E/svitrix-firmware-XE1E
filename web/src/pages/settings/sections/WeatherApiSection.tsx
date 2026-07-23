@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo } from "preact/hooks";
 import { useSettings } from "../../../context/SettingsContext";
-import { Select, Card, FormRow, Button } from "../../../components/ui";
+import { Select, Card, FormRow, Button, Toggle } from "../../../components/ui";
 import { getWeatherData, forceWeatherFetch, getRotation, saveRotation } from "../../../api/client";
 import { toast } from "../../../components/Toast";
 import { useT } from "../../../i18n";
 import type { WeatherData, RotationItem } from "../../../api/types";
 import styles from "./sections.module.css";
 
-const WEATHER_APPS = ["OutdoorTemp", "OutdoorHum", "Pressure", "AirQuality", "UV"];
+const WEATHER_APPS = ["OutdoorTemp", "OutdoorHum", "Pressure", "AirQuality", "UV", "Wind", "Radiation", "Precip"];
 
 function generateId(): string {
   const chars = "0123456789abcdef";
@@ -99,6 +99,18 @@ export function WeatherApiSection() {
     <Card title={t.settings.weatherApi}>
       <div class={styles.stack}>
         <div class="form-group">
+          <label htmlFor="weather-server-url">{t.settings.weatherServerUrl}</label>
+          <input
+            id="weather-server-url"
+            type="text"
+            placeholder="https://clima.xe1e.net/api/svitrix"
+            value={w.serverUrl}
+            onInput={(e) => updateWeatherConfig({ serverUrl: (e.target as HTMLInputElement).value })}
+          />
+          <small class={styles.hint}>{t.settings.weatherServerUrlHint}</small>
+        </div>
+
+        <div class="form-group">
           <label htmlFor="weather-api-key">{t.settings.apiKey}</label>
           <input
             id="weather-api-key"
@@ -177,11 +189,30 @@ export function WeatherApiSection() {
           onChange={(v) => updateWeatherConfig({ updateInterval: v as number })}
         />
 
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <p style={{ fontWeight: 600, margin: "4px 0 0" }}>{t.settings.weatherServerApps}</p>
+          <Toggle label={t.settings.windApp} checked={w.showWind}
+            onChange={(v) => updateWeatherConfig({ showWind: v })} />
+          {w.showWind && (
+            <Toggle label={t.settings.windShowGust} checked={w.windShowGust}
+              onChange={(v) => updateWeatherConfig({ windShowGust: v })} />
+          )}
+          <Toggle label={t.settings.radiationApp} checked={w.showRadiation}
+            onChange={(v) => updateWeatherConfig({ showRadiation: v })} />
+          <Toggle label={t.settings.precipApp} checked={w.showPrecip}
+            onChange={(v) => updateWeatherConfig({ showPrecip: v })} />
+          {w.showPrecip && (
+            <Toggle label={t.settings.precipShowRate} checked={w.precipShowRate}
+              onChange={(v) => updateWeatherConfig({ precipShowRate: v })} />
+          )}
+          <small class={styles.hint}>{t.settings.weatherServerAppsHint}</small>
+        </div>
+
         <FormRow>
           <Button variant="primary" onClick={handleSave} loading={saving}>
             {t.settings.saveWeatherApi}
           </Button>
-          <Button variant="default" onClick={handleFetch} loading={fetching} disabled={!w.apiKey}>
+          <Button variant="default" onClick={handleFetch} loading={fetching} disabled={!w.apiKey && !w.serverUrl}>
             {t.settings.fetchNow}
           </Button>
         </FormRow>

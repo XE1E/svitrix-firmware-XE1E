@@ -299,6 +299,18 @@ std::pair<String, AppCallback> getNativeAppByName(const String& appName)
     {
         return std::make_pair("AirQuality", AirQualityApp);
     }
+    else if (appName == "Wind")
+    {
+        return std::make_pair("Wind", WindApp);
+    }
+    else if (appName == "Radiation")
+    {
+        return std::make_pair("Radiation", RadiationApp);
+    }
+    else if (appName == "Precip")
+    {
+        return std::make_pair("Precip", PrecipApp);
+    }
     return std::make_pair("", nullptr);
 }
 
@@ -550,6 +562,9 @@ void DisplayManager_::loadNativeApps()
     availableApps["Pressure"] = PressureApp;
     availableApps["AirQuality"] = AirQualityApp;
     availableApps["UV"] = UVApp;
+    availableApps["Wind"] = WindApp;
+    availableApps["Radiation"] = RadiationApp;
+    availableApps["Precip"] = PrecipApp;
     availableApps["Moon"] = MoonApp;
 
     // Custom apps from customApps map (covers both Apps vector and newly-created apps)
@@ -611,6 +626,9 @@ void DisplayManager_::loadNativeApps()
         addNative("Pressure", PressureApp, weatherConfig.showPressure);
         addNative("AirQuality", AirQualityApp, weatherConfig.showAirQuality);
         addNative("UV", UVApp, weatherConfig.showUV);
+        addNative("Wind", WindApp, weatherConfig.showWind);
+        addNative("Radiation", RadiationApp, weatherConfig.showRadiation);
+        addNative("Precip", PrecipApp, weatherConfig.showPrecip);
 
         for (const auto& app : Apps)
         {

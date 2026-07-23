@@ -203,6 +203,25 @@ struct WeatherConfig {
     uint8_t uvDuration;
     bool aqiShowComponents;       // ICA app: rotate pollutants exceeding level 4
     uint8_t aqiComponentSecs;     // ICA app: seconds each flagged pollutant is shown (2-10)
+    // Fuente propia (XE1E): si no está vacío, se consulta esta URL en lugar de
+    // WeatherAPI.com. Debe devolver la MISMA forma de WeatherAPI current.json
+    // (p. ej. https://clima.xe1e.net/api/svitrix), con campos extra opcionales
+    // (solar_radiation, rain_rate_mm).
+    String serverUrl;
+    // App Viento (dirección + velocidad; opción de rotar la ráfaga). Estilo Luna.
+    bool showWind;
+    uint32_t windColor;
+    uint8_t windDuration;
+    bool windShowGust;            // rotar un cuadro con la ráfaga
+    // App Radiación solar (W/m²) — separada del UV
+    bool showRadiation;
+    uint32_t radColor;
+    uint8_t radDuration;
+    // App Precipitación (lluvia de hoy; opción de rotar la tasa mm/h)
+    bool showPrecip;
+    uint32_t precipColor;
+    uint8_t precipDuration;
+    bool precipShowRate;
 };
 
 struct WeatherData {
@@ -220,6 +239,15 @@ struct WeatherData {
     float co;
     String condition;         // "sunny", "cloudy", etc.
     int conditionCode;        // WeatherAPI condition code
+    // Viento (WeatherAPI: wind_kph/wind_degree/wind_dir/gust_kph)
+    float windSpeed;          // km/h
+    int windDeg;              // grados (0-360)
+    float windGust;           // km/h
+    String windDir;           // rumbo (N, NE, …)
+    // Extras del servidor propio (no en WeatherAPI): 0 si la fuente no los da
+    float solarRadiation;     // W/m²
+    float precipToday;        // mm acumulados hoy (WeatherAPI: precip_mm)
+    float rainRate;           // mm/h (extra)
     unsigned long lastUpdate; // millis() of last update
     bool valid;               // data available
 };
