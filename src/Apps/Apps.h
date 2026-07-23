@@ -66,6 +66,12 @@ long airQualityExtraDurationMs();
 
 void UVApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer);
 
+void WindApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer);
+
+void RadiationApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer);
+
+void PrecipApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer);
+
 void MoonApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer);
 
 void ShowCustomApp(const String& name, FastLED_NeoMatrix *matrix, const MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer);

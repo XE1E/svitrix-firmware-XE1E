@@ -182,6 +182,22 @@ export interface WeatherConfig {
   pressureDuration: number;
   aqiDuration: number;
   uvDuration: number;
+  // Fuente propia (XE1E): URL que devuelve la forma de WeatherAPI current.json.
+  serverUrl: string;
+  // App Viento
+  showWind: boolean;
+  windColor: number;
+  windDuration: number;
+  windShowGust: boolean;
+  // App Radiación solar
+  showRadiation: boolean;
+  radColor: number;
+  radDuration: number;
+  // App Precipitación
+  showPrecip: boolean;
+  precipColor: number;
+  precipDuration: number;
+  precipShowRate: boolean;
 }
 
 export interface WeatherData {

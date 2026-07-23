@@ -59,8 +59,9 @@ void DataFetcher_::tick()
 {
     unsigned long now = millis();
 
-    // Weather API fetch (synchronous; blocks the loop ~2s on success)
-    if (!weatherConfig.apiKey.isEmpty())
+    // Weather API fetch (synchronous; blocks the loop ~2s on success).
+    // Se activa con una API key de WeatherAPI o con una URL de servidor propio.
+    if (!weatherConfig.apiKey.isEmpty() || !weatherConfig.serverUrl.isEmpty())
     {
         unsigned long weatherInterval = weatherConfig.updateInterval * 60000UL;
         // Due on first tick (lastWeatherFetch_==0 — also how forceWeatherFetch
@@ -658,11 +659,20 @@ String DataFetcher_::buildWeatherQuery()
 
 void DataFetcher_::fetchWeather()
 {
-    String url = "https://api.weatherapi.com/v1/current.json?key=";
-    url += weatherConfig.apiKey;
-    url += "&q=";
-    url += buildWeatherQuery();
-    url += "&aqi=yes";
+    String url;
+    if (!weatherConfig.serverUrl.isEmpty())
+    {
+        // Servidor propio (XE1E): devuelve la misma forma de WeatherAPI current.json.
+        url = weatherConfig.serverUrl;
+    }
+    else
+    {
+        url = "https://api.weatherapi.com/v1/current.json?key=";
+        url += weatherConfig.apiKey;
+        url += "&q=";
+        url += buildWeatherQuery();
+        url += "&aqi=yes";
+    }
 
     DEBUG_PRINTF("DataFetcher: fetching weather from %s", url.c_str());
 
@@ -694,6 +704,16 @@ void DataFetcher_::fetchWeather()
                                                    : current["temp_f"].as<float>();
     weatherData.outdoorHumidity = current["humidity"].as<float>();
     weatherData.pressure = current["pressure_mb"].as<float>();
+    // Viento (WeatherAPI y servidor propio comparten estas claves)
+    weatherData.windSpeed = current["wind_kph"].as<float>();
+    weatherData.windDeg = current["wind_degree"].as<int>();
+    weatherData.windGust = current["gust_kph"].as<float>();
+    weatherData.windDir = current["wind_dir"].as<String>();
+    // Precipitación: precip_mm (acumulado hoy) — estándar WeatherAPI
+    weatherData.precipToday = current["precip_mm"].as<float>();
+    // Extras del servidor propio (0 si la fuente no los provee)
+    weatherData.solarRadiation = current["solar_radiation"].as<float>();
+    weatherData.rainRate = current["rain_rate_mm"].as<float>();
 
     JsonObject condition = current["condition"];
     if (!condition.isNull())

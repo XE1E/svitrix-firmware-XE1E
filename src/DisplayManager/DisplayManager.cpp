@@ -300,6 +300,12 @@ static long getDurationForApp(const String& appName)
         return weatherConfig.aqiDuration * 1000L;
     if (appName == "UV")
         return weatherConfig.uvDuration * 1000L;
+    if (appName == "Wind")
+        return weatherConfig.windDuration * 1000L;
+    if (appName == "Radiation")
+        return weatherConfig.radDuration * 1000L;
+    if (appName == "Precip")
+        return weatherConfig.precipDuration * 1000L;
     return appConfig.timePerApp;
 }
 
@@ -328,6 +334,12 @@ static void syncLegacyShowFlag(const char *name, bool visible)
         weatherConfig.showAirQuality = visible;
     else if (strcmp(name, "UV") == 0)
         weatherConfig.showUV = visible;
+    else if (strcmp(name, "Wind") == 0)
+        weatherConfig.showWind = visible;
+    else if (strcmp(name, "Radiation") == 0)
+        weatherConfig.showRadiation = visible;
+    else if (strcmp(name, "Precip") == 0)
+        weatherConfig.showPrecip = visible;
 }
 
 static void syncLegacyDuration(const char *name, uint16_t seconds)
@@ -352,6 +364,12 @@ static void syncLegacyDuration(const char *name, uint16_t seconds)
         weatherConfig.aqiDuration = static_cast<uint8_t>(seconds);
     else if (strcmp(name, "UV") == 0)
         weatherConfig.uvDuration = static_cast<uint8_t>(seconds);
+    else if (strcmp(name, "Wind") == 0)
+        weatherConfig.windDuration = static_cast<uint8_t>(seconds);
+    else if (strcmp(name, "Radiation") == 0)
+        weatherConfig.radDuration = static_cast<uint8_t>(seconds);
+    else if (strcmp(name, "Precip") == 0)
+        weatherConfig.precipDuration = static_cast<uint8_t>(seconds);
 }
 
 /// Real per-app duration (seconds) as the rotation currently runs it. Scans ALL

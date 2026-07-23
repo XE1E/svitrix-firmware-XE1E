@@ -96,6 +96,15 @@ export const translations = {
       uvIndex: "Índice UV",
       noWeatherData: "Sin datos del clima. Haz clic en \"Obtener ahora\" para probar tu clave API.",
       weatherAppsAdded: "Apps de clima agregadas",
+      weatherServerUrl: "Servidor propio (URL)",
+      weatherServerUrlHint: "Si se llena, el reloj baja el clima de TU servidor (formato WeatherAPI) en vez de WeatherAPI.com. Ej: https://clima.xe1e.net/api/svitrix",
+      weatherServerApps: "Apps de tu servidor",
+      weatherServerAppsHint: "Activa las apps y pulsa «Agregar apps de clima» para añadirlas a la rotación.",
+      windApp: "Viento (dirección y velocidad)",
+      windShowGust: "Rotar ráfaga",
+      radiationApp: "Radiación solar",
+      precipApp: "Precipitación",
+      precipShowRate: "Rotar tasa de lluvia",
     },
 
     // MQTT page
@@ -594,6 +603,15 @@ export const translations = {
       uvIndex: "UV Index",
       noWeatherData: "No weather data yet. Click \"Fetch Now\" to test your API key.",
       weatherAppsAdded: "Weather apps added",
+      weatherServerUrl: "Own server (URL)",
+      weatherServerUrlHint: "If set, the clock fetches weather from YOUR server (WeatherAPI shape) instead of WeatherAPI.com. E.g. https://clima.xe1e.net/api/svitrix",
+      weatherServerApps: "Apps from your server",
+      weatherServerAppsHint: "Enable the apps and press \"Add weather apps\" to add them to the rotation.",
+      windApp: "Wind (direction & speed)",
+      windShowGust: "Rotate gust",
+      radiationApp: "Solar radiation",
+      precipApp: "Precipitation",
+      precipShowRate: "Rotate rain rate",
     },
 
     // MQTT page
