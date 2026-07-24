@@ -19,13 +19,23 @@ Releases prior to v0.4.0-beta.13 are documented in the
   - **Precipitation** now shows the **current rain event** (mm) as its fixed
     value (was today's total), and rotates the rate (mm/h) when enabled.
 - **apps:** Solar radiation gains an **Auto color** option (like UV) — the value
-  is tinted by intensity (blue → amber → orange → red). Web toggle under
-  Settings → Weather API; defaults on.
-
+  is tinted by intensity (blue → amber → orange → red); defaults on.
+- **apps:** Wind, Solar-radiation and Precipitation are now first-class apps in
+  the **Apps tab** catalog (addable, with their animated default icons), and
+  their per-app options are configured inline there just like UV / ICA / Moon:
+  *Auto color* (radiation), *Rotate gust* (wind), *Rotate rain rate* (precip).
+  The duplicate block under Settings → Weather API was removed (only the own-
+  server URL remains there).
 - **weather:** faster update intervals (1 / 2 / 5 min) are now selectable —
   useful with an own server (no API rate limit) so the clock tracks
   fast-changing values (e.g. solar radiation at dusk) instead of lagging up to
   10 min behind.
+
+### Bug Fixes
+
+- **weather:** the update-interval validation floor was 10 min, so the new
+  1 / 2 / 5-min options were silently reset to 10 on save/reboot. The floor is
+  now 1 min (the fetcher keeps its hard 60 s minimum).
 
 ### Other Changes
 

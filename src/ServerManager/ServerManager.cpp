@@ -6,6 +6,7 @@
 #include <ESPmDNS.h>
 #include <LittleFS.h>
 #include <WiFi.h>
+#include <nvs.h>
 #include "IDisplayRenderer.h"
 #include "IDisplayControl.h"
 #include "IDisplayNavigation.h"
@@ -622,6 +623,25 @@ void ServerManager_::setup()
                             request->send(200, "text/plain", "OK"); });
     mws.addHandler("/api/reboot", HTTP_ANY, [](AsyncWebServerRequest *request)
                    { request->send(200, "text/plain", "OK"); delay(200); ESP.restart(); });
+    // Diagnóstico NVS: entradas usadas/libres de la partición de ajustes (20 KB).
+    // Sirve para vigilar el margen y evitar que se llene (lo que corrompe la NVS).
+    mws.addHandler("/api/nvs", HTTP_GET, [](AsyncWebServerRequest *request)
+                   {
+                    nvs_stats_t st;
+                    esp_err_t err = nvs_get_stats(nullptr, &st);
+                    StaticJsonDocument<256> doc;
+                    if (err != ESP_OK) {
+                        doc["error"] = static_cast<int>(err);
+                    } else {
+                        doc["used"] = st.used_entries;
+                        doc["free"] = st.free_entries;
+                        doc["total"] = st.total_entries;
+                        doc["namespaces"] = st.namespace_count;
+                        doc["usedPct"] = st.total_entries
+                            ? (st.used_entries * 100.0 / st.total_entries) : 0.0;
+                    }
+                    String json; serializeJson(doc, json);
+                    request->send(200, "application/json", json); });
 
     if (isConnected)
     {
