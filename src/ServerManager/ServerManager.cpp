@@ -276,6 +276,9 @@ void addHandler()
                     doc["precipEvent"] = weatherData.precipEvent;
                     doc["rainRate"] = weatherData.rainRate;
                     doc["lastUpdate"] = weatherData.lastUpdate;
+                    // Diagnóstico de fiabilidad: fallos de red consecutivos del
+                    // fetch (0 = último OK). Auto-reinicio al llegar a 15.
+                    doc["failStreak"] = DataFetcher.weatherFailStreak();
                     String json;
                     serializeJson(doc, json);
                     request->send(200, "application/json", json); });

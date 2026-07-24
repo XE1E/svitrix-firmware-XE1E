@@ -5,6 +5,7 @@
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include <WiFi.h>
 #include <LittleFS.h>
 #include <algorithm>
 #include <cctype>
@@ -26,6 +27,14 @@ static constexpr uint32_t HTTP_READ_TIMEOUT = 4000;    // response read
 static constexpr uint32_t HANDSHAKE_TIMEOUT_S = 4;     // TLS handshake (default 120s)
 static constexpr uint32_t WEATHER_RETRY_MS = 60000;    // re-attempt 60s after a failed weather fetch (vs full interval)
 static constexpr uint32_t CUSTOM_RETRY_MS = 60000;     // same fast retry for failed custom sources (vs the full interval)
+// Auto-recuperación por TIEMPO SIN ÉXITO: si el reloj lleva demasiado tiempo sin
+// una actualización de clima exitosa (red atascada por fuga de sockets TLS, heap
+// fragmentado/agotado que hace fallar o saltar el fetch, TLS caído…) y el WiFi
+// sigue conectado (una caída de WiFi la gestiona la librería), se hace un
+// reinicio controlado que limpia el stack de red y el heap, y el reloj sigue
+// solo sin atención. Umbral relativo al intervalo (para no reiniciar de más con
+// intervalos largos), con un piso de 15 min.
+static constexpr uint32_t WEATHER_STALE_FLOOR_MS = 15UL * 60 * 1000;
 
 DataFetcher_& DataFetcher_::getInstance()
 {
@@ -64,6 +73,24 @@ void DataFetcher_::tick()
     if (!weatherConfig.apiKey.isEmpty() || !weatherConfig.serverUrl.isEmpty())
     {
         unsigned long weatherInterval = weatherConfig.updateInterval * 60000UL;
+
+        // Auto-recuperación por tiempo sin éxito: cubre cualquier causa (red
+        // atascada, TLS fallando, heap bajo que salta el fetch). Umbral = 5x el
+        // intervalo, con piso de 15 min, para no reiniciar de más con intervalos
+        // largos. Solo con WiFi conectado (una caída de WiFi la gestiona la
+        // librería). lastWeatherSuccessMs_==0 al arranque ⇒ cuenta desde el boot.
+        unsigned long staleLimit = weatherInterval * 5;
+        if (staleLimit < WEATHER_STALE_FLOOR_MS)
+            staleLimit = WEATHER_STALE_FLOOR_MS;
+        if ((now - lastWeatherSuccessMs_) > staleLimit && WiFi.status() == WL_CONNECTED)
+        {
+            DEBUG_PRINTF("DataFetcher: %lu ms sin clima fresco con WiFi OK; "
+                         "reiniciando para recuperar red/heap",
+                         now - lastWeatherSuccessMs_);
+            delay(150); // deja salir el log por serie
+            ESP.restart();
+        }
+
         // Due on first tick (lastWeatherFetch_==0 — also how forceWeatherFetch
         // schedules it), after the normal interval, or for a fast retry scheduled
         // after a failed fetch (recovers in ~60s instead of the full interval).
@@ -682,7 +709,11 @@ void DataFetcher_::fetchWeather()
     {
         DEBUG_PRINTF("DataFetcher: weather fetch failed: %d", httpCode);
         weatherRetryAt_ = millis() + WEATHER_RETRY_MS; // retry soon; keep last value
-        return;                                        // weatherData left intact
+        if (weatherFailStreak_ < 0xFFFF)               // solo diagnóstico (/api/weather/data)
+            weatherFailStreak_++;
+        // La auto-recuperación (reinicio) la decide tick() por TIEMPO sin éxito,
+        // para cubrir también el caso de fetch saltado por poco heap.
+        return; // weatherData left intact
     }
 
     DynamicJsonDocument doc(4096); // weatherapi current.json + aqi can approach 2 KB
@@ -737,6 +768,8 @@ void DataFetcher_::fetchWeather()
     weatherData.valid = true;
 
     weatherRetryAt_ = 0;
+    weatherFailStreak_ = 0;           // fetch OK → limpia la racha (diagnóstico)
+    lastWeatherSuccessMs_ = millis(); // fetch OK → reinicia el reloj de auto-recuperación
     DEBUG_PRINTF("DataFetcher: weather updated - %.1f%s, %s, AQI=%d, UV=%.1f",
                  weatherData.outdoorTemp, timeConfig.isCelsius ? "C" : "F",
                  weatherData.condition.c_str(), weatherData.aqi, weatherData.uv);
