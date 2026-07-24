@@ -12,7 +12,7 @@ const NATIVE_APPS_ORIGINAL = [
   "Time", "Date", "Temperature", "Humidity", "Battery",
 ];
 const NATIVE_APPS_WEATHER = [
-  "OutdoorTemp", "OutdoorHum", "Pressure", "AirQuality", "UV",
+  "OutdoorTemp", "OutdoorHum", "Pressure", "AirQuality", "UV", "Wind", "Radiation", "Precip",
 ];
 const NATIVE_APPS_EXTRA = [
   "Moon",
@@ -31,6 +31,9 @@ const DEFAULT_ICONS: Record<string, string> = {
   Pressure: "66893",   // GIF
   AirQuality: "73559", // GIF
   UV: "64310",         // GIF
+  Wind: "17071",       // GIF animado
+  Radiation: "56958",  // GIF animado
+  Precip: "3527",      // GIF animado
   Moon: "-",           // drawn programmatically (no icon file)
 };
 
@@ -452,6 +455,33 @@ export function UnifiedRotationSection() {
                               label={t.apps.autoColor || "Auto color"}
                               checked={weatherConfig.uvAutoColor}
                               onChange={(v) => { updateWeatherConfig({ uvAutoColor: v }); saveWeatherConfig(); }}
+                            />
+                          </div>
+                        )}
+                        {item.name === "Radiation" && weatherConfig && (
+                          <div class={styles.rotationField}>
+                            <Toggle
+                              label={t.apps.autoColor || "Auto color"}
+                              checked={weatherConfig.radAutoColor}
+                              onChange={(v) => { updateWeatherConfig({ radAutoColor: v }); saveWeatherConfig(); }}
+                            />
+                          </div>
+                        )}
+                        {item.name === "Wind" && weatherConfig && (
+                          <div class={styles.rotationField}>
+                            <Toggle
+                              label={t.apps.windShowGust}
+                              checked={weatherConfig.windShowGust}
+                              onChange={(v) => { updateWeatherConfig({ windShowGust: v }); saveWeatherConfig(); }}
+                            />
+                          </div>
+                        )}
+                        {item.name === "Precip" && weatherConfig && (
+                          <div class={styles.rotationField}>
+                            <Toggle
+                              label={t.apps.precipShowRate}
+                              checked={weatherConfig.precipShowRate}
+                              onChange={(v) => { updateWeatherConfig({ precipShowRate: v }); saveWeatherConfig(); }}
                             />
                           </div>
                         )}
