@@ -22,11 +22,19 @@ Releases prior to v0.4.0-beta.13 are documented in the
   is tinted by intensity (blue → amber → orange → red). Web toggle under
   Settings → Weather API; defaults on.
 
+- **weather:** faster update intervals (1 / 2 / 5 min) are now selectable —
+  useful with an own server (no API rate limit) so the clock tracks
+  fast-changing values (e.g. solar radiation at dusk) instead of lagging up to
+  10 min behind.
+
 ### Other Changes
 
 - **server:** the own-server adapter (`/api/svitrix`) now also exposes
   `current.precip_event_mm` (current rain-event accumulation) alongside
   `solar_radiation` and `rain_rate_mm`.
+- **web:** `/api/weather/data` now also returns the wind, solar-radiation and
+  precipitation fields (they were parsed and displayed but missing from the
+  debug endpoint).
 
 ## [v0.4.0-beta.16] — 2026-07-23
 

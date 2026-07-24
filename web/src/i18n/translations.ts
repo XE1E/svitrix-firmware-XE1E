@@ -503,6 +503,7 @@ export const translations = {
 
     // Time intervals
     intervals: {
+      minute: "minuto",
       minutes: "minutos",
     },
   },
@@ -1011,6 +1012,7 @@ export const translations = {
 
     // Time intervals
     intervals: {
+      minute: "minute",
       minutes: "minutes",
     },
   },

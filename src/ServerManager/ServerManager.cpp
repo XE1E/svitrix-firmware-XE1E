@@ -257,7 +257,7 @@ void addHandler()
                     request->send(200, "text/plain", "OK"); });
     mws.addHandler("/api/weather/data", HTTP_GET, [](AsyncWebServerRequest *request)
                    {
-                    StaticJsonDocument<512> doc;
+                    StaticJsonDocument<768> doc;
                     doc["valid"] = weatherData.valid;
                     doc["outdoorTemp"] = weatherData.outdoorTemp;
                     doc["outdoorHumidity"] = weatherData.outdoorHumidity;
@@ -266,6 +266,14 @@ void addHandler()
                     doc["uv"] = weatherData.uv;
                     doc["condition"] = weatherData.condition;
                     doc["conditionCode"] = weatherData.conditionCode;
+                    doc["windSpeed"] = weatherData.windSpeed;
+                    doc["windDeg"] = weatherData.windDeg;
+                    doc["windGust"] = weatherData.windGust;
+                    doc["windDir"] = weatherData.windDir;
+                    doc["solarRadiation"] = weatherData.solarRadiation;
+                    doc["precipToday"] = weatherData.precipToday;
+                    doc["precipEvent"] = weatherData.precipEvent;
+                    doc["rainRate"] = weatherData.rainRate;
                     doc["lastUpdate"] = weatherData.lastUpdate;
                     String json;
                     serializeJson(doc, json);

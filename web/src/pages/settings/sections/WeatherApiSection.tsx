@@ -33,6 +33,9 @@ export function WeatherApiSection() {
   ], [t]);
 
   const updateIntervals = useMemo(() => [
+    { value: 1, label: `1 ${t.intervals.minute}` },
+    { value: 2, label: `2 ${t.intervals.minutes}` },
+    { value: 5, label: `5 ${t.intervals.minutes}` },
     { value: 10, label: `10 ${t.intervals.minutes}` },
     { value: 15, label: `15 ${t.intervals.minutes}` },
     { value: 30, label: `30 ${t.intervals.minutes}` },
