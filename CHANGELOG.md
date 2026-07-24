@@ -7,6 +7,27 @@ Format based on [Keep a Changelog](https://keepachangelog.com/) and
 Releases prior to v0.4.0-beta.13 are documented in the
 [GitHub Releases](https://github.com/XE1E/svitrix-firmware-XE1E/releases).
 
+## [v0.4.0-beta.17] — 2026-07-23
+
+### Features
+
+- **apps:** the Wind, Solar-radiation and Precipitation apps now use their own
+  **animated icons** (`/ICONS/17071`, `56958`, `3527`) and long values scroll
+  (Moon-style marquee) instead of being clipped.
+  - **Wind** keeps direction + speed fixed and, with *Rotate gust* on, rotates a
+    second `R<gust>` frame.
+  - **Precipitation** now shows the **current rain event** (mm) as its fixed
+    value (was today's total), and rotates the rate (mm/h) when enabled.
+- **apps:** Solar radiation gains an **Auto color** option (like UV) — the value
+  is tinted by intensity (blue → amber → orange → red). Web toggle under
+  Settings → Weather API; defaults on.
+
+### Other Changes
+
+- **server:** the own-server adapter (`/api/svitrix`) now also exposes
+  `current.precip_event_mm` (current rain-event accumulation) alongside
+  `solar_radiation` and `rain_rate_mm`.
+
 ## [v0.4.0-beta.16] — 2026-07-23
 
 ### Features

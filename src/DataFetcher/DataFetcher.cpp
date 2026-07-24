@@ -713,6 +713,7 @@ void DataFetcher_::fetchWeather()
     weatherData.precipToday = current["precip_mm"].as<float>();
     // Extras del servidor propio (0 si la fuente no los provee)
     weatherData.solarRadiation = current["solar_radiation"].as<float>();
+    weatherData.precipEvent = current["precip_event_mm"].as<float>();
     weatherData.rainRate = current["rain_rate_mm"].as<float>();
 
     JsonObject condition = current["condition"];

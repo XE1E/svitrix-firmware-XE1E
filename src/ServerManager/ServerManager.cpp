@@ -308,6 +308,7 @@ void addHandler()
                     doc["windShowGust"] = weatherConfig.windShowGust;
                     doc["showRadiation"] = weatherConfig.showRadiation;
                     doc["radColor"] = weatherConfig.radColor;
+                    doc["radAutoColor"] = weatherConfig.radAutoColor;
                     doc["radDuration"] = weatherConfig.radDuration;
                     doc["showPrecip"] = weatherConfig.showPrecip;
                     doc["precipColor"] = weatherConfig.precipColor;
@@ -360,6 +361,7 @@ void addHandler()
                             if (doc.containsKey("windShowGust")) weatherConfig.windShowGust = doc["windShowGust"].as<bool>();
                             if (doc.containsKey("showRadiation")) weatherConfig.showRadiation = doc["showRadiation"].as<bool>();
                             if (doc.containsKey("radColor")) weatherConfig.radColor = doc["radColor"].as<uint32_t>();
+                            if (doc.containsKey("radAutoColor")) weatherConfig.radAutoColor = doc["radAutoColor"].as<bool>();
                             if (doc.containsKey("radDuration")) weatherConfig.radDuration = doc["radDuration"].as<uint8_t>();
                             if (doc.containsKey("showPrecip")) weatherConfig.showPrecip = doc["showPrecip"].as<bool>();
                             if (doc.containsKey("precipColor")) weatherConfig.precipColor = doc["precipColor"].as<uint32_t>();

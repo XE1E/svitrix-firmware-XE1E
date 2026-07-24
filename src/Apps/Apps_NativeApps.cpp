@@ -827,107 +827,282 @@ struct MoonStar
 constexpr uint32_t kMoonInfoPeriod = 3200;
 } // namespace
 
+// ── Rotating-text helper for icon weather apps (Wind/Radiation/Precip) ──
+namespace
+{
+// Dwell for a short (non-scrolling) info item, ms.
+constexpr uint32_t kWeatherInfoPeriod = 3200;
+
+// Draw a rotating list of short strings in the text area beside the icon,
+// centered when they fit and marqueed (Moon-style) when they don't, advancing
+// to the next item after its dwell / full pass. Respects the native icon
+// layout (left/right/none). Only ONE native app is visible at a time, so a
+// single set of statics is safe (shared across Wind/Radiation/Precip). The
+// caller sets the text color and draws the icon *after* this returns (the icon
+// column is cleared here so scrolling text never bleeds onto the icon).
+void drawWeatherRotatingText(int16_t x, int16_t y, IconLayout layout,
+                             const String *items, int nItems)
+{
+    if (nItems <= 0)
+        return;
+
+    // Text area and icon-clip region per layout (8px icon + 1px gap).
+    int16_t areaX0, areaW, clipX0, clipW;
+    switch (layout)
+    {
+    case IconLayout::Right:
+        areaX0 = 0;  areaW = 23; clipX0 = 23; clipW = 9;
+        break;
+    case IconLayout::None:
+        areaX0 = 0;  areaW = 32; clipX0 = 0;  clipW = 0;
+        break;
+    case IconLayout::Left:
+    default:
+        areaX0 = 9;  areaW = 23; clipX0 = 0;  clipW = 9;
+        break;
+    }
+
+    const uint32_t now = millis();
+    const uint16_t spd = appConfig.scrollSpeed > 0 ? appConfig.scrollSpeed : 100;
+
+    // Entry detection: this runs every frame while visible, so a gap > 400ms
+    // means the rotation just switched to us → restart at slot 0.
+    static uint32_t lastCallMs = 0;
+    static uint32_t appEnterMs = 0;
+    if (now - lastCallMs > 400)
+        appEnterMs = now;
+    lastCallMs = now;
+
+    static int curSlot = 0;
+    static uint32_t slotStartMs = 0;
+    static uint32_t seenEnter = 0;
+    if (seenEnter != appEnterMs)
+    {
+        seenEnter = appEnterMs;
+        curSlot = 0;
+        slotStartMs = now;
+    }
+    if (curSlot >= nItems)
+        curSlot = 0;
+
+    const String &s = items[curSlot];
+    const uint16_t tw = getTextWidth(s.c_str(), 0);
+    const bool scrolling = tw > static_cast<uint16_t>(areaW);
+    const uint32_t elapsed = now - slotStartMs;
+
+    if (!scrolling)
+    {
+        int16_t tx = areaX0 + (areaW - static_cast<int16_t>(tw)) / 2;
+        DisplayManager.setCursor(tx + x, 6 + y);
+        DisplayManager.matrixPrint(s.c_str());
+    }
+    else
+    {
+        // Marquee: enter from the right edge of the area, scroll left at the
+        // Apps-tab speed (ms per pixel).
+        int off = static_cast<int>(elapsed / spd);
+        int16_t drawX = areaX0 + areaW - static_cast<int16_t>(off);
+        DisplayManager.setCursor(drawX + x, 6 + y);
+        DisplayManager.matrixPrint(s.c_str());
+    }
+
+    // Advance: short items after a fixed dwell; scrolling items only after a
+    // full pass (+ a short tail) so the whole string has been shown.
+    const uint32_t slotDur = scrolling
+                                 ? (static_cast<uint32_t>(tw + areaW) * spd + 700)
+                                 : kWeatherInfoPeriod;
+    if (elapsed >= slotDur && nItems > 1)
+    {
+        curSlot = (curSlot + 1) % nItems;
+        slotStartMs = now;
+    }
+
+    // Clear the icon column so the scrolling text never merges with the icon
+    // (the caller redraws the icon on top afterwards).
+    if (clipW)
+        DisplayManager.drawFilledRect(clipX0 + x, 0 + y, clipW, 8, 0x000000);
+}
+} // namespace
+
 // ── WindApp ────────────────────────────────────────────────────────
-/// App de viento: dirección + velocidad (km/h). Si windShowGust, rota un
-/// segundo cuadro con la ráfaga (estilo rotativo, como la app de la Luna).
+/// App de viento: dirección + velocidad (km/h) fijas; si windShowGust, rota un
+/// segundo cuadro con la ráfaga ("R<n>"). Texto con marquee (estilo Luna) si no
+/// cabe. Ícono animado /ICONS/17071.gif (fallback icon_cloudy).
 void WindApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer)
 {
     (void)state;
-    (void)gifPlayer;
     if (nativeAppGuard("Wind"))
         return;
 
     applyNativeAppColor(weatherConfig.windColor, "Wind");
 
-    LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
-    if (m.hasIcon)
-        matrix->drawRGBBitmap(x + m.iconX, y, icon_cloudy, 8, 8);
-
-    String txt;
+    // Slots: [0] dirección + velocidad (fijo), [1] ráfaga (opcional).
+    String items[2];
+    int n = 0;
     if (weatherData.valid)
     {
-        bool showGust = weatherConfig.windShowGust && weatherData.windGust > 0;
-        int frame = showGust ? static_cast<int>((millis() / 3200) % 2) : 0;
-        if (frame == 1)
-        {
-            txt = "R" + String(static_cast<int>(round(weatherData.windGust)));
-        }
-        else
-        {
-            String dir = weatherData.windDir;
-            txt = (dir.length() ? dir + " " : "") + String(static_cast<int>(round(weatherData.windSpeed)));
-        }
+        String dir = weatherData.windDir;
+        items[n++] = (dir.length() ? dir + " " : "") +
+                     String(static_cast<int>(round(weatherData.windSpeed)));
+        if (weatherConfig.windShowGust && weatherData.windGust > 0)
+            items[n++] = "R" + String(static_cast<int>(round(weatherData.windGust)));
     }
     else
     {
-        txt = "--";
+        items[n++] = "--";
     }
 
-    uint16_t textWidth = getTextWidth(txt.c_str(), 0);
-    LayoutMetrics tm = LayoutEngine::computeLayout(appConfig.nativeIconLayout, textWidth);
-    DisplayManager.setCursor(tm.textCenterX + x, 6 + y);
-    DisplayManager.matrixPrint(txt.c_str());
+    LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
+    drawWeatherRotatingText(x, y, appConfig.nativeIconLayout, items, n);
+
+    static File windIconGif;
+    static bool windIconChecked = false;
+    static bool windIconIsGif = false;
+    static uint16_t windIconFrame = 0;
+    if (m.hasIcon)
+    {
+        if (!windIconChecked)
+        {
+            windIconChecked = true;
+            if (LittleFS.exists("/ICONS/17071.gif"))
+            {
+                windIconGif = LittleFS.open("/ICONS/17071.gif");
+                windIconIsGif = true;
+            }
+        }
+        if (windIconIsGif)
+        {
+            gifPlayer->playGif(x + m.iconX, y, &windIconGif, windIconFrame);
+            windIconFrame = gifPlayer->getFrame();
+        }
+        else
+        {
+            matrix->drawRGBBitmap(x + m.iconX, y, icon_cloudy, 8, 8);
+        }
+    }
 }
 
 // ── RadiationApp ───────────────────────────────────────────────────
 /// App de radiación solar (W/m²). Dato del servidor propio (0 con WeatherAPI).
+/// Color dinámico opcional (radAutoColor) según intensidad, como el UV.
+/// Ícono animado /ICONS/56958.gif (fallback icon_sunny).
 void RadiationApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer)
 {
     (void)state;
-    (void)gifPlayer;
     if (nativeAppGuard("Radiation"))
         return;
 
-    applyNativeAppColor(weatherConfig.radColor, "Radiation");
-
-    LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
-    if (m.hasIcon)
-        matrix->drawRGBBitmap(x + m.iconX, y, icon_sunny, 8, 8);
+    // Color automático por nivel de radiación (mismo criterio que el UV).
+    uint32_t radColor = weatherConfig.radColor;
+    bool radAuto = weatherConfig.radAutoColor && weatherData.valid;
+    if (radAuto)
+    {
+        float r = weatherData.solarRadiation;
+        if (r < 50)
+            radColor = 0x60A5FA; // noche / nublado - azul
+        else if (r < 200)
+            radColor = 0xFBBF24; // bajo - amarillo tenue
+        else if (r < 500)
+            radColor = 0xF59E0B; // medio - ámbar
+        else if (r < 800)
+            radColor = 0xF97316; // alto - naranja
+        else
+            radColor = 0xEF4444; // muy alto - rojo
+    }
+    if (radAuto)
+        DisplayManager.setTextColor(DisplayManager.resolveTextColor(radColor));
+    else
+        applyNativeAppColor(radColor, "Radiation");
 
     String txt = weatherData.valid
                      ? String(static_cast<int>(round(weatherData.solarRadiation))) + "W"
                      : "--";
+    String items[1] = {txt};
 
-    uint16_t textWidth = getTextWidth(txt.c_str(), 0);
-    LayoutMetrics tm = LayoutEngine::computeLayout(appConfig.nativeIconLayout, textWidth);
-    DisplayManager.setCursor(tm.textCenterX + x, 6 + y);
-    DisplayManager.matrixPrint(txt.c_str());
+    LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
+    drawWeatherRotatingText(x, y, appConfig.nativeIconLayout, items, 1);
+
+    static File radIconGif;
+    static bool radIconChecked = false;
+    static bool radIconIsGif = false;
+    static uint16_t radIconFrame = 0;
+    if (m.hasIcon)
+    {
+        if (!radIconChecked)
+        {
+            radIconChecked = true;
+            if (LittleFS.exists("/ICONS/56958.gif"))
+            {
+                radIconGif = LittleFS.open("/ICONS/56958.gif");
+                radIconIsGif = true;
+            }
+        }
+        if (radIconIsGif)
+        {
+            gifPlayer->playGif(x + m.iconX, y, &radIconGif, radIconFrame);
+            radIconFrame = gifPlayer->getFrame();
+        }
+        else
+        {
+            matrix->drawRGBBitmap(x + m.iconX, y, icon_sunny, 8, 8);
+        }
+    }
 }
 
 // ── PrecipApp ──────────────────────────────────────────────────────
-/// App de precipitación: lluvia de hoy (mm). Si precipShowRate, rota un cuadro
-/// con la tasa de lluvia (mm/h).
+/// App de precipitación: lluvia del EVENTO actual (mm) fija; si precipShowRate,
+/// rota un cuadro con la tasa de lluvia (mm/h). Ícono animado /ICONS/3527.gif
+/// (fallback icon_rainy).
 void PrecipApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer)
 {
     (void)state;
-    (void)gifPlayer;
     if (nativeAppGuard("Precip"))
         return;
 
     applyNativeAppColor(weatherConfig.precipColor, "Precip");
 
-    LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
-    if (m.hasIcon)
-        matrix->drawRGBBitmap(x + m.iconX, y, icon_rainy, 8, 8);
-
-    String txt;
+    // Slots: [0] lluvia del evento (fijo), [1] tasa mm/h (opcional).
+    String items[2];
+    int n = 0;
     if (weatherData.valid)
     {
-        int frame = weatherConfig.precipShowRate ? static_cast<int>((millis() / 3200) % 2) : 0;
-        if (frame == 1)
-            txt = String(weatherData.rainRate, 1) + "/h";
-        else
-            txt = String(weatherData.precipToday, 1) + "mm";
+        items[n++] = String(weatherData.precipEvent, 1) + "mm";
+        if (weatherConfig.precipShowRate)
+            items[n++] = String(weatherData.rainRate, 1) + "/h";
     }
     else
     {
-        txt = "--";
+        items[n++] = "--";
     }
 
-    uint16_t textWidth = getTextWidth(txt.c_str(), 0);
-    LayoutMetrics tm = LayoutEngine::computeLayout(appConfig.nativeIconLayout, textWidth);
-    DisplayManager.setCursor(tm.textCenterX + x, 6 + y);
-    DisplayManager.matrixPrint(txt.c_str());
+    LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
+    drawWeatherRotatingText(x, y, appConfig.nativeIconLayout, items, n);
+
+    static File precipIconGif;
+    static bool precipIconChecked = false;
+    static bool precipIconIsGif = false;
+    static uint16_t precipIconFrame = 0;
+    if (m.hasIcon)
+    {
+        if (!precipIconChecked)
+        {
+            precipIconChecked = true;
+            if (LittleFS.exists("/ICONS/3527.gif"))
+            {
+                precipIconGif = LittleFS.open("/ICONS/3527.gif");
+                precipIconIsGif = true;
+            }
+        }
+        if (precipIconIsGif)
+        {
+            gifPlayer->playGif(x + m.iconX, y, &precipIconGif, precipIconFrame);
+            precipIconFrame = gifPlayer->getFrame();
+        }
+        else
+        {
+            matrix->drawRGBBitmap(x + m.iconX, y, icon_rainy, 8, 8);
+        }
+    }
 }
 
 /// Native moon-phase app: a physically-shaded grayscale moon anchored left,

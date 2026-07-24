@@ -199,6 +199,10 @@ export function WeatherApiSection() {
           )}
           <Toggle label={t.settings.radiationApp} checked={w.showRadiation}
             onChange={(v) => updateWeatherConfig({ showRadiation: v })} />
+          {w.showRadiation && (
+            <Toggle label={t.settings.radAutoColor} checked={w.radAutoColor}
+              onChange={(v) => updateWeatherConfig({ radAutoColor: v })} />
+          )}
           <Toggle label={t.settings.precipApp} checked={w.showPrecip}
             onChange={(v) => updateWeatherConfig({ showPrecip: v })} />
           {w.showPrecip && (
