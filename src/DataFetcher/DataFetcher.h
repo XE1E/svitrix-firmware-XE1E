@@ -29,7 +29,11 @@ class DataFetcher_
     std::mutex sourcesMutex_;
 
     unsigned long lastWeatherFetch_ = 0;
-    unsigned long weatherRetryAt_ = 0; // millis() of a scheduled fast retry (0 = none)
+    unsigned long weatherRetryAt_ = 0;       // millis() of a scheduled fast retry (0 = none)
+    unsigned long lastWeatherSuccessMs_ = 0; // millis() del último fetch de clima EXITOSO
+                                             // (0 = ninguno aún; base para auto-recuperación)
+    uint16_t weatherFailStreak_ = 0;         // fallos de RED consecutivos (solo diagnóstico;
+                                             // se resetea en cada éxito)
 
     // Synchronous fetch helpers (run on the main loop in tick()).
     bool fetchAndPush(const DataSourceConfig& src); // custom source -> parseCustomPage (operates on a copy, no shared-state access)
@@ -61,6 +65,13 @@ class DataFetcher_
     void forceWeatherFetch();
     void loadSources();
     void saveSources();
+
+    // Fallos de red consecutivos del fetch de clima (0 = último intento OK).
+    // Expuesto para diagnóstico (/api/stats) y monitoreo de fiabilidad.
+    uint16_t weatherFailStreak() const
+    {
+        return weatherFailStreak_;
+    }
 };
 
 extern DataFetcher_& DataFetcher;

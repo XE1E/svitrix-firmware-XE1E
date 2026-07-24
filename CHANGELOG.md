@@ -7,6 +7,24 @@ Format based on [Keep a Changelog](https://keepachangelog.com/) and
 Releases prior to v0.4.0-beta.13 are documented in the
 [GitHub Releases](https://github.com/XE1E/svitrix-firmware-XE1E/releases).
 
+## [v0.4.0-beta.18] — 2026-07-24
+
+### Bug Fixes
+
+- **weather:** the clock now **self-recovers** if weather updates get stuck, so
+  a configured clock keeps working unattended. Two failure modes were observed
+  in the field: a leaked TLS socket making every `connect()` fail instantly
+  (`reset_reason: wdt`, `UV 0` at midday), and a slow heap decline
+  (~120 KB → 65 KB/h) that eventually starves the HTTPS fetch. The DataFetcher
+  now tracks time since the last **successful** fetch and, if it exceeds
+  `max(15 min, 5× the update interval)` **with WiFi still connected**, performs a
+  controlled `ESP.restart()` to reset the network stack and heap. This is
+  time-based so it also covers fetches skipped for low heap (not just network
+  errors). Consecutive network failures are exposed as `failStreak` in
+  `GET /api/weather/data` for monitoring.
+  - *Note:* the reboot is a safety net; the underlying HTTPS/heap leak still
+    warrants a root-cause fix so reboots stay rare.
+
 ## [v0.4.0-beta.17] — 2026-07-24
 
 ### Features
