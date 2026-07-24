@@ -7,7 +7,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/) and
 Releases prior to v0.4.0-beta.13 are documented in the
 [GitHub Releases](https://github.com/XE1E/svitrix-firmware-XE1E/releases).
 
-## [v0.4.0-beta.17] — 2026-07-23
+## [v0.4.0-beta.17] — 2026-07-24
 
 ### Features
 
