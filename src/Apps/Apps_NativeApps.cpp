@@ -907,14 +907,17 @@ void drawWeatherRotatingText(int16_t x, int16_t y, IconLayout layout,
     }
 
     // Advance: short items after a fixed dwell; scrolling items only after a
-    // full pass (+ a short tail) so the whole string has been shown.
+    // full pass (+ a short tail) so the whole string has been shown. With a
+    // single item a scrolling string LOOPS (restart the pass) so it keeps
+    // showing while the app is on screen instead of scrolling off once.
     const uint32_t slotDur = scrolling
                                  ? (static_cast<uint32_t>(tw + areaW) * spd + 700)
                                  : kWeatherInfoPeriod;
-    if (elapsed >= slotDur && nItems > 1)
+    if (elapsed >= slotDur)
     {
-        curSlot = (curSlot + 1) % nItems;
-        slotStartMs = now;
+        if (nItems > 1)
+            curSlot = (curSlot + 1) % nItems;
+        slotStartMs = now; // advance to next value, or loop the marquee
     }
 
     // Clear the icon column so the scrolling text never merges with the icon
@@ -936,24 +939,26 @@ void WindApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
 
     applyNativeAppColor(weatherConfig.windColor, "Wind");
 
-    // Slots: [0] dirección + velocidad (fijo), [1] ráfaga (opcional).
-    String items[2];
-    int n = 0;
+    // Una sola línea: "<dir> <vel>" y, si windShowGust, " R<ráfaga>" al final.
+    // Se desplaza (marquee) cuando no cabe; el tiempo en pantalla lo da la
+    // duración de la app en la rotación.
+    String txt;
     if (weatherData.valid)
     {
         String dir = weatherData.windDir;
-        items[n++] = (dir.length() ? dir + " " : "") +
-                     String(static_cast<int>(round(weatherData.windSpeed)));
+        txt = (dir.length() ? dir + " " : "") +
+              String(static_cast<int>(round(weatherData.windSpeed)));
         if (weatherConfig.windShowGust && weatherData.windGust > 0)
-            items[n++] = "R" + String(static_cast<int>(round(weatherData.windGust)));
+            txt += " R" + String(static_cast<int>(round(weatherData.windGust)));
     }
     else
     {
-        items[n++] = "--";
+        txt = "--";
     }
+    String items[1] = {txt};
 
     LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
-    drawWeatherRotatingText(x, y, appConfig.nativeIconLayout, items, n);
+    drawWeatherRotatingText(x, y, appConfig.nativeIconLayout, items, 1);
 
     static File windIconGif;
     static bool windIconChecked = false;
@@ -1061,22 +1066,24 @@ void PrecipApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x
 
     applyNativeAppColor(weatherConfig.precipColor, "Precip");
 
-    // Slots: [0] lluvia del evento (fijo), [1] tasa mm/h (opcional).
-    String items[2];
-    int n = 0;
+    // Una sola línea: "<evento>mm" y, si precipShowRate, " <tasa>/h" al final.
+    // Se desplaza (marquee) cuando no cabe; el tiempo en pantalla lo da la
+    // duración de la app en la rotación.
+    String txt;
     if (weatherData.valid)
     {
-        items[n++] = String(weatherData.precipEvent, 1) + "mm";
+        txt = String(weatherData.precipEvent, 1) + "mm";
         if (weatherConfig.precipShowRate)
-            items[n++] = String(weatherData.rainRate, 1) + "/h";
+            txt += " " + String(weatherData.rainRate, 1) + "/h";
     }
     else
     {
-        items[n++] = "--";
+        txt = "--";
     }
+    String items[1] = {txt};
 
     LayoutMetrics m = LayoutEngine::computeLayout(appConfig.nativeIconLayout, 0);
-    drawWeatherRotatingText(x, y, appConfig.nativeIconLayout, items, n);
+    drawWeatherRotatingText(x, y, appConfig.nativeIconLayout, items, 1);
 
     static File precipIconGif;
     static bool precipIconChecked = false;

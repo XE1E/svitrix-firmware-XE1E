@@ -14,10 +14,13 @@ Releases prior to v0.4.0-beta.13 are documented in the
 - **apps:** the Wind, Solar-radiation and Precipitation apps now use their own
   **animated icons** (`/ICONS/17071`, `56958`, `3527`) and long values scroll
   (Moon-style marquee) instead of being clipped.
-  - **Wind** keeps direction + speed fixed and, with *Rotate gust* on, rotates a
-    second `R<gust>` frame.
-  - **Precipitation** now shows the **current rain event** (mm) as its fixed
-    value (was today's total), and rotates the rate (mm/h) when enabled.
+  - **Wind** shows direction + speed on a **single line** and, with *Rotate gust*
+    on, appends the gust (` R<gust>`) to that same line (e.g. `W 5 R 4`) — it
+    scrolls rather than swapping frames.
+  - **Precipitation** shows the **current rain event** (mm) on a single line
+    (was today's total), appending the rate (`<n>/h`) when enabled
+    (e.g. `0.0mm 0.0/h`).
+  - Each app's on-screen time is its per-app duration in the Apps tab.
 - **apps:** Solar radiation gains an **Auto color** option (like UV) — the value
   is tinted by intensity (blue → amber → orange → red); defaults on.
 - **apps:** Wind, Solar-radiation and Precipitation are now first-class apps in
