@@ -851,14 +851,23 @@ void drawWeatherRotatingText(int16_t x, int16_t y, IconLayout layout,
     switch (layout)
     {
     case IconLayout::Right:
-        areaX0 = 0;  areaW = 23; clipX0 = 23; clipW = 9;
+        areaX0 = 0;
+        areaW = 23;
+        clipX0 = 23;
+        clipW = 9;
         break;
     case IconLayout::None:
-        areaX0 = 0;  areaW = 32; clipX0 = 0;  clipW = 0;
+        areaX0 = 0;
+        areaW = 32;
+        clipX0 = 0;
+        clipW = 0;
         break;
     case IconLayout::Left:
     default:
-        areaX0 = 9;  areaW = 23; clipX0 = 0;  clipW = 9;
+        areaX0 = 9;
+        areaW = 23;
+        clipX0 = 0;
+        clipW = 9;
         break;
     }
 
@@ -885,7 +894,7 @@ void drawWeatherRotatingText(int16_t x, int16_t y, IconLayout layout,
     if (curSlot >= nItems)
         curSlot = 0;
 
-    const String &s = items[curSlot];
+    const String& s = items[curSlot];
     const uint16_t tw = getTextWidth(s.c_str(), 0);
     const bool scrolling = tw > static_cast<uint16_t>(areaW);
     const uint32_t elapsed = now - slotStartMs;
