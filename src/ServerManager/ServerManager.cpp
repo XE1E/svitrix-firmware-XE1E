@@ -6,6 +6,7 @@
 #include <ESPmDNS.h>
 #include <LittleFS.h>
 #include <WiFi.h>
+#include <nvs.h>
 #include "IDisplayRenderer.h"
 #include "IDisplayControl.h"
 #include "IDisplayNavigation.h"
@@ -257,7 +258,7 @@ void addHandler()
                     request->send(200, "text/plain", "OK"); });
     mws.addHandler("/api/weather/data", HTTP_GET, [](AsyncWebServerRequest *request)
                    {
-                    StaticJsonDocument<512> doc;
+                    StaticJsonDocument<768> doc;
                     doc["valid"] = weatherData.valid;
                     doc["outdoorTemp"] = weatherData.outdoorTemp;
                     doc["outdoorHumidity"] = weatherData.outdoorHumidity;
@@ -266,6 +267,14 @@ void addHandler()
                     doc["uv"] = weatherData.uv;
                     doc["condition"] = weatherData.condition;
                     doc["conditionCode"] = weatherData.conditionCode;
+                    doc["windSpeed"] = weatherData.windSpeed;
+                    doc["windDeg"] = weatherData.windDeg;
+                    doc["windGust"] = weatherData.windGust;
+                    doc["windDir"] = weatherData.windDir;
+                    doc["solarRadiation"] = weatherData.solarRadiation;
+                    doc["precipToday"] = weatherData.precipToday;
+                    doc["precipEvent"] = weatherData.precipEvent;
+                    doc["rainRate"] = weatherData.rainRate;
                     doc["lastUpdate"] = weatherData.lastUpdate;
                     String json;
                     serializeJson(doc, json);
@@ -308,6 +317,7 @@ void addHandler()
                     doc["windShowGust"] = weatherConfig.windShowGust;
                     doc["showRadiation"] = weatherConfig.showRadiation;
                     doc["radColor"] = weatherConfig.radColor;
+                    doc["radAutoColor"] = weatherConfig.radAutoColor;
                     doc["radDuration"] = weatherConfig.radDuration;
                     doc["showPrecip"] = weatherConfig.showPrecip;
                     doc["precipColor"] = weatherConfig.precipColor;
@@ -360,6 +370,7 @@ void addHandler()
                             if (doc.containsKey("windShowGust")) weatherConfig.windShowGust = doc["windShowGust"].as<bool>();
                             if (doc.containsKey("showRadiation")) weatherConfig.showRadiation = doc["showRadiation"].as<bool>();
                             if (doc.containsKey("radColor")) weatherConfig.radColor = doc["radColor"].as<uint32_t>();
+                            if (doc.containsKey("radAutoColor")) weatherConfig.radAutoColor = doc["radAutoColor"].as<bool>();
                             if (doc.containsKey("radDuration")) weatherConfig.radDuration = doc["radDuration"].as<uint8_t>();
                             if (doc.containsKey("showPrecip")) weatherConfig.showPrecip = doc["showPrecip"].as<bool>();
                             if (doc.containsKey("precipColor")) weatherConfig.precipColor = doc["precipColor"].as<uint32_t>();
@@ -612,6 +623,25 @@ void ServerManager_::setup()
                             request->send(200, "text/plain", "OK"); });
     mws.addHandler("/api/reboot", HTTP_ANY, [](AsyncWebServerRequest *request)
                    { request->send(200, "text/plain", "OK"); delay(200); ESP.restart(); });
+    // Diagnóstico NVS: entradas usadas/libres de la partición de ajustes (20 KB).
+    // Sirve para vigilar el margen y evitar que se llene (lo que corrompe la NVS).
+    mws.addHandler("/api/nvs", HTTP_GET, [](AsyncWebServerRequest *request)
+                   {
+                    nvs_stats_t st;
+                    esp_err_t err = nvs_get_stats(nullptr, &st);
+                    StaticJsonDocument<256> doc;
+                    if (err != ESP_OK) {
+                        doc["error"] = static_cast<int>(err);
+                    } else {
+                        doc["used"] = st.used_entries;
+                        doc["free"] = st.free_entries;
+                        doc["total"] = st.total_entries;
+                        doc["namespaces"] = st.namespace_count;
+                        doc["usedPct"] = st.total_entries
+                            ? (st.used_entries * 100.0 / st.total_entries) : 0.0;
+                    }
+                    String json; serializeJson(doc, json);
+                    request->send(200, "application/json", json); });
 
     if (isConnected)
     {

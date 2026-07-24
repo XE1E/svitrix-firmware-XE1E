@@ -310,8 +310,9 @@ void validateSettings()
     weatherConfig.uvDuration = clampValue(weatherConfig.uvDuration, (uint8_t)1, (uint8_t)60);
     weatherConfig.aqiComponentSecs = clampValue(weatherConfig.aqiComponentSecs, (uint8_t)2, (uint8_t)10);
 
-    // Weather update interval: 10-120 minutes
-    weatherConfig.updateInterval = clampValue(weatherConfig.updateInterval, (uint16_t)10, (uint16_t)120);
+    // Weather update interval: 1-120 minutes (1-5 min pensado para servidor
+    // propio sin límite de API; el firmware fija además un piso duro de 60 s).
+    weatherConfig.updateInterval = clampValue(weatherConfig.updateInterval, (uint16_t)1, (uint16_t)120);
 
     // Audio volume: 0-100
     audioConfig.soundVolume = clampValue(audioConfig.soundVolume, (uint8_t)0, (uint8_t)100);
@@ -565,6 +566,7 @@ void loadSettings()
     weatherConfig.windShowGust = Settings.getBool("WAPI_WGST", true);
     weatherConfig.showRadiation = Settings.getBool("WAPI_RAD", false);
     weatherConfig.radColor = Settings.getUInt("WAPI_RCOL", 0xF59E0B);
+    weatherConfig.radAutoColor = Settings.getBool("WAPI_RAUT", true);
     weatherConfig.radDuration = Settings.getUChar("WAPI_RDUR", 7);
     weatherConfig.showPrecip = Settings.getBool("WAPI_PRCP", false);
     weatherConfig.precipColor = Settings.getUInt("WAPI_PCCOL", 0x60A5FA);
@@ -701,6 +703,7 @@ void saveSettings()
     Settings.putBool("WAPI_WGST", weatherConfig.windShowGust);
     Settings.putBool("WAPI_RAD", weatherConfig.showRadiation);
     Settings.putUInt("WAPI_RCOL", weatherConfig.radColor);
+    Settings.putBool("WAPI_RAUT", weatherConfig.radAutoColor);
     Settings.putUChar("WAPI_RDUR", weatherConfig.radDuration);
     Settings.putBool("WAPI_PRCP", weatherConfig.showPrecip);
     Settings.putUInt("WAPI_PCCOL", weatherConfig.precipColor);
@@ -859,6 +862,7 @@ String exportSettings()
     doc["WAPI_WGST"] = weatherConfig.windShowGust;
     doc["WAPI_RAD"] = weatherConfig.showRadiation;
     doc["WAPI_RCOL"] = weatherConfig.radColor;
+    doc["WAPI_RAUT"] = weatherConfig.radAutoColor;
     doc["WAPI_RDUR"] = weatherConfig.radDuration;
     doc["WAPI_PRCP"] = weatherConfig.showPrecip;
     doc["WAPI_PCCOL"] = weatherConfig.precipColor;
@@ -1089,6 +1093,8 @@ bool importSettings(const char *json)
         weatherConfig.showRadiation = doc["WAPI_RAD"];
     if (doc.containsKey("WAPI_RCOL"))
         weatherConfig.radColor = doc["WAPI_RCOL"].as<uint32_t>();
+    if (doc.containsKey("WAPI_RAUT"))
+        weatherConfig.radAutoColor = doc["WAPI_RAUT"];
     if (doc.containsKey("WAPI_RDUR"))
         weatherConfig.radDuration = doc["WAPI_RDUR"];
     if (doc.containsKey("WAPI_PRCP"))

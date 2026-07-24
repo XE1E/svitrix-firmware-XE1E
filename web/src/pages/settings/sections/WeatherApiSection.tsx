@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "preact/hooks";
 import { useSettings } from "../../../context/SettingsContext";
-import { Select, Card, FormRow, Button, Toggle } from "../../../components/ui";
+import { Select, Card, FormRow, Button } from "../../../components/ui";
 import { getWeatherData, forceWeatherFetch, getRotation, saveRotation } from "../../../api/client";
 import { toast } from "../../../components/Toast";
 import { useT } from "../../../i18n";
@@ -33,6 +33,9 @@ export function WeatherApiSection() {
   ], [t]);
 
   const updateIntervals = useMemo(() => [
+    { value: 1, label: `1 ${t.intervals.minute}` },
+    { value: 2, label: `2 ${t.intervals.minutes}` },
+    { value: 5, label: `5 ${t.intervals.minutes}` },
     { value: 10, label: `10 ${t.intervals.minutes}` },
     { value: 15, label: `15 ${t.intervals.minutes}` },
     { value: 30, label: `30 ${t.intervals.minutes}` },
@@ -188,25 +191,6 @@ export function WeatherApiSection() {
           options={updateIntervals}
           onChange={(v) => updateWeatherConfig({ updateInterval: v as number })}
         />
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <p style={{ fontWeight: 600, margin: "4px 0 0" }}>{t.settings.weatherServerApps}</p>
-          <Toggle label={t.settings.windApp} checked={w.showWind}
-            onChange={(v) => updateWeatherConfig({ showWind: v })} />
-          {w.showWind && (
-            <Toggle label={t.settings.windShowGust} checked={w.windShowGust}
-              onChange={(v) => updateWeatherConfig({ windShowGust: v })} />
-          )}
-          <Toggle label={t.settings.radiationApp} checked={w.showRadiation}
-            onChange={(v) => updateWeatherConfig({ showRadiation: v })} />
-          <Toggle label={t.settings.precipApp} checked={w.showPrecip}
-            onChange={(v) => updateWeatherConfig({ showPrecip: v })} />
-          {w.showPrecip && (
-            <Toggle label={t.settings.precipShowRate} checked={w.precipShowRate}
-              onChange={(v) => updateWeatherConfig({ precipShowRate: v })} />
-          )}
-          <small class={styles.hint}>{t.settings.weatherServerAppsHint}</small>
-        </div>
 
         <FormRow>
           <Button variant="primary" onClick={handleSave} loading={saving}>

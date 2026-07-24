@@ -216,8 +216,9 @@ struct WeatherConfig {
     // App Radiación solar (W/m²) — separada del UV
     bool showRadiation;
     uint32_t radColor;
+    bool radAutoColor;            // color dinámico según nivel de radiación (como UV)
     uint8_t radDuration;
-    // App Precipitación (lluvia de hoy; opción de rotar la tasa mm/h)
+    // App Precipitación (lluvia por evento; opción de rotar la tasa mm/h)
     bool showPrecip;
     uint32_t precipColor;
     uint8_t precipDuration;
@@ -247,6 +248,7 @@ struct WeatherData {
     // Extras del servidor propio (no en WeatherAPI): 0 si la fuente no los da
     float solarRadiation;     // W/m²
     float precipToday;        // mm acumulados hoy (WeatherAPI: precip_mm)
+    float precipEvent;        // mm del evento de lluvia actual (extra: precip_event_mm)
     float rainRate;           // mm/h (extra)
     unsigned long lastUpdate; // millis() of last update
     bool valid;               // data available

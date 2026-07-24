@@ -7,6 +7,48 @@ Format based on [Keep a Changelog](https://keepachangelog.com/) and
 Releases prior to v0.4.0-beta.13 are documented in the
 [GitHub Releases](https://github.com/XE1E/svitrix-firmware-XE1E/releases).
 
+## [v0.4.0-beta.17] — 2026-07-24
+
+### Features
+
+- **apps:** the Wind, Solar-radiation and Precipitation apps now use their own
+  **animated icons** (`/ICONS/17071`, `56958`, `3527`) and long values scroll
+  (Moon-style marquee) instead of being clipped.
+  - **Wind** shows direction + speed on a **single line** and, with *Rotate gust*
+    on, appends the gust (` R<gust>`) to that same line (e.g. `W 5 R 4`) — it
+    scrolls rather than swapping frames.
+  - **Precipitation** shows the **current rain event** (mm) on a single line
+    (was today's total), appending the rate (`<n>/h`) when enabled
+    (e.g. `0.0mm 0.0/h`).
+  - Each app's on-screen time is its per-app duration in the Apps tab.
+- **apps:** Solar radiation gains an **Auto color** option (like UV) — the value
+  is tinted by intensity (blue → amber → orange → red); defaults on.
+- **apps:** Wind, Solar-radiation and Precipitation are now first-class apps in
+  the **Apps tab** catalog (addable, with their animated default icons), and
+  their per-app options are configured inline there just like UV / ICA / Moon:
+  *Auto color* (radiation), *Rotate gust* (wind), *Rotate rain rate* (precip).
+  The duplicate block under Settings → Weather API was removed (only the own-
+  server URL remains there).
+- **weather:** faster update intervals (1 / 2 / 5 min) are now selectable —
+  useful with an own server (no API rate limit) so the clock tracks
+  fast-changing values (e.g. solar radiation at dusk) instead of lagging up to
+  10 min behind.
+
+### Bug Fixes
+
+- **weather:** the update-interval validation floor was 10 min, so the new
+  1 / 2 / 5-min options were silently reset to 10 on save/reboot. The floor is
+  now 1 min (the fetcher keeps its hard 60 s minimum).
+
+### Other Changes
+
+- **server:** the own-server adapter (`/api/svitrix`) now also exposes
+  `current.precip_event_mm` (current rain-event accumulation) alongside
+  `solar_radiation` and `rain_rate_mm`.
+- **web:** `/api/weather/data` now also returns the wind, solar-radiation and
+  precipitation fields (they were parsed and displayed but missing from the
+  debug endpoint).
+
 ## [v0.4.0-beta.16] — 2026-07-23
 
 ### Features

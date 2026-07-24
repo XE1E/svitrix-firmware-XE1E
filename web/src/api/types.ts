@@ -192,6 +192,7 @@ export interface WeatherConfig {
   // App Radiación solar
   showRadiation: boolean;
   radColor: number;
+  radAutoColor: boolean;
   radDuration: number;
   // App Precipitación
   showPrecip: boolean;

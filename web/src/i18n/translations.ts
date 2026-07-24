@@ -103,6 +103,7 @@ export const translations = {
       windApp: "Viento (dirección y velocidad)",
       windShowGust: "Rotar ráfaga",
       radiationApp: "Radiación solar",
+      radAutoColor: "Color automático",
       precipApp: "Precipitación",
       precipShowRate: "Rotar tasa de lluvia",
     },
@@ -201,6 +202,8 @@ export const translations = {
       uvIndex: "Índice UV",
       autoColor: "Auto",
       autoColorHint: "El color automático cambia según el nivel (verde a amarillo a naranja a rojo).",
+      windShowGust: "Rotar ráfaga",
+      precipShowRate: "Rotar tasa de lluvia",
       aqiShowComponents: "Mostrar componentes",
       aqiComponentSecs: "Seg. por componente",
       saveWeatherApps: "Guardar Apps del Clima",
@@ -502,6 +505,7 @@ export const translations = {
 
     // Time intervals
     intervals: {
+      minute: "minuto",
       minutes: "minutos",
     },
   },
@@ -610,6 +614,7 @@ export const translations = {
       windApp: "Wind (direction & speed)",
       windShowGust: "Rotate gust",
       radiationApp: "Solar radiation",
+      radAutoColor: "Auto color",
       precipApp: "Precipitation",
       precipShowRate: "Rotate rain rate",
     },
@@ -708,6 +713,8 @@ export const translations = {
       uvIndex: "UV Index",
       autoColor: "Auto",
       autoColorHint: "Auto color changes based on level (green to yellow to orange to red).",
+      windShowGust: "Rotate gust",
+      precipShowRate: "Rotate rain rate",
       aqiShowComponents: "Show components",
       aqiComponentSecs: "Sec. per component",
       saveWeatherApps: "Save Weather Apps",
@@ -1009,6 +1016,7 @@ export const translations = {
 
     // Time intervals
     intervals: {
+      minute: "minute",
       minutes: "minutes",
     },
   },
