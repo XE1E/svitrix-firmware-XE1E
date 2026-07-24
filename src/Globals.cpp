@@ -310,8 +310,9 @@ void validateSettings()
     weatherConfig.uvDuration = clampValue(weatherConfig.uvDuration, (uint8_t)1, (uint8_t)60);
     weatherConfig.aqiComponentSecs = clampValue(weatherConfig.aqiComponentSecs, (uint8_t)2, (uint8_t)10);
 
-    // Weather update interval: 10-120 minutes
-    weatherConfig.updateInterval = clampValue(weatherConfig.updateInterval, (uint16_t)10, (uint16_t)120);
+    // Weather update interval: 1-120 minutes (1-5 min pensado para servidor
+    // propio sin límite de API; el firmware fija además un piso duro de 60 s).
+    weatherConfig.updateInterval = clampValue(weatherConfig.updateInterval, (uint16_t)1, (uint16_t)120);
 
     // Audio volume: 0-100
     audioConfig.soundVolume = clampValue(audioConfig.soundVolume, (uint8_t)0, (uint8_t)100);
