@@ -501,7 +501,7 @@ Manage alarm-clock entries and reminders. Works without WiFi thanks to the RTC.
 
 ## Weather
 
-Configure and query outdoor weather data (requires an API key). Weather apps appear in the rotation according to the `showOutdoorTemp`, `showOutdoorHumidity`, `showPressure`, `showAirQuality` and `showUV` switches.
+Configure and query outdoor weather data. The source can be either WeatherAPI.com (via `apiKey`) or your own server (via `serverUrl`): if `serverUrl` is not empty, the clock queries that URL instead of WeatherAPI. The server must return the WeatherAPI `current.json` shape (e.g. `https://clima.xe1e.net/api/svitrix`), with optional extras `solar_radiation`, `precip_event_mm` and `rain_rate_mm`. Weather apps (Outdoor temp, Humidity, Pressure, Air quality, UV, Wind, Radiation, Precipitation) are added and ordered from the Apps tab (rotation).
 
 | HTTP URL                          | Payload/Body | HTTP Method | Description |
 | --------------------------------- | ------------ | ----------- | ----------- |
@@ -517,12 +517,13 @@ Configure and query outdoor weather data (requires an API key). Weather apps app
 | Key | Type | Description |
 | --- | ---- | ----------- |
 | `apiKey` | string | Weather provider API key. |
+| `serverUrl` | string | Own server. If not empty, the clock queries this URL instead of WeatherAPI. Must return the WeatherAPI `current.json` shape (+ optional extras `solar_radiation`, `precip_event_mm`, `rain_rate_mm`). Empty = use WeatherAPI.com. |
 | `locationType` | integer | Location type (0 = city, 1 = coordinates, 2 = station ID). |
 | `city` | string | City name. |
 | `latitude` | float | Latitude. |
 | `longitude` | float | Longitude. |
 | `stationId` | string | Weather station ID. |
-| `updateInterval` | integer | Update interval in minutes. |
+| `updateInterval` | integer | Update interval in minutes (1–120; UI options 1/2/5/10/15/30/60). With an own server, keep it low (1–2) to track fast-changing values. |
 | `showOutdoorTemp` | boolean | Show the outdoor temperature app. |
 | `showOutdoorHumidity` | boolean | Show the outdoor humidity app. |
 | `showPressure` | boolean | Show the pressure app. |
@@ -544,8 +545,22 @@ Configure and query outdoor weather data (requires an API key). Weather apps app
 | `pressureDuration` | integer | Pressure app duration (seconds). |
 | `aqiDuration` | integer | AQI app duration (seconds). |
 | `uvDuration` | integer | UV index app duration (seconds). |
+| `showWind` | boolean | Show wind app. |
+| `windColor` | integer | Wind color (RGB integer). |
+| `windDuration` | integer | Wind app duration (seconds). |
+| `windShowGust` | boolean | Append the gust (` R<n>`) to the wind line (e.g. `W 5 R4`). |
+| `showRadiation` | boolean | Show solar-radiation app (W/m²). |
+| `radColor` | integer | Radiation color (RGB integer). |
+| `radAutoColor` | boolean | Auto-color radiation by intensity (like UV). |
+| `radDuration` | integer | Radiation app duration (seconds). |
+| `showPrecip` | boolean | Show precipitation app. |
+| `precipColor` | integer | Precipitation color (RGB integer). |
+| `precipDuration` | integer | Precipitation app duration (seconds). |
+| `precipShowRate` | boolean | Append the rain rate (` <n>/h`) to the line (e.g. `0.0mm 0.0/h`). |
 
-`GET /api/weather/data` returns the current data: `valid`, `outdoorTemp`, `outdoorHumidity`, `pressure`, `aqi`, `uv`, `condition`, `conditionCode`, `lastUpdate`.
+`GET /api/weather/data` returns the current data: `valid`, `outdoorTemp`, `outdoorHumidity`, `pressure`, `aqi`, `uv`, `condition`, `conditionCode`, `windSpeed` (km/h), `windDeg`, `windGust` (km/h), `windDir`, `solarRadiation` (W/m²), `precipToday` (mm), `precipEvent` (current-event mm), `rainRate` (mm/h), `lastUpdate` (millis), and `failStreak` (consecutive network fetch failures; 0 = last OK).
+
+> **Self-recovery:** if the clock goes `max(15 min, 5× the interval)` without a successful fetch and WiFi is still connected, it reboots itself to reset the network stack (covers a wedged TLS socket). It never reboots in normal operation; `failStreak` and `/api/nvs` let you watch its health.
 
 
 ## Change Settings
@@ -716,6 +731,14 @@ System endpoints and direct access to the LittleFS filesystem (icons, melodies, 
 | HTTP URL               | Payload/Body | HTTP Method |
 |------------------------|--------------|-------------|
 | `http://[IP]/version`  | -            | GET         |
+
+#### NVS diagnostics (settings partition)
+
+NVS partition usage (20 KB), where all settings live. Useful to watch the margin: if it fills up, NVS corrupts and settings are lost (the clock falls into AP mode). Watch that `usedPct` stays under ~85%.
+
+| HTTP URL              | Payload/Body | HTTP Method | Description |
+|-----------------------|--------------|-------------|-------------|
+| `http://[IP]/api/nvs` | -            | GET         | Returns `{used, free, total, namespaces, usedPct}` (32-byte entries) |
 
 #### Apply Network/Broker Configuration
 

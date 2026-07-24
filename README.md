@@ -43,12 +43,14 @@ SVITRIX-XE1E es un fork de [SVITRIX](https://github.com/svitrix/svitrix-firmware
 - **Temperatura y Humedad** — lecturas internas de sensores I2C (SHT3x, BME280, etc.)
 - **Batería** — porcentaje de carga con icono vertical dinámico (se llena por nivel y cambia de color: verde, amarillo, naranja, rojo)
 - **Luna (NUEVO)** — fase lunar con iconos de fase diseñados (set LaMetric, uno por fase) sobre fondo de estrellas azules; texto rotativo configurable (nombre de fase, edad, % iluminación) y hemisferio norte/sur
-- **Apps de Clima (NUEVO)** — temperatura exterior, humedad, presión y calidad del aire vía [WeatherAPI.com](https://weatherapi.com)
-  - Ubicación configurable (nombre de ciudad, coordenadas, auto-detectar por IP, o ID de estación)
-  - Iconos de condición climática (soleado, nublado, lluvioso)
-  - Configuración de color y duración por app
-  - La app de **Calidad del Aire** desglosa los contaminantes fuera de rango (PM2.5, O3…), cada uno en el color de su nivel de severidad
-  - Iconos animados de LaMetric desde la carpeta `/ICONS/`
+- **Apps de Clima (NUEVO)** — temperatura exterior, humedad, presión, calidad del aire, **UV**, **Viento**, **Radiación solar** y **Precipitación**
+  - **Fuente:** [WeatherAPI.com](https://weatherapi.com) **o tu propio servidor** (campo *Servidor propio (URL)*; debe devolver la forma WeatherAPI `current.json`, con extras `solar_radiation`, `precip_event_mm`, `rain_rate_mm`)
+  - Ubicación configurable (nombre de ciudad, coordenadas, auto-detectar por IP, o ID de estación); intervalo 1–60 min
+  - Iconos de condición y **iconos animados** por app desde `/ICONS/`
+  - Configuración de color y duración por app; **color automático** por nivel (UV, ICA, Radiación)
+  - **Viento** (dirección+velocidad, ráfaga opcional) y **Precipitación** (evento + tasa opcional) en una sola línea que se desplaza
+  - La app de **Calidad del Aire** desglosa los contaminantes fuera de rango (PM2.5, O3…), cada uno en el color de su nivel
+  - **Fiabilidad:** si el fetch se atasca, el reloj se auto‑recupera (reinicio controlado) para funcionar sin atención
 
 ### Conectividad e Integración
 - **API MQTT y HTTP** — control total sobre apps, notificaciones, configuración y pantalla
@@ -126,14 +128,21 @@ curl -X POST http://<ip>/api/settings \
   -d '{"BRI": 120, "TMODE": 1, "ATIME": 5}'
 ```
 
-**Configurar clima:**
+**Configurar clima (WeatherAPI):**
 
 ```bash
 curl -X POST http://<ip>/api/weather \
   -d '{"apiKey": "tu_clave", "locationType": 0, "city": "Ciudad de México", "showOutdoorTemp": true}'
 ```
 
-**Obtener datos del clima actual:**
+**Configurar clima (servidor propio):**
+
+```bash
+curl -X POST http://<ip>/api/weather \
+  -d '{"serverUrl": "https://clima.xe1e.net/api/svitrix", "updateInterval": 2}'
+```
+
+**Obtener datos del clima actual** (incluye `windSpeed`, `solarRadiation`, `precipEvent`, `failStreak`…):
 
 ```bash
 curl http://<ip>/api/weather/data

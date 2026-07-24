@@ -188,6 +188,52 @@ Reemplaza:
 
 ---
 
+## 5B. Clima desde tu Servidor Propio (Recomendado XE1E)
+
+En lugar de WeatherAPI.com, el reloj puede tomar el clima de **tu propio
+servidor** (la estación XE1E). Ventajas: datos reales de tu estación, sin límites
+de llamadas y con actualización más rápida.
+
+### Configurar la fuente
+
+1. Entra a **Ajustes → Weather API**.
+2. En **«Servidor propio (URL)»** pon:
+   ```
+   https://clima.xe1e.net/api/svitrix
+   ```
+3. Deja la **API Key vacía** (si pones URL propia, tiene prioridad sobre WeatherAPI).
+4. **Intervalo de actualización:** ponlo bajo (**1 o 2 min**) para seguir de cerca
+   valores que cambian rápido (p. ej. la radiación solar al anochecer).
+5. Guarda. Puedes forzar una lectura con **«Actualizar ahora»**.
+
+> El endpoint devuelve la forma WeatherAPI `current.json` con extras
+> (`solar_radiation`, `precip_event_mm`, `rain_rate_mm`). Si dejas la URL vacía,
+> el reloj vuelve a usar WeatherAPI.com.
+
+### Agregar las apps de clima
+
+Desde la pestaña **Apps** (rotación) agrega y ordena las que quieras. Además de
+las clásicas (Temperatura, Humedad, Presión, ICA, UV), hay tres nuevas, cada una
+con su opción en línea (igual que UV/Luna):
+
+| App | Muestra | Opción en línea |
+|-----|---------|-----------------|
+| **Viento** | dirección + velocidad (km/h), una sola línea | **Rotar ráfaga**: agrega ` R<n>` (p. ej. `W 5 R4`) |
+| **Radiación** | radiación solar (W/m²) | **Color automático**: tinta el valor por intensidad (como UV) |
+| **Precipitación** | lluvia del evento (mm), una sola línea | **Rotar tasa**: agrega ` <n>/h` (p. ej. `0.0mm 0.0/h`) |
+
+El tiempo en pantalla de cada app lo controla su **slider de duración** en la
+pestaña Apps.
+
+### Fiabilidad (funciona sin atención)
+
+Si alguna vez el fetch se atasca (`max(15 min, 5× el intervalo)` sin éxito) con
+WiFi conectado, el reloj **se reinicia solo** para recuperarse. Para vigilar la
+salud: `http://[IP]/api/weather/data` (campo `failStreak`, debe estar en 0) y
+`http://[IP]/api/nvs` (uso de la partición de ajustes; que no pase ~85 %).
+
+---
+
 ## 6. Configuraciones de Clima Recomendadas
 
 Agrega estas fuentes en el Data Fetcher (`http://[IP]/datafetcher`):

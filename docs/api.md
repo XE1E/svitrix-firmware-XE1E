@@ -501,7 +501,14 @@ Gestiona las alarmas del despertador y recordatorios. Funciona sin WiFi gracias 
 
 ## Clima
 
-Configura y consulta los datos del clima exterior (requiere clave API). Las apps de clima se muestran en la rotación según los conmutadores `showOutdoorTemp`, `showOutdoorHumidity`, `showPressure`, `showAirQuality` y `showUV`.
+Configura y consulta los datos del clima exterior. La fuente puede ser
+**WeatherAPI.com** (con `apiKey`) **o tu propio servidor** (con `serverUrl`): si
+`serverUrl` no está vacío, el reloj consulta esa URL en lugar de WeatherAPI. Debe
+devolver la misma forma de WeatherAPI `current.json` (p. ej.
+`https://clima.xe1e.net/api/svitrix`), con campos extra opcionales
+(`solar_radiation`, `precip_event_mm`, `rain_rate_mm`). Las apps de clima
+(Temperatura, Humedad, Presión, ICA, UV, **Viento**, **Radiación**,
+**Precipitación**) se agregan/ordenan desde la pestaña Apps (rotación).
 
 | URL HTTP                          | Payload/Body | Método HTTP | Descripción |
 | --------------------------------- | ------------ | ----------- | ----------- |
@@ -516,13 +523,14 @@ Configura y consulta los datos del clima exterior (requiere clave API). Las apps
 
 | Clave | Tipo | Descripción |
 | --- | ---- | ----------- |
-| `apiKey` | string | Clave API del proveedor del clima. |
+| `apiKey` | string | Clave API de WeatherAPI.com (si no usas servidor propio). |
+| `serverUrl` | string | **Servidor propio.** Si no está vacío, el reloj consulta esta URL en vez de WeatherAPI. Debe devolver la forma WeatherAPI `current.json` (+ extras opcionales `solar_radiation`, `precip_event_mm`, `rain_rate_mm`). Vacío = usar WeatherAPI.com. |
 | `locationType` | integer | Tipo de ubicación (0 = ciudad, 1 = coordenadas, 2 = ID de estación). |
 | `city` | string | Nombre de la ciudad. |
 | `latitude` | float | Latitud. |
 | `longitude` | float | Longitud. |
 | `stationId` | string | ID de la estación meteorológica. |
-| `updateInterval` | integer | Intervalo de actualización en minutos. |
+| `updateInterval` | integer | Intervalo de actualización en minutos (1–120; opciones en UI: 1/2/5/10/15/30/60). Con servidor propio conviene bajo (1–2) para seguir valores que cambian rápido. |
 | `showOutdoorTemp` | boolean | Mostrar app de temperatura exterior. |
 | `showOutdoorHumidity` | boolean | Mostrar app de humedad exterior. |
 | `showPressure` | boolean | Mostrar app de presión. |
@@ -544,8 +552,30 @@ Configura y consulta los datos del clima exterior (requiere clave API). Las apps
 | `pressureDuration` | integer | Duración de la app de presión (segundos). |
 | `aqiDuration` | integer | Duración de la app de AQI (segundos). |
 | `uvDuration` | integer | Duración de la app de índice UV (segundos). |
+| `showWind` | boolean | Mostrar app de viento. |
+| `windColor` | integer | Color del viento (entero RGB). |
+| `windDuration` | integer | Duración de la app de viento (segundos). |
+| `windShowGust` | boolean | Agregar la ráfaga (` R<n>`) a la línea del viento (p. ej. `W 5 R4`). |
+| `showRadiation` | boolean | Mostrar app de radiación solar (W/m²). |
+| `radColor` | integer | Color de la radiación (entero RGB). |
+| `radAutoColor` | boolean | Colorear automáticamente la radiación según intensidad (como UV). |
+| `radDuration` | integer | Duración de la app de radiación (segundos). |
+| `showPrecip` | boolean | Mostrar app de precipitación. |
+| `precipColor` | integer | Color de la precipitación (entero RGB). |
+| `precipDuration` | integer | Duración de la app de precipitación (segundos). |
+| `precipShowRate` | boolean | Agregar la tasa de lluvia (` <n>/h`) a la línea (p. ej. `0.0mm 0.0/h`). |
 
-`GET /api/weather/data` devuelve los datos actuales: `valid`, `outdoorTemp`, `outdoorHumidity`, `pressure`, `aqi`, `uv`, `condition`, `conditionCode`, `lastUpdate`.
+`GET /api/weather/data` devuelve los datos actuales:
+`valid`, `outdoorTemp`, `outdoorHumidity`, `pressure`, `aqi`, `uv`,
+`condition`, `conditionCode`, `windSpeed` (km/h), `windDeg`, `windGust` (km/h),
+`windDir` (rumbo), `solarRadiation` (W/m²), `precipToday` (mm), `precipEvent`
+(mm del evento), `rainRate` (mm/h), `lastUpdate` (millis) y `failStreak`
+(fallos de red consecutivos del fetch; 0 = último OK).
+
+> **Auto-recuperación:** si el reloj pasa `max(15 min, 5× el intervalo)` sin un
+> fetch exitoso y el WiFi sigue conectado, se reinicia solo para limpiar el
+> stack de red (cubre atascos del socket TLS). En operación normal no reinicia;
+> `failStreak` y `/api/nvs` sirven para vigilar la salud.
 
 
 ## Cambiar Configuración
@@ -716,6 +746,16 @@ Endpoints de sistema y acceso directo al sistema de archivos LittleFS (iconos, m
 | URL HTTP               | Payload/Body | Método HTTP |
 |------------------------|--------------|-------------|
 | `http://[IP]/version`  | -            | GET         |
+
+#### Diagnóstico NVS (partición de ajustes)
+
+Uso de la partición NVS (20 KB) donde se guardan todos los ajustes. Útil para
+vigilar el margen: si se llena, la NVS se corrompe y se pierden ajustes (el reloj
+cae en modo AP). Vigilar que `usedPct` no pase ~85 %.
+
+| URL HTTP              | Payload/Body | Método HTTP | Descripción |
+|-----------------------|--------------|-------------|-------------|
+| `http://[IP]/api/nvs` | -            | GET         | `{used, free, total, namespaces, usedPct}` (entradas de 32 B) |
 
 #### Aplicar Configuración de Red/Broker
 

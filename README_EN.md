@@ -43,12 +43,14 @@ SVITRIX-XE1E is a fork of [SVITRIX](https://github.com/svitrix/svitrix-firmware)
 - **Temperature & Humidity** — indoor readings from I2C sensors (SHT3x, BME280, etc.)
 - **Battery** — charge percentage with a dynamic vertical icon (fills by level and changes color: green, yellow, orange, red)
 - **Moon (NEW)** — lunar phase using designed phase icons (LaMetric set, one per phase) over a blue starfield background; configurable rotating text (phase name, age, % illumination) and northern/southern hemisphere
-- **Weather Apps (NEW)** — outdoor temperature, humidity, pressure, and air quality via [WeatherAPI.com](https://weatherapi.com)
-  - Configurable location (city name, coordinates, auto-detect by IP, or station ID)
-  - Weather condition icons (sunny, cloudy, rainy)
-  - Per-app color and duration settings
+- **Weather Apps (NEW)** — outdoor temperature, humidity, pressure, air quality, **UV**, **Wind**, **Solar radiation**, and **Precipitation**
+  - **Source:** [WeatherAPI.com](https://weatherapi.com) **or your own server** (*Own server (URL)* field; must return the WeatherAPI `current.json` shape, with extras `solar_radiation`, `precip_event_mm`, `rain_rate_mm`)
+  - Configurable location (city name, coordinates, auto-detect by IP, or station ID); 1–60 min interval
+  - Weather condition icons and **animated per-app icons** from `/ICONS/`
+  - Per-app color and duration settings; **auto-color** by level (UV, AQI, Radiation)
+  - **Wind** (direction+speed, optional gust) and **Precipitation** (event + optional rate) on a single scrolling line
   - The **Air Quality** app breaks down the out-of-range pollutants (PM2.5, O3…), each in its severity-level color
-  - Animated LaMetric icons from `/ICONS/` folder
+  - **Reliability:** if the fetch gets stuck, the clock self-recovers (controlled reboot) so it keeps working unattended
 
 ### Connectivity & Integration
 - **MQTT & HTTP API** — full control over apps, notifications, settings, and display
@@ -126,14 +128,21 @@ curl -X POST http://<ip>/api/settings \
   -d '{"BRI": 120, "TMODE": 1, "ATIME": 5}'
 ```
 
-**Configure weather:**
+**Configure weather (WeatherAPI):**
 
 ```bash
 curl -X POST http://<ip>/api/weather \
   -d '{"apiKey": "your_key", "locationType": 0, "city": "Mexico City", "showOutdoorTemp": true}'
 ```
 
-**Get current weather data:**
+**Configure weather (own server):**
+
+```bash
+curl -X POST http://<ip>/api/weather \
+  -d '{"serverUrl": "https://clima.xe1e.net/api/svitrix", "updateInterval": 2}'
+```
+
+**Get current weather data** (includes `windSpeed`, `solarRadiation`, `precipEvent`, `failStreak`…):
 
 ```bash
 curl http://<ip>/api/weather/data
