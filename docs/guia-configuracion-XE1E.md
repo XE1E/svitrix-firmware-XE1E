@@ -232,6 +232,17 @@ WiFi conectado, el reloj **se reinicia solo** para recuperarse. Para vigilar la
 salud: `http://[IP]/api/weather/data` (campo `failStreak`, debe estar en 0) y
 `http://[IP]/api/nvs` (uso de la partición de ajustes; que no pase ~85 %).
 
+### Ahorro en modo nocturno
+
+Durante el **modo nocturno** (ver §15.2) solo se muestra el reloj — las apps de
+clima y las fuentes personalizadas quedan ocultas. Por eso, mientras el modo
+nocturno está activo, el reloj **deja de consultar el servidor** por completo (no
+tiene caso pedir datos que no se van a mostrar). Además, la auto‑recuperación se
+**pausa** en ese lapso, así que el reloj **no se reinicia de madrugada**. Al
+terminar la ventana nocturna, el reloj **vuelve a consultar de inmediato**, de modo
+que las apps de clima reaparecen con dato **fresco**. Es automático; no hay nada
+que configurar.
+
 ---
 
 ## 6. Configuraciones de Clima Recomendadas
