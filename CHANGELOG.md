@@ -7,6 +7,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/) and
 Releases prior to v0.4.0-beta.13 are documented in the
 [GitHub Releases](https://github.com/XE1E/svitrix-firmware-XE1E/releases).
 
+## [v0.4.0-beta.19] — 2026-07-24
+
+### Features
+
+- **weather:** the clock now **pauses all data fetches while night mode is
+  active**. During night mode only the clock is shown (weather/custom apps are
+  hidden), so polling the server is wasted work. When night mode ends, the
+  pending fetch fires immediately, so the weather apps reappear with fresh data.
+  The self-recovery timer is frozen during night mode too, so the clock never
+  reboots overnight for "no successful fetch."
+
 ## [v0.4.0-beta.18] — 2026-07-24
 
 ### Bug Fixes
