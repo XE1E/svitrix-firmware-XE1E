@@ -577,6 +577,12 @@ devolver la misma forma de WeatherAPI `current.json` (p. ej.
 > stack de red (cubre atascos del socket TLS). En operación normal no reinicia;
 > `failStreak` y `/api/nvs` sirven para vigilar la salud.
 
+> **Modo nocturno:** mientras el modo nocturno está activo, el reloj **pausa
+> todos los fetches** (clima + fuentes personalizadas) — solo se muestra el
+> reloj — y congela la auto-recuperación (no se reinicia de madrugada). Al
+> terminar la ventana nocturna, el fetch pendiente sale de inmediato, así que las
+> apps reaparecen con dato fresco.
+
 
 ## Cambiar Configuración
 

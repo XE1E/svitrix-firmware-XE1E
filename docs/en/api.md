@@ -562,6 +562,8 @@ Configure and query outdoor weather data. The source can be either WeatherAPI.co
 
 > **Self-recovery:** if the clock goes `max(15 min, 5× the interval)` without a successful fetch and WiFi is still connected, it reboots itself to reset the network stack (covers a wedged TLS socket). It never reboots in normal operation; `failStreak` and `/api/nvs` let you watch its health.
 
+> **Night mode:** while night mode is active the clock **pauses all fetches** (weather + custom sources) — only the clock is shown — and freezes the self-recovery timer (it won't reboot overnight). When the night window ends, the pending fetch fires immediately, so the weather apps reappear with fresh data.
+
 
 ## Change Settings
 
