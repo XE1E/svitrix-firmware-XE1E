@@ -1064,9 +1064,9 @@ void RadiationApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_
 }
 
 // ── PrecipApp ──────────────────────────────────────────────────────
-/// App de precipitación: lluvia del EVENTO actual (mm) fija; si precipShowRate,
-/// rota un cuadro con la tasa de lluvia (mm/h). Ícono animado /ICONS/3527.gif
-/// (fallback icon_rainy).
+/// App de precipitación: lluvia acumulada de HOY (mm, se reinicia a medianoche)
+/// fija; si precipShowRate, añade la tasa de lluvia actual (mm/h). Ícono animado
+/// /ICONS/3527.gif (fallback icon_rainy).
 void PrecipApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, int16_t y, GifPlayer *gifPlayer)
 {
     (void)state;
@@ -1075,13 +1075,13 @@ void PrecipApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x
 
     applyNativeAppColor(weatherConfig.precipColor, "Precip");
 
-    // Una sola línea: "<evento>mm" y, si precipShowRate, " <tasa>/h" al final.
+    // Una sola línea: "<hoy>mm" y, si precipShowRate, " <tasa>/h" al final.
     // Se desplaza (marquee) cuando no cabe; el tiempo en pantalla lo da la
     // duración de la app en la rotación.
     String txt;
     if (weatherData.valid)
     {
-        txt = String(weatherData.precipEvent, 1) + "mm";
+        txt = String(weatherData.precipToday, 1) + "mm";
         if (weatherConfig.precipShowRate)
             txt += " " + String(weatherData.rainRate, 1) + "/h";
     }

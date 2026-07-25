@@ -84,14 +84,40 @@ void DataFetcher_::tick()
 {
     unsigned long now = millis();
 
+    // El reloj es USB (enchufado): mantener el WiFi SIN ahorro de energía evita
+    // que la asociación se ponga "vieja" tras horas sin tráfico (la noche entera
+    // sin fetches), que es lo que hacía colgar el primer fetch al volver. Se
+    // aplica una vez tras conectar y se re-aplica tras cada reconnect.
+    if (!wifiKeepAwake_ && WiFi.status() == WL_CONNECTED)
+    {
+        WiFi.setSleep(false);
+        wifiKeepAwake_ = true;
+    }
+
     // En modo nocturno se pausan TODOS los fetches (clima + fuentes): solo se ve
     // el reloj. Además se congela el reloj de auto-recuperación (no reiniciar de
-    // noche por "sin fetch exitoso"). Al terminar la noche, tick() reanuda y el
-    // fetch pendiente sale de inmediato (queda 'due').
+    // noche por "sin fetch exitoso").
     if (isNightModeActiveNow())
     {
         lastWeatherSuccessMs_ = now;
+        wasNightMode_ = true;
         return;
+    }
+
+    // Al SALIR del modo nocturno: tras horas sin tráfico el enlace puede estar
+    // muerto aunque WiFi.status() diga conectado. Se re-asocia el WiFi y se
+    // programa el primer fetch ~5 s después (enlace fresco), en vez de esperar a
+    // que la auto-recuperación reinicie a los 15 min.
+    if (wasNightMode_)
+    {
+        wasNightMode_ = false;
+        DEBUG_PRINTLN(F("DataFetcher: fin de modo nocturno; refrescando WiFi"));
+        WiFi.reconnect();
+        wifiKeepAwake_ = false;       // re-aplica setSleep(false) tras reasociar
+        softReconnectDone_ = false;   // permite una reconexión suave si el 1er fetch falla
+        lastWeatherFetch_ = now;      // no dispares por intervalo aún
+        weatherRetryAt_ = now + 5000; // primer intento ~5 s tras reasociar
+        lastWeatherSuccessMs_ = now;  // reinicia el reloj de auto-recuperación
     }
 
     // Weather API fetch (synchronous; blocks the loop ~2s on success).
@@ -108,6 +134,19 @@ void DataFetcher_::tick()
         unsigned long staleLimit = weatherInterval * 5;
         if (staleLimit < WEATHER_STALE_FLOOR_MS)
             staleLimit = WEATHER_STALE_FLOOR_MS;
+
+        // Recuperación SUAVE antes del reinicio: tras varios fallos de red seguidos
+        // (~3 min con el retry de 60 s), intenta re-asociar el WiFi UNA vez. Si
+        // recupera, se evita el reinicio; si no, la comprobación de abajo reinicia.
+        if (weatherFailStreak_ >= 3 && !softReconnectDone_ && WiFi.status() == WL_CONNECTED)
+        {
+            DEBUG_PRINTLN(F("DataFetcher: fallos seguidos; WiFi.reconnect() suave antes de reiniciar"));
+            WiFi.reconnect();
+            wifiKeepAwake_ = false;
+            softReconnectDone_ = true;
+            weatherRetryAt_ = now + 5000; // reintenta pronto tras reasociar
+        }
+
         if ((now - lastWeatherSuccessMs_) > staleLimit && WiFi.status() == WL_CONNECTED)
         {
             DEBUG_PRINTF("DataFetcher: %lu ms sin clima fresco con WiFi OK; "
@@ -795,6 +834,7 @@ void DataFetcher_::fetchWeather()
 
     weatherRetryAt_ = 0;
     weatherFailStreak_ = 0;           // fetch OK → limpia la racha (diagnóstico)
+    softReconnectDone_ = false;       // fetch OK → habilita otra reconexión suave si vuelve a fallar
     lastWeatherSuccessMs_ = millis(); // fetch OK → reinicia el reloj de auto-recuperación
     DEBUG_PRINTF("DataFetcher: weather updated - %.1f%s, %s, AQI=%d, UV=%.1f",
                  weatherData.outdoorTemp, timeConfig.isCelsius ? "C" : "F",

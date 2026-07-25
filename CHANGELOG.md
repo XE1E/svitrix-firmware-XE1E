@@ -7,6 +7,27 @@ Format based on [Keep a Changelog](https://keepachangelog.com/) and
 Releases prior to v0.4.0-beta.13 are documented in the
 [GitHub Releases](https://github.com/XE1E/svitrix-firmware-XE1E/releases).
 
+## [v0.4.0-beta.20] — 2026-07-25
+
+### Bug Fixes
+
+- **weather:** the clock now **syncs immediately when night mode ends** and
+  **reboots far less often**. After a whole night with no fetches the WiFi
+  association could go stale (`WiFi.status()` still "connected" but the socket
+  dead), so the first morning fetch hung until the 15‑min self‑recovery reboot —
+  and the same stuck‑fetch reboot also fired a few times during the day. Fixes:
+  (1) `WiFi.setSleep(false)` (the clock is USB‑powered) so the link never idles
+  into that stale state; (2) on the night→day transition it re‑associates
+  (`WiFi.reconnect()`) and schedules the first fetch ~5 s later on a fresh link;
+  (3) a **soft `WiFi.reconnect()`** after ~3 consecutive failed fetches, so a
+  full reboot is now a last resort instead of the primary recovery.
+
+### Other Changes
+
+- **apps:** the Precipitation app now shows **today's accumulated rain**
+  (`precip_mm`, resets at midnight) instead of the current rain event, still
+  appending the rate (`<n>/h`) when enabled.
+
 ## [v0.4.0-beta.19] — 2026-07-24
 
 ### Features

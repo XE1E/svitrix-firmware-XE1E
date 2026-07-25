@@ -34,6 +34,11 @@ class DataFetcher_
                                              // (0 = ninguno aún; base para auto-recuperación)
     uint16_t weatherFailStreak_ = 0;         // fallos de RED consecutivos (solo diagnóstico;
                                              // se resetea en cada éxito)
+    bool wasNightMode_ = false;              // ¿el tick anterior estaba en modo nocturno?
+                                             // (para detectar la salida y refrescar el WiFi)
+    bool softReconnectDone_ = false;         // ya se intentó un WiFi.reconnect() suave en esta
+                                             // racha de fallos (evita reconectar en cada tick)
+    bool wifiKeepAwake_ = false;             // ya se aplicó WiFi.setSleep(false) tras conectar
 
     // Synchronous fetch helpers (run on the main loop in tick()).
     bool fetchAndPush(const DataSourceConfig& src); // custom source -> parseCustomPage (operates on a copy, no shared-state access)
