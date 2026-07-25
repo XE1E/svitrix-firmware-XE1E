@@ -7,8 +7,10 @@
 #include <WiFiClientSecure.h>
 #include <WiFi.h>
 #include <LittleFS.h>
+#include "NightModeWindow.h"
 #include <algorithm>
 #include <cctype>
+#include <ctime>
 
 extern const char *rootCACertificate;
 
@@ -62,11 +64,35 @@ void DataFetcher_::setup()
     DEBUG_PRINTF("DataFetcher: loaded %d sources", sources_.size());
 }
 
+// ¿Modo nocturno activo? De noche solo se muestra el reloj (las apps de clima y
+// las fuentes personalizadas NO se dibujan), así que consultar el servidor es
+// desperdicio. Mismo criterio que NightModePolicy (isWithinNightWindow).
+static bool isNightModeActiveNow()
+{
+    if (!appConfig.nightMode)
+        return false;
+    time_t t = time(nullptr);
+    struct tm lt;
+    localtime_r(&t, &lt);
+    uint16_t mins = static_cast<uint16_t>(lt.tm_hour * 60 + lt.tm_min);
+    return isWithinNightWindow(mins, appConfig.nightStart, appConfig.nightEnd);
+}
+
 // ---------- tick: synchronous, one weather + one round-robin source per call ----------
 
 void DataFetcher_::tick()
 {
     unsigned long now = millis();
+
+    // En modo nocturno se pausan TODOS los fetches (clima + fuentes): solo se ve
+    // el reloj. Además se congela el reloj de auto-recuperación (no reiniciar de
+    // noche por "sin fetch exitoso"). Al terminar la noche, tick() reanuda y el
+    // fetch pendiente sale de inmediato (queda 'due').
+    if (isNightModeActiveNow())
+    {
+        lastWeatherSuccessMs_ = now;
+        return;
+    }
 
     // Weather API fetch (synchronous; blocks the loop ~2s on success).
     // Se activa con una API key de WeatherAPI o con una URL de servidor propio.
