@@ -768,8 +768,12 @@ void DataFetcher_::fetchWeather()
 
     DEBUG_PRINTF("DataFetcher: fetching weather from %s", url.c_str());
 
+    // Detecta el esquema por la URL: el servidor propio puede ser http:// (plano,
+    // SIN la fuga de socket TLS que atasca el fetch); WeatherAPI y cualquier
+    // https:// siguen usando TLS. Así el servidor propio por HTTP no se engancha.
+    bool isHttps = url.startsWith("https");
     String body;
-    int httpCode = httpGet(url, true, body);
+    int httpCode = httpGet(url, isHttps, body);
     if (httpCode != HTTP_CODE_OK)
     {
         DEBUG_PRINTF("DataFetcher: weather fetch failed: %d", httpCode);

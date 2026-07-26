@@ -7,6 +7,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/) and
 Releases prior to v0.4.0-beta.13 are documented in the
 [GitHub Releases](https://github.com/XE1E/svitrix-firmware-XE1E/releases).
 
+## [v0.4.0-beta.21] — 2026-07-25
+
+### Bug Fixes
+
+- **weather:** the weather fetch now **picks HTTP vs HTTPS from the URL scheme**
+  instead of always using TLS. `fetchWeather()` hard-coded a TLS client, so even
+  an `http://` own-server URL went through `WiFiClientSecure` — whose fd/socket
+  leak on arduino-esp32 2.0.9 wedges the fetch after a failed handshake (every
+  later fetch fails until a reboot; `failStreak` climbs). Pointing the own-server
+  URL at a plain `http://host:8080/...` endpoint now uses the plain client (no
+  TLS, no leak), which eliminates the wedging/reboots. WeatherAPI and any
+  `https://` URL still use TLS as before.
+
 ## [v0.4.0-beta.20] — 2026-07-25
 
 ### Bug Fixes
