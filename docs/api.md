@@ -572,16 +572,18 @@ devolver la misma forma de WeatherAPI `current.json` (p. ej.
 (mm del evento), `rainRate` (mm/h), `lastUpdate` (millis) y `failStreak`
 (fallos de red consecutivos del fetch; 0 = último OK).
 
-> **Auto-recuperación:** si el reloj pasa `max(15 min, 5× el intervalo)` sin un
-> fetch exitoso y el WiFi sigue conectado, se reinicia solo para limpiar el
-> stack de red (cubre atascos del socket TLS). En operación normal no reinicia;
-> `failStreak` y `/api/nvs` sirven para vigilar la salud.
+> **Auto-recuperación:** si el fetch se atasca, el reloj primero **re-asocia el
+> WiFi** (recuperación suave, tras varios fallos seguidos) y solo si aun así pasa
+> `max(15 min, 5× el intervalo)` sin un fetch exitoso, con WiFi conectado, **se
+> reinicia** como último recurso (limpia el stack de red/heap). Mantiene el WiFi
+> sin ahorro de energía (el reloj es USB) para que el enlace no se ponga viejo. En
+> operación normal no reinicia; `failStreak` y `/api/nvs` vigilan la salud.
 
 > **Modo nocturno:** mientras el modo nocturno está activo, el reloj **pausa
 > todos los fetches** (clima + fuentes personalizadas) — solo se muestra el
 > reloj — y congela la auto-recuperación (no se reinicia de madrugada). Al
-> terminar la ventana nocturna, el fetch pendiente sale de inmediato, así que las
-> apps reaparecen con dato fresco.
+> terminar la ventana nocturna **re-asocia el WiFi** y el fetch sale de inmediato,
+> así que las apps reaparecen con dato fresco.
 
 
 ## Cambiar Configuración

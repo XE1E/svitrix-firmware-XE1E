@@ -220,17 +220,21 @@ con su opción en línea (igual que UV/Luna):
 |-----|---------|-----------------|
 | **Viento** | dirección + velocidad (km/h), una sola línea | **Rotar ráfaga**: agrega ` R<n>` (p. ej. `W 5 R4`) |
 | **Radiación** | radiación solar (W/m²) | **Color automático**: tinta el valor por intensidad (como UV) |
-| **Precipitación** | lluvia del evento (mm), una sola línea | **Rotar tasa**: agrega ` <n>/h` (p. ej. `0.0mm 0.0/h`) |
+| **Precipitación** | lluvia **acumulada de hoy** (mm, se reinicia a medianoche), una sola línea | **Rotar tasa**: agrega ` <n>/h` (p. ej. `0.0mm 0.0/h`) |
 
 El tiempo en pantalla de cada app lo controla su **slider de duración** en la
 pestaña Apps.
 
 ### Fiabilidad (funciona sin atención)
 
-Si alguna vez el fetch se atasca (`max(15 min, 5× el intervalo)` sin éxito) con
-WiFi conectado, el reloj **se reinicia solo** para recuperarse. Para vigilar la
-salud: `http://[IP]/api/weather/data` (campo `failStreak`, debe estar en 0) y
-`http://[IP]/api/nvs` (uso de la partición de ajustes; que no pase ~85 %).
+Si alguna vez el fetch se atasca, el reloj se recupera solo, en dos escalones:
+primero **re‑asocia el WiFi** (recuperación suave, tras varios intentos fallidos)
+y, únicamente si aun así no logra un fetch exitoso en `max(15 min, 5× el
+intervalo)` con WiFi conectado, **se reinicia** como último recurso. Además, como
+está enchufado por USB, mantiene el WiFi **sin ahorro de energía** para que el
+enlace no se ponga "viejo" tras horas sin tráfico (p. ej. la noche entera). Para
+vigilar la salud: `http://[IP]/api/weather/data` (campo `failStreak`, debe estar
+en 0) y `http://[IP]/api/nvs` (uso de la partición de ajustes; que no pase ~85 %).
 
 ### Ahorro en modo nocturno
 
@@ -239,9 +243,9 @@ clima y las fuentes personalizadas quedan ocultas. Por eso, mientras el modo
 nocturno está activo, el reloj **deja de consultar el servidor** por completo (no
 tiene caso pedir datos que no se van a mostrar). Además, la auto‑recuperación se
 **pausa** en ese lapso, así que el reloj **no se reinicia de madrugada**. Al
-terminar la ventana nocturna, el reloj **vuelve a consultar de inmediato**, de modo
-que las apps de clima reaparecen con dato **fresco**. Es automático; no hay nada
-que configurar.
+terminar la ventana nocturna, el reloj **re‑asocia el WiFi y vuelve a consultar de
+inmediato**, de modo que las apps de clima reaparecen con dato **fresco** (sin
+esperas ni reinicios de por medio). Es automático; no hay nada que configurar.
 
 ---
 
