@@ -7,6 +7,31 @@ Format based on [Keep a Changelog](https://keepachangelog.com/) and
 Releases prior to v0.4.0-beta.13 are documented in the
 [GitHub Releases](https://github.com/XE1E/svitrix-firmware-XE1E/releases).
 
+## [v0.4.0-beta.22] — 2026-08-22
+
+### Bug Fixes
+
+- **weather:** the clock no longer reboots when the own-server has no station
+  reading yet. `/api/svitrix` returns **503** in that case (server-side fix),
+  but `fetchWeather()` treated any non-200 response as a network failure and
+  never refreshed the self-recovery clock — a station outage ended in a
+  **reboot every ~15 min**. A 503 (or a 200 response missing `current`) now
+  keeps the last known value, doesn't count toward the network fail streak,
+  and does refresh the self-recovery clock; the data is flagged
+  `weatherData.stale` (exposed in `/api/weather/data`).
+- **date:** month names in the Date app are now in **Spanish** ("AGO" instead
+  of "AUG"). ESP32's libc has no es_MX locale, so `strftime("%b"/"%B")` always
+  resolved in English even though the rest of the clock is already Spanish
+  (moon phase names, "DIA"/"DIAS"). New `DateFormat` service substitutes
+  `%b`/`%B` with literal Spanish text before calling `strftime()`.
+
+### Other Changes
+
+- **apps:** the weather condition icon now uses `is_day` (already emitted by
+  `/api/svitrix`): condition code 1000 ("Sunny"/"Clear" in WeatherAPI) used to
+  always draw the sun, even before dawn. At night it now draws the real moon
+  phase (same calculation as the Moon app).
+
 ## [v0.4.0-beta.21] — 2026-07-25
 
 ### Bug Fixes
