@@ -12,6 +12,7 @@
 #include "icons.h"
 #include "LayoutEngine.h"
 #include "MoonPhase.h"
+#include "DateFormat.h"
 #include "AirQualityLevels.h"
 #include "AlarmManager/AlarmManager.h"
 #include <LittleFS.h>
@@ -257,7 +258,9 @@ void DateApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, 
     applyNativeAppColor(colorConfig.dateColor, "Date");
 
     char d[20];
-    strftime(d, sizeof(d), timeConfig.dateFormat.c_str(), timer_localtime());
+    const struct tm *lt = timer_localtime();
+    String fmt = localizeMonthFormat(timeConfig.dateFormat.c_str(), lt);
+    strftime(d, sizeof(d), fmt.c_str(), lt);
     DisplayManager.printText(0 + x, 6 + y, d, true, 2);
 
     if (!appConfig.showWeekday)

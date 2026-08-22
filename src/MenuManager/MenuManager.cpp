@@ -11,6 +11,7 @@
 #include "timer.h"
 #include <icons.h>
 #include <WiFi.h>
+#include "DateFormat.h"
 
 enum MenuState
 {
@@ -243,9 +244,13 @@ String MenuManager_::menutext()
         return buf;
     }
     case DateFormatMenu:
+    {
         renderer_->drawMenuIndicator(dateFormatIndex, dateFormatCount, 0xFBC000);
-        strftime(buf, sizeof(buf), dateFormat[dateFormatIndex], timer_localtime());
+        const struct tm *lt = timer_localtime();
+        String fmt = localizeMonthFormat(dateFormat[dateFormatIndex], lt);
+        strftime(buf, sizeof(buf), fmt.c_str(), lt);
         return buf;
+    }
     case WeekdayMenu:
         return timeConfig.startOnMonday ? "LUN" : "DOM";
     case TempMenu:
