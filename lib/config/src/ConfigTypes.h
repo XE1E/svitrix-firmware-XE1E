@@ -252,6 +252,23 @@ struct WeatherData {
     float rainRate;           // mm/h (extra)
     unsigned long lastUpdate; // millis() of last update
     bool valid;               // data available
+    // El servidor propio respondió 503 ("sin lectura de la estación todavía")
+    // u omitió `current`: se conserva el último valor conocido (valid puede
+    // seguir en true) pero NO es un dato fresco. false tras cualquier fetch
+    // completo y exitoso.
+    bool stale;
+    // 1 = día, 0 = noche (WeatherAPI y el servidor propio lo incluyen). Elige
+    // sol/luna para el código 1000 ("Sunny"/"Clear"), que WeatherAPI usa para
+    // ambos. Va al final del struct a propósito: Globals.cpp inicializa
+    // WeatherData por posición con una lista más corta que el número de campos
+    // (los que faltan se autoinicializan a cero) — insertarlo en medio
+    // desalinea esa lista. NO lleva inicializador de miembro (`= 1`): este
+    // header se compila con el framework Arduino-ESP32, que para algunas
+    // unidades fuerza `-std=gnu++11` pese al `-std=c++17` de platformio.ini, y
+    // antes de C++14 un inicializador de miembro invalida el agregado (mismo
+    // error de conversión al compilar). Arranca en 0 hasta el primer fetch
+    // exitoso; fetchWeather() ya asume "día" si el campo viene ausente/null.
+    int isDay;
 };
 
 enum PlaylistItemType : uint8_t {

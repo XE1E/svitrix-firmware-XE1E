@@ -406,11 +406,21 @@ void BatApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int16_t x, i
 // ── OutdoorTempApp ─────────────────────────────────────────────────
 
 /// Returns weather condition icon based on WeatherAPI condition code.
-static const uint16_t *getWeatherConditionIcon(int code)
+/// isDay distingue el código 1000, que WeatherAPI usa tanto para "Sunny" (día)
+/// como para "Clear" (noche): de noche se pinta la fase lunar real en vez del
+/// sol (mismo servicio que usa MoonApp, así que coincide con lo que se ve ahí).
+static const uint16_t *getWeatherConditionIcon(int code, int isDay)
 {
     // Sunny/Clear: 1000
     if (code == 1000)
+    {
+        if (isDay == 0)
+        {
+            MoonData moon = computeMoonPhase(time(nullptr));
+            return kMoonPhaseIcons[moon.phaseIndex & 0x07];
+        }
         return icon_sunny;
+    }
     // Rain: 1063, 1150-1201, 1240-1246
     if (code == 1063 || (code >= 1150 && code <= 1201) || (code >= 1240 && code <= 1246))
         return icon_rainy;
@@ -430,7 +440,7 @@ void OutdoorTempApp(FastLED_NeoMatrix *matrix, MatrixDisplayUiState *state, int1
 
     if (m.hasIcon)
     {
-        const uint16_t *condIcon = getWeatherConditionIcon(weatherData.conditionCode);
+        const uint16_t *condIcon = getWeatherConditionIcon(weatherData.conditionCode, weatherData.isDay);
         matrix->drawRGBBitmap(x + m.iconX, y, condIcon, 8, 8);
     }
 

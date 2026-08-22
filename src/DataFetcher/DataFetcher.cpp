@@ -774,6 +774,22 @@ void DataFetcher_::fetchWeather()
     bool isHttps = url.startsWith("https");
     String body;
     int httpCode = httpGet(url, isHttps, body);
+    if (httpCode == 503)
+    {
+        // Servidor propio vivo, pero SIN lectura de estación todavía (ver
+        // receiver/app/main.py::get_svitrix — 503 "Sin lectura de la estación
+        // todavía"). No es un fallo de red: el servidor respondió. Se conserva
+        // el último valor conocido, NO cuenta para el streak de fallos, y SÍ
+        // refresca el reloj de auto-recuperación — si no, tras ~15 min con la
+        // estación caída el reloj se reiniciaría igual, que es justo lo que
+        // esto evita (la estación tarda en volver, el reloj no tiene por qué).
+        DEBUG_PRINTLN(F("DataFetcher: servidor sin lectura de estación (503); se conserva el último dato"));
+        weatherRetryAt_ = millis() + WEATHER_RETRY_MS; // reintenta pronto por si la estación ya respondió
+        lastWeatherSuccessMs_ = millis();
+        weatherFailStreak_ = 0; // hubo respuesta HTTP real: la red no está fallando
+        weatherData.stale = true;
+        return; // weatherData left intact
+    }
     if (httpCode != HTTP_CODE_OK)
     {
         DEBUG_PRINTF("DataFetcher: weather fetch failed: %d", httpCode);
@@ -796,7 +812,11 @@ void DataFetcher_::fetchWeather()
     JsonObject current = doc["current"];
     if (current.isNull())
     {
+        // Mismo caso que el 503 (servidor respondió pero sin dato de estación),
+        // solo que con HTTP 200 y sin `current` en el body: mismo tratamiento.
         DEBUG_PRINTLN(F("DataFetcher: weather response missing 'current' object"));
+        lastWeatherSuccessMs_ = millis();
+        weatherData.stale = true;
         return;
     }
 
@@ -822,6 +842,12 @@ void DataFetcher_::fetchWeather()
         weatherData.condition = condition["text"].as<String>();
         weatherData.conditionCode = condition["code"].as<int>();
     }
+    // is_day distingue el código 1000 ("Sunny" de día / "Clear" de noche, mismo
+    // código en WeatherAPI): sin él el ícono mostraba el sol también de
+    // madrugada. Ausente/null (fuente vieja o sin elevación solar) -> se asume
+    // día, igual que el comportamiento antes de que existiera este campo.
+    JsonVariant isDayVar = current["is_day"];
+    weatherData.isDay = isDayVar.isNull() ? 1 : isDayVar.as<int>();
 
     JsonObject airQuality = current["air_quality"];
     weatherData.aqi = airQuality.isNull() ? 0 : airQuality["us-epa-index"].as<int>();
@@ -835,6 +861,7 @@ void DataFetcher_::fetchWeather()
     weatherData.uv = current["uv"].as<float>();
     weatherData.lastUpdate = millis();
     weatherData.valid = true;
+    weatherData.stale = false;
 
     weatherRetryAt_ = 0;
     weatherFailStreak_ = 0;           // fetch OK → limpia la racha (diagnóstico)

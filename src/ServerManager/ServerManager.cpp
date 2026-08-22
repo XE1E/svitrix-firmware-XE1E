@@ -260,6 +260,7 @@ void addHandler()
                    {
                     StaticJsonDocument<768> doc;
                     doc["valid"] = weatherData.valid;
+                    doc["stale"] = weatherData.stale;
                     doc["outdoorTemp"] = weatherData.outdoorTemp;
                     doc["outdoorHumidity"] = weatherData.outdoorHumidity;
                     doc["pressure"] = weatherData.pressure;
@@ -267,6 +268,7 @@ void addHandler()
                     doc["uv"] = weatherData.uv;
                     doc["condition"] = weatherData.condition;
                     doc["conditionCode"] = weatherData.conditionCode;
+                    doc["isDay"] = weatherData.isDay;
                     doc["windSpeed"] = weatherData.windSpeed;
                     doc["windDeg"] = weatherData.windDeg;
                     doc["windGust"] = weatherData.windGust;
