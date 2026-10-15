@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: write  # para el paso «Keep alive»
 
 jobs:
   sync:
@@ -47,3 +48,11 @@ jobs:
       - name: Push changes
         if: steps.check.outputs.changes != '0'
         run: git push
+
+      # GitHub desactiva los workflows programados tras 60 días sin actividad en el repo, y este casi
+      # nunca hace commits (upstream cambia poco). Reactivarlo por la API cuenta como actividad.
+      - name: Keep alive
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT repos/${{ github.repository }}/actions/workflows/sync-upstream.yml/enable
