@@ -97,6 +97,56 @@ A failed fetch keeps the last good value on screen and schedules a fast retry; i
 does **not** drive any status LED. (The WiFi corner LED is now a pure
 WiFi-connectivity indicator — see [Overlays](../Overlays/README.md).)
 
+### Weather source: WeatherAPI vs. own server
+
+`fetchWeather()` picks the URL in `weatherConfig`:
+
+- **`serverUrl` set** (own server, e.g. XE1E's `https://clima.xe1e.net/api/svitrix`)
+  → used as-is, HTTP or HTTPS chosen from the URL's scheme. A plain `http://`
+  own server avoids the TLS socket-leak class of bug entirely.
+- **`serverUrl` empty** → `https://api.weatherapi.com/v1/current.json` with
+  `apiKey` + the location query (`buildWeatherQuery()`) + `aqi=yes`.
+
+Both must return the same shape as WeatherAPI's `current.json`; the own server
+may add extra fields (`solar_radiation`, `precip_event_mm`, `rain_rate_mm`) that
+WeatherAPI doesn't provide — `weatherData` defaults those to 0 when absent.
+
+**Own-server 503** ("no station reading yet" — the server is up but has no
+fresh sensor data) is treated as a soft miss, not a network failure: the last
+good value is kept, `weatherData.stale` is set, `weatherFailStreak_` is
+**not** incremented (there was a real HTTP response), and the auto-recovery
+clock (`lastWeatherSuccessMs_`) **is** refreshed so a slow station doesn't
+trigger a restart. A `200` response missing the `current` object gets the same
+treatment. Any other non-200 code, or a response missing `current`, follows the
+normal failed-fetch path (fast retry, `weatherFailStreak_++`).
+
+### Night mode: fetches paused
+
+`tick()` checks `isNightModeActiveNow()` (same predicate as `NightModePolicy`)
+and returns immediately if true — no weather or custom-source fetch runs
+overnight, since only the clock is shown. On **exit** from night mode, since
+hours of idle WiFi can leave the link stale even though `WiFi.status()` still
+reports connected, `tick()` forces `WiFi.reconnect()`, re-arms
+`WiFi.setSleep(false)`, and schedules the first post-night fetch ~5 s later
+instead of waiting for the auto-recovery restart.
+
+### Auto-recovery
+
+Covers any cause of a weather fetch going stale (leaked sockets, fragmented
+heap, dead TLS) without needing a specific diagnosis:
+
+- **Soft reconnect** — after 3 consecutive weather fetch failures (~3 min at
+  the 60 s fast retry), `tick()` calls `WiFi.reconnect()` once
+  (`softReconnectDone_` guards against retrying every tick) before considering
+  a full restart.
+- **Restart on staleness** — if `millis() - lastWeatherSuccessMs_` exceeds
+  `5 × updateInterval` (floor 15 min, `WEATHER_STALE_FLOOR_MS`) while WiFi is
+  still connected, `ESP.restart()` runs to clear the network stack and heap.
+  A WiFi *disconnect* is left to the WiFi library's own reconnect logic.
+- **`weatherFailStreak()`** — consecutive network-level failures (0 = last
+  attempt OK), exposed via `/api/weather/data` (`failStreak`) for diagnostics;
+  resets to 0 on any successful fetch or own-server 503.
+
 ## Tick Behavior
 
 - **Round-robin**: at most one weather + one custom source fetched per `tick()` call
@@ -123,7 +173,7 @@ WiFi-connectivity indicator — see [Overlays](../Overlays/README.md).)
 
 | Method | Description |
 |--------|-------------|
-| `fetchWeather()` | GET weatherapi + parse → write `weatherData` (keep-last-value on failure) |
+| `fetchWeather()` | GET WeatherAPI or own server (see below) + parse → write `weatherData` (keep-last-value on failure/stale) |
 | `fetchAndPush(idx)` | GET source + extract + format → `parseCustomPage()` |
 | `httpGet(url, isHttps, &body)` | Single GET; always `stop()`s the socket; returns the HTTP code |
 | `extractJsonValue(json, path)` | Walk dot-notation path through ArduinoJson (supports objects + arrays) |
@@ -139,6 +189,12 @@ WiFi-connectivity indicator — see [Overlays](../Overlays/README.md).)
 | `DELETE` | `/api/datafetcher?name=X` | Remove source by name |
 | `POST` | `/api/datafetcher/fetch?name=X` | Force immediate fetch for a source |
 | `GET` | `/datafetcher` | Web UI page (`datafetcher_html`) |
+| `GET` | `/api/weather` | Get `weatherConfig` (API key, location, per-app display settings) |
+| `POST` | `/api/weather` | Update `weatherConfig` |
+| `GET` | `/api/weather/data` | Current `weatherData` as JSON — see field list in [lib/config/CLAUDE.md](../../lib/config/CLAUDE.md#weatherdata); adds `failStreak` (diagnostic, not a `WeatherData` field) |
+| `POST` | `/api/weather/fetch` | Mark weather due (`forceWeatherFetch()`); fetched on the next `tick()`, not inline |
+
+Full request/response shapes: [docs/api.md](../../docs/api.md) (public reference, 3 languages).
 
 ### Add/Update Source JSON
 

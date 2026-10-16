@@ -58,6 +58,10 @@ Central configuration store and persistent settings. Defines all config structs 
 | `AppConfig` | showTime/Date/Bat/Temp/Hum, autoTransition, transEffect, scrollSpeed, nativeIconLayout, nightMode/Start/End/Brightness/Color/BlockTransition | Apps |
 | `AudioConfig` | soundActive, soundVolume, bootSound | Audio |
 | `SystemConfig` | debugMode, hostname, deviceId, updateUrls, buttonCallback | System |
+| `WeatherConfig` | apiKey, serverUrl (own server, replaces WeatherAPI), location, per-app show/color/duration | Weather apps, DataFetcher |
+| `WeatherData` | outdoorTemp/Humidity, pressure, aqi, uv, wind\*, solarRadiation, precip\*, isDay, valid, stale | Weather apps (written by DataFetcher) |
+| `RotationConfig` | items (unified app+effect rotation order/duration/color/icon) | DisplayManager, ServerManager |
+| `WifiConfig` | networks[3] (ssid/password) | main.cpp (WiFi setup), ServerManager |
 
 See [lib/config/CLAUDE.md](../lib/config/CLAUDE.md) for full field list.
 

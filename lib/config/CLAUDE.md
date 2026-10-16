@@ -6,7 +6,7 @@ Shared configuration structs consumed by all modules. Single header, no logic, n
 
 | File | Purpose |
 |------|---------|
-| `src/ConfigTypes.h` | 13 config structs + 1 enum, all POD-style with public fields |
+| `src/ConfigTypes.h` | 20 config structs + 4 enums, all POD-style with public fields |
 
 ## Config Structs
 
@@ -15,6 +15,17 @@ Shared configuration structs consumed by all modules. Single header, no logic, n
 |-------|------|---------|-------|
 | `user` | String | `""` | HTTP username |
 | `pass` | String | `"svitrix"` | HTTP password |
+
+### WifiNetwork
+| Field | Type | Default | Notes |
+|-------|------|---------|-------|
+| `ssid` | String | `""` | Network SSID |
+| `password` | String | `""` | Network password |
+
+### WifiConfig
+| Field | Type | Default | Notes |
+|-------|------|---------|-------|
+| `networks` | WifiNetwork[3] | — | Up to 3 configured networks, tried in order |
 
 ### NetworkConfig
 | Field | Type | Default | Notes |
@@ -153,6 +164,53 @@ Shared configuration structs consumed by all modules. Single header, no logic, n
 | `soundVolume` | uint8_t | `30` | Volume level |
 | `bootSound` | String | `""` | RTTTL melody on boot |
 
+### WeatherLocationType (enum)
+
+| Value | Constant |
+|-------|----------|
+| 0 | `WEATHER_LOC_CITY` |
+| 1 | `WEATHER_LOC_COORDS` |
+| 2 | `WEATHER_LOC_AUTO_IP` |
+| 3 | `WEATHER_LOC_STATION` |
+
+### WeatherConfig
+| Field | Type | Notes |
+|-------|------|-------|
+| `apiKey` | String | WeatherAPI.com API key (ignored when `serverUrl` is set) |
+| `locationType` | WeatherLocationType | City / coords / auto-IP / PWS station |
+| `city` | String | City name query |
+| `latitude` / `longitude` | float | Coordinate query |
+| `stationId` | String | PWS station ID (e.g. `"pws:KMAHANOV10"`) |
+| `updateInterval` | uint16_t | Minutes between fetches (1, 2, 5, 10, 15, 30, 60 — sub-10min meant for a low-latency own server, not the rate-limited WeatherAPI.com) |
+| `serverUrl` | String | Own weather server (XE1E) URL; when non-empty, replaces WeatherAPI.com entirely. Must return the same shape as WeatherAPI's `current.json`, with optional extra fields (`solar_radiation`, `precip_event_mm`, `rain_rate_mm`). HTTP vs HTTPS is chosen from the URL scheme |
+| `showOutdoorTemp` / `showOutdoorHumidity` / `showPressure` / `showAirQuality` / `showUV` / `showWind` / `showRadiation` / `showPrecip` | bool | Enable each weather app |
+| `showIndoorTemp` / `showIndoorHumidity` | bool | Enable indoor sensor apps |
+| `outdoorTempColor` / `outdoorHumColor` / `pressureColor` / `aqiColor` / `uvColor` / `windColor` / `radColor` / `precipColor` | uint32_t | Per-app text color |
+| `aqiAutoColor` / `uvAutoColor` / `radAutoColor` | bool | Dynamic color by level instead of fixed color |
+| `outdoorTempDuration` / `outdoorHumDuration` / `pressureDuration` / `aqiDuration` / `uvDuration` / `windDuration` / `radDuration` / `precipDuration` | uint8_t | Seconds shown (legacy default; rotation-item overrides win) |
+| `aqiShowComponents` | bool | ICA app: rotate pollutants exceeding level 4 after the index |
+| `aqiComponentSecs` | uint8_t | Seconds each flagged pollutant is shown (2-10) |
+| `windShowGust` | bool | Wind app: rotate a second frame with the gust speed |
+| `precipShowRate` | bool | Precip app: append the current rain rate (mm/h) |
+
+### WeatherData
+Runtime weather state (not persisted) — written by `DataFetcher::fetchWeather()`, read by the weather apps and `/api/weather/data`.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `outdoorTemp` / `outdoorHumidity` / `pressure` (mb) | float | Core readings |
+| `aqi` | int | US-EPA index (1-6) |
+| `uv` | float | UV index |
+| `pm2_5` / `pm10` / `o3` / `no2` / `so2` / `co` | float | Per-pollutant concentrations (µg/m³), from WeatherAPI's `air_quality` (not exposed by `/api/weather/data`, only used by the ICA app) |
+| `condition` / `conditionCode` | String / int | WeatherAPI condition text/code |
+| `windSpeed` (km/h) / `windDeg` / `windGust` (km/h) / `windDir` | float/int/float/String | Wind, shared by WeatherAPI and the own server |
+| `solarRadiation` (W/m²) / `precipEvent` (mm) / `rainRate` (mm/h) | float | Extras only the own server provides; 0 with WeatherAPI |
+| `precipToday` | float | mm accumulated today (WeatherAPI `precip_mm`) |
+| `lastUpdate` | unsigned long | `millis()` of the last successful fetch |
+| `valid` | bool | Data available (at least one successful fetch since boot) |
+| `stale` | bool | Last fetch kept the previous value instead of refreshing it — own-server 503 ("no station reading yet") or a response missing `current`. `valid` can stay `true` while `stale` is `true` |
+| `isDay` | int | 1 = day, 0 = night; picks sun vs. the real moon phase icon for condition code 1000 ("Sunny"/"Clear", shared by both). Defaults to day (1) if the source omits it |
+
 ### PlaylistItemType (enum)
 
 | Value | Constant |
@@ -172,6 +230,18 @@ Shared configuration structs consumed by all modules. Single header, no logic, n
 |-------|------|---------|-------|
 | `enabled` | bool | `false` | false = use simple appOrder mode |
 | `items` | String | `""` | JSON array of PlaylistItem objects |
+
+### RotationItemType (enum)
+
+| Value | Constant |
+|-------|----------|
+| 0 | `ROTATION_ITEM_APP` |
+| 1 | `ROTATION_ITEM_EFFECT` |
+
+### RotationConfig
+| Field | Type | Notes |
+|-------|------|-------|
+| `items` | String | JSON array: `[{id, type, name, enabled, duration, color, icon}, ...]` — unified rotation order, replaces both `appConfig.appOrder` and `PlaylistConfig` |
 
 ### SystemConfig
 | Field | Type | Default | Notes |
@@ -217,6 +287,10 @@ Config values come from **three layers** (later overrides earlier):
 | `networkConfig` | main.cpp (WiFi setup) |
 | `authConfig` | ServerManager |
 | `playlistConfig` | DisplayManager, ServerManager |
+| `rotationConfig` | DisplayManager, ServerManager |
+| `wifiConfig` | main.cpp (WiFi setup), ServerManager |
+| `weatherConfig` | DataFetcher, Apps (weather apps), ServerManager |
+| `weatherData` | Apps (weather apps), ServerManager, DataFetcher (writer) |
 
 ## Design Notes
 

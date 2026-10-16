@@ -96,7 +96,7 @@ HTTP REST API server, WiFi connectivity, mDNS discovery, UDP device discovery, a
 |--------|------|-------------|
 | `GET` | `/api/weather` | Get weather app config |
 | `POST` | `/api/weather` | Update weather config (API key, location, display) |
-| `GET` | `/api/weather/data` | Current weather data (temp, humidity, pressure, aqi, uv, condition) |
+| `GET` | `/api/weather/data` | Current weather data — temp, humidity, pressure, aqi, uv, condition/conditionCode/isDay, wind (speed/deg/gust/dir), solarRadiation, precip (today/event/rate), lastUpdate, valid/stale, failStreak (diagnostic) |
 | `POST` | `/api/weather/fetch` | Force a weather fetch now |
 
 ### Alarms & Reminders
@@ -124,6 +124,7 @@ HTTP REST API server, WiFi connectivity, mDNS discovery, UDP device discovery, a
 ### System & Files
 | Method | Path | Description |
 |--------|------|-------------|
+| `GET` | `/api/nvs` | NVS partition usage (used/free/total entries, namespace count) — diagnostic |
 | `GET` | `/version` | Firmware version string |
 | `POST` | `/save` | Apply `/DoNotTouch.json` config to running system |
 | `GET` | `/list?dir=/ICONS` | List a LittleFS directory (JSON) — *webserver wrapper* |

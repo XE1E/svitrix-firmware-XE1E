@@ -77,6 +77,43 @@ Dynamic vertical battery icon (drawn programmatically by `drawBatteryIcon()` —
 grey shell + nub, interior fills bottom-up proportional to charge, coloured by
 level: green ≥75, yellow 50–74, orange 20–49, red <20) + battery percentage.
 
+### Weather apps
+
+Populated from `weatherData` (written by `DataFetcher::fetchWeather()` — see
+[DataFetcher/CLAUDE.md](../DataFetcher/CLAUDE.md)), gated by the matching
+`weatherConfig.showX` flag. All show `--`/`--.-` placeholders while
+`weatherData.valid` is false (no successful fetch yet).
+
+#### OutdoorTempApp / OutdoorHumApp / PressureApp / UVApp
+Icon (weather-condition icon / droplet GIF / pressure GIF / UV GIF, each with
+a static-bitmap fallback) + a single centered value line:
+outdoor temperature (auto °C/°F, `timeConfig.tempDecimalPlaces`), outdoor
+humidity (`%`), pressure (mb, integer), or `UV:<n>`. `UVApp` and
+`PressureApp`/`OutdoorTempApp`/`OutdoorHumApp` support a per-app fixed color;
+`UVApp` also supports `uvAutoColor` (green→violet by index, low to extreme).
+The weather-condition icon (`getWeatherConditionIcon()`) maps WeatherAPI
+condition codes to sunny/rainy/cloudy — for code 1000 ("Sunny"/"Clear", used
+for both day and night) it picks the sun icon by day or the real current moon
+phase icon (`computeMoonPhase()`, same service as `MoonApp`) by night, using
+`weatherData.isDay`.
+
+#### WindApp / RadiationApp / PrecipApp
+Animated icon (`/ICONS/17071.gif`, `/ICONS/56958.gif`, `/ICONS/3527.gif` —
+cloudy/sunny/rainy static fallback) + a rotating single-line text drawn by the
+shared `drawWeatherRotatingText()` helper: centered when it fits the text
+area, marquee-scrolled (Moon-style, at `appConfig.scrollSpeed`) when it
+doesn't. Only one native app renders at a time, so the helper's rotation state
+is safely shared across all three.
+
+- **WindApp** — `"<dir> <speed>"` (km/h, rounded); if `windShowGust`, appends
+  a second rotating frame `"R<gust>"`. Fixed color (`windColor`).
+- **RadiationApp** — solar radiation in W/m² (`"<n>W"`); own-server-only data,
+  reads 0 with WeatherAPI. Supports `radAutoColor` (blue→red, 5 bands by W/m²).
+- **PrecipApp** — today's accumulated rain in mm; if `precipShowRate`, appends
+  the current rain rate (mm/h, own-server-only). Fixed color (`precipColor`).
+
+See below for AirQualityApp (ICA), also fed by `weatherData`.
+
 ### MoonApp
 8x8 phase bitmap (LaMetric set, embedded in `icons.h` as `icon_moon_0..7`,
 indexed by `MoonPhase::phaseIndex`) over a dynamic blue twinkling-star
@@ -155,6 +192,7 @@ No hardcoded limit on the number of custom apps.
 | `nativeAppGuard(appName)` | Skip if notification active, set currentApp |
 | `applyNativeAppColor(color)` | Apply per-app color (> 0) or global text color; any active `IDisplayPolicy` (e.g. NightModePolicy) can veto via `DisplayManager.resolveTextColor()` |
 | `drawWeekdayBar(x, y, lineWidth, spacing, start)` | 7 horizontal segments, current day highlighted |
+| `drawWeatherRotatingText(x, y, layout, items, nItems)` | Shared Wind/Radiation/Precip rotating-text renderer: centers a short item or marquees a long one, respects icon layout |
 | `replacePlaceholders(input)` | `{{topic}}` → MQTT value substitution |
 
 ## Registry Functions
